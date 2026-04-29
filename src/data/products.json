@@ -1,0 +1,50 @@
+[
+  {
+    "id": "arabescato",
+    "name": "ARABESCATO",
+    "size": "",
+    "image": "/%C3%BCr%C3%BCnler/ARABESCATO.png"
+  },
+  {
+    "id": "arch-a-gri",
+    "name": "ARCH A.GRI",
+    "size": "",
+    "image": "/%C3%BCr%C3%BCnler/ARCH%20A.GRI.png"
+  },
+  {
+    "id": "bianco-dolomiti",
+    "name": "BIANCO DOLOMITI",
+    "size": "",
+    "image": "/%C3%BCr%C3%BCnler/BIANCO%20DOLOMITI.png"
+  },
+  {
+    "id": "karbone-black-f-lapp",
+    "name": "KARBONE BLACK F.LAPP",
+    "size": "",
+    "image": "/%C3%BCr%C3%BCnler/KARBONE%20BLACK%20F.LAPP.png"
+  },
+  {
+    "id": "martins-marble-light",
+    "name": "MARTINS MARBLE LIGHT",
+    "size": "",
+    "image": "/%C3%BCr%C3%BCnler/MARTINS%20MARBLE%20LIGHT.png"
+  },
+  {
+    "id": "nordic-grey",
+    "name": "NORDIC GREY",
+    "size": "",
+    "image": "/%C3%BCr%C3%BCnler/NORDIC%20GREY.png"
+  },
+  {
+    "id": "nordic-ivory",
+    "name": "NORDIC IVORY",
+    "size": "",
+    "image": "/%C3%BCr%C3%BCnler/NORDIC%20IVORY.png"
+  },
+  {
+    "id": "paonazzo",
+    "name": "PAONAZZO",
+    "size": "",
+    "image": "/%C3%BCr%C3%BCnler/PAONAZZO.png"
+  }
+]
