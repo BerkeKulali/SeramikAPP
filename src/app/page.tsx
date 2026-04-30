@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toJpeg } from "html-to-image";
+import { jsPDF } from "jspdf";
 import { Search } from "lucide-react";
 
 type TemplateCount = 1 | 2 | 3 | 4 | 5 | 6 | 8;
@@ -40,6 +41,13 @@ type DraftV1 = {
   slots: SlotState[];
 };
 
+type PdfQueueItemV1 = {
+  id: string;
+  title: string;
+  thumbnailDataUrl: string | null;
+  snapshot: DraftV1;
+};
+
 const TEMPLATES_DEFAULT: TemplateCount[] = [1, 2, 4, 6, 8];
 const TEMPLATES_PARQUET: TemplateCount[] = [1, 2, 3, 4, 5];
 
@@ -56,6 +64,9 @@ const SIZE_OPTIONS = [
   "30x60",
   "30x90",
   "120x180",
+  "45x45",
+  "50x50",
+  "20x120",
 ] as const;
 
 type SizeOption = (typeof SIZE_OPTIONS)[number];
@@ -100,6 +111,10 @@ function formatThousandsWithDot(digits: string) {
 
 function sanitizeFileComponent(input: string) {
   return input.trim().replace(/[\\/:*?"<>|]/g, "-");
+}
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
 function gridForTemplate(template: TemplateCount) {
@@ -222,8 +237,6 @@ export default function Home() {
   const [selectedTemplateSize, setSelectedTemplateSize] = useState("30x60");
   const [selectedManufacturer, setSelectedManufacturer] =
     useState("QUA SERAMİK");
-  const [manufacturerManuallyOverridden, setManufacturerManuallyOverridden] =
-    useState(false);
   const [unitName, setUnitName] = useState(DEFAULT_UNIT_NAME);
   const [fileName, setFileName] = useState("");
   const [canvasBgColor, setCanvasBgColor] = useState(DEFAULT_CANVAS_BG);
@@ -238,6 +251,9 @@ export default function Home() {
   const [imageErrorBySlot, setImageErrorBySlot] = useState<
     Record<number, boolean>
   >({});
+  const [pdfQueue, setPdfQueue] = useState<PdfQueueItemV1[]>([]);
+  const [pdfEditingIndex, setPdfEditingIndex] = useState<number | null>(null);
+  const [isBuildingPdf, setIsBuildingPdf] = useState(false);
 
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const exportCanvasRef = useRef<HTMLDivElement | null>(null);
@@ -394,14 +410,6 @@ export default function Home() {
       delete next[idx];
       return next;
     });
-
-    const p = productsById.get(productId);
-    if (p) {
-      setSelectedTemplateSize(p.size || selectedTemplateSize);
-      if (!manufacturerManuallyOverridden) {
-        setSelectedManufacturer(p.brand || selectedManufacturer);
-      }
-    }
   }
 
   function resetAllSlots() {
@@ -492,6 +500,158 @@ export default function Home() {
       a.click();
     } finally {
       setIsDownloading(false);
+    }
+  }
+
+  function makeSnapshot(): DraftV1 {
+    return {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      selectedTemplate,
+      productImageAspect,
+      globalFontSize,
+      canvasBgColor,
+      isDarkBg,
+      selectedTemplateSize,
+      selectedManufacturer,
+      headerRightText,
+      unitName,
+      fileName,
+      slots,
+    };
+  }
+
+  function snapshotTitle() {
+    const base = sanitizeFileComponent(fileName) || "katalog-ciktisi";
+    const sizePart = sanitizeFileComponent(selectedTemplateSize) || "boyut";
+    return `${sizePart}_${base}`;
+  }
+
+  function applySnapshot(d: DraftV1) {
+    const allowedTemplates: TemplateCount[] = [...TEMPLATES_DEFAULT, ...TEMPLATES_PARQUET];
+    const nextTemplate = allowedTemplates.includes(d.selectedTemplate)
+      ? d.selectedTemplate
+      : 4;
+    const nextAspect: ProductImageAspect =
+      d.productImageAspect === "square" ||
+      d.productImageAspect === "threeTwo" ||
+      d.productImageAspect === "video" ||
+      d.productImageAspect === "parquet"
+        ? d.productImageAspect
+        : "square";
+
+    setIsDarkBg(!!d.isDarkBg);
+    setCanvasBgColor(
+      typeof d.canvasBgColor === "string" && d.canvasBgColor.trim()
+        ? d.canvasBgColor
+        : d.isDarkBg
+          ? "#1D1616"
+          : "#F5F5F5",
+    );
+    setProductImageAspect(nextAspect);
+    setSelectedTemplate(nextTemplate);
+    setSlots(buildSlots(nextTemplate, Array.isArray(d.slots) ? d.slots : []));
+
+    const nextGlobalFont =
+      typeof d.globalFontSize === "number" && Number.isFinite(d.globalFontSize)
+        ? Math.max(12, Math.min(64, Math.round(d.globalFontSize)))
+        : DEFAULT_GLOBAL_FONT_SIZE;
+    setGlobalFontSize(nextGlobalFont);
+    if (nextAspect !== "parquet") setLastNonParquetFontSize(nextGlobalFont);
+
+    setSelectedTemplateSize(d.selectedTemplateSize || "30x60");
+    setSelectedManufacturer(d.selectedManufacturer || "QUA SERAMİK");
+    setHeaderRightText(d.headerRightText || "SÖKE FABRİKA SEVK");
+    setUnitName(d.unitName || DEFAULT_UNIT_NAME);
+    setFileName(d.fileName || "");
+    setActiveSlotIndex(0);
+    setImageErrorBySlot({});
+  }
+
+  async function captureThumbnail(): Promise<string | null> {
+    const node = exportCanvasRef.current;
+    if (!node) return null;
+    try {
+      return await toJpeg(node, {
+        quality: 0.7,
+        pixelRatio: 0.25,
+        cacheBust: true,
+        backgroundColor: canvasBg,
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  async function addOrUpdatePdfQueueItem() {
+    const snap = makeSnapshot();
+    const thumb = await captureThumbnail();
+    const title = snapshotTitle();
+
+    if (pdfEditingIndex != null) {
+      setPdfQueue((prev) =>
+        prev.map((it, idx) =>
+          idx === pdfEditingIndex
+            ? {
+                ...it,
+                title,
+                thumbnailDataUrl: thumb ?? it.thumbnailDataUrl,
+                snapshot: snap,
+              }
+            : it,
+        ),
+      );
+      setPdfEditingIndex(null);
+      return;
+    }
+
+    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    setPdfQueue((prev) => [
+      ...prev,
+      { id, title, thumbnailDataUrl: thumb, snapshot: snap },
+    ]);
+  }
+
+  async function downloadPdfFromQueue() {
+    if (pdfQueue.length === 0) return;
+    const node = exportCanvasRef.current;
+    if (!node) return;
+
+    const original = makeSnapshot();
+    const pdfName = `${snapshotTitle()}_PDF.pdf`;
+
+    try {
+      setIsBuildingPdf(true);
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "px",
+        format: [CANVAS_W, CANVAS_H],
+        compress: true,
+      });
+
+      for (let i = 0; i < pdfQueue.length; i++) {
+        const item = pdfQueue[i]!;
+        applySnapshot(item.snapshot);
+        await sleep(0);
+        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+
+        const dataUrl = await toJpeg(node, {
+          quality: 0.98,
+          pixelRatio: 2,
+          cacheBust: true,
+          backgroundColor: normalizeHexColor(item.snapshot.canvasBgColor),
+        });
+
+        if (i > 0) doc.addPage([CANVAS_W, CANVAS_H], "portrait");
+        doc.addImage(dataUrl, "JPEG", 0, 0, CANVAS_W, CANVAS_H);
+      }
+
+      doc.save(pdfName);
+    } finally {
+      applySnapshot(original);
+      setPdfEditingIndex(null);
+      setIsBuildingPdf(false);
     }
   }
 
@@ -599,7 +759,6 @@ export default function Home() {
         parsed.selectedManufacturer.trim()
       ) {
         setSelectedManufacturer(parsed.selectedManufacturer);
-        setManufacturerManuallyOverridden(true);
       }
       if (typeof parsed.headerRightText === "string" && parsed.headerRightText.trim()) {
         setHeaderRightText(parsed.headerRightText);
@@ -667,7 +826,7 @@ export default function Home() {
               <div className="flex flex-col items-end gap-2">
                 <button
                   onClick={downloadJpg}
-                  disabled={isDownloading}
+                  disabled={isDownloading || isBuildingPdf}
                   className="inline-flex items-center gap-2 justify-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
                 >
                   <Icon name="download" className="h-4 w-4" />
@@ -675,16 +834,113 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => void addOrUpdatePdfQueueItem()}
+                  disabled={isDownloading || isBuildingPdf}
+                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+                >
+                  {pdfEditingIndex != null ? "Sayfayı Güncelle" : "PDF Listesine Ekle"}
+                </button>
+                <button
+                  type="button"
                   onClick={exportDraftJson}
+                  disabled={isDownloading || isBuildingPdf}
                   className="inline-flex items-center gap-2 justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50"
                 >
                   Taslağı Kaydet (.json)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void downloadPdfFromQueue()}
+                  disabled={pdfQueue.length === 0 || isDownloading || isBuildingPdf}
+                  className="inline-flex items-center gap-2 justify-center rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
+                  title={pdfQueue.length === 0 ? "PDF kuyruğu boş" : "PDF indir"}
+                >
+                  PDF İndir ({pdfQueue.length})
                 </button>
               </div>
             </div>
           </div>
 
           <div className="p-5 space-y-5 overflow-auto">
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-zinc-900">PDF Kuyruğu</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPdfQueue([]);
+                    setPdfEditingIndex(null);
+                  }}
+                  disabled={pdfQueue.length === 0 || isBuildingPdf}
+                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+                >
+                  Tüm Listeyi Temizle
+                </button>
+              </div>
+
+              <div className="rounded-lg border border-zinc-200 bg-white overflow-hidden">
+                {pdfQueue.length === 0 ? (
+                  <div className="px-3 py-3 text-xs text-zinc-500">
+                    Henüz sayfa eklenmedi.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-zinc-200">
+                    {pdfQueue.map((item, idx) => (
+                      <div key={item.id} className="flex items-center gap-3 px-3 py-2">
+                        <div className="h-10 w-10 shrink-0 rounded border border-zinc-200 bg-zinc-50 overflow-hidden">
+                          {item.thumbnailDataUrl ? (
+                            <img
+                              src={item.thumbnailDataUrl}
+                              alt={item.title}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : null}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-xs font-semibold text-zinc-900">
+                            {idx + 1}. {item.title}
+                          </div>
+                          <div className="text-[11px] text-zinc-500">
+                            Şablon {item.snapshot.selectedTemplate} •{" "}
+                            {item.snapshot.isDarkBg ? "Koyu" : "Açık"}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            applySnapshot(item.snapshot);
+                            setPdfEditingIndex(idx);
+                          }}
+                          disabled={isBuildingPdf}
+                          className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+                          title="Düzenle"
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPdfQueue((prev) => prev.filter((x) => x.id !== item.id));
+                            setPdfEditingIndex((cur) => {
+                              if (cur == null) return null;
+                              if (cur === idx) return null;
+                              if (cur > idx) return cur - 1;
+                              return cur;
+                            });
+                          }}
+                          disabled={isBuildingPdf}
+                          className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+                          title="Sil"
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold text-zinc-900">Şablon</div>
@@ -812,34 +1068,10 @@ export default function Home() {
                     value={selectedManufacturer}
                     onChange={(e) => {
                       setSelectedManufacturer(e.target.value);
-                      setManufacturerManuallyOverridden(true);
                     }}
                     placeholder="örn. QUA SERAMİK"
                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                   />
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="text-xs font-montserrat text-zinc-500 leading-tight">
-                      {manufacturerManuallyOverridden
-                        ? "Manuel ezme açık"
-                        : "Otomatik (üründen)"}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setManufacturerManuallyOverridden(false);
-                        const activeProductId =
-                          slots[activeSlotIndex]?.productId ?? null;
-                        const p = activeProductId
-                          ? productsById.get(activeProductId)
-                          : undefined;
-                        if (p?.brand) setSelectedManufacturer(p.brand);
-                      }}
-                      className="shrink-0 text-xs font-montserrat font-semibold text-zinc-700 hover:text-zinc-900"
-                      title="Markayı üründen otomatik al"
-                    >
-                      Otomatik al
-                    </button>
-                  </div>
                 </label>
               </div>
               <label className="space-y-1">
