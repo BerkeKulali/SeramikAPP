@@ -286,7 +286,7 @@ export default function Home() {
   const productDetailsTextColorClass = canvasTextColorClass;
   const headerBoxPx = Math.max(10, Math.round(FIXED_HEADER_FONT_SIZE * 0.6));
   const headerBoxPy = Math.max(8, Math.round(FIXED_HEADER_FONT_SIZE * 0.35));
-  const selectedLogoSrc = "/images/logos/kulalilar_light.png";
+  const selectedLogoSrc = "/images/logos/kulalilar-light.png";
   const logoFilter = isDarkBg ? "invert(1)" : "none";
   const isSixOrEightSquare =
     productImageAspect === "square" &&
