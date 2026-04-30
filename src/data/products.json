@@ -1,50 +1,1983 @@
 [
   {
-    "id": "arabescato",
-    "name": "ARABESCATO",
-    "size": "",
-    "image": "/%C3%BCr%C3%BCnler/ARABESCATO.png"
+    "id": "bien-serami-k-45x45-astoira-turquoise",
+    "name": "Astoira Turquoise",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Astoira%20Turquoise.png"
   },
   {
-    "id": "arch-a-gri",
+    "id": "bien-serami-k-45x45-astoria-crema",
+    "name": "Astoria Crema",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Astoria%20Crema.png"
+  },
+  {
+    "id": "bien-serami-k-45x45-enzo-antrasit",
+    "name": "Enzo Antrasit",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Enzo%20Antrasit.png"
+  },
+  {
+    "id": "bien-serami-k-45x45-enzo-beyaz",
+    "name": "Enzo Beyaz",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Enzo%20Beyaz.png"
+  },
+  {
+    "id": "bien-serami-k-45x45-enzo-gri",
+    "name": "Enzo Gri",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Enzo%20Gri.png"
+  },
+  {
+    "id": "bien-serami-k-45x45-famous-grey",
+    "name": "Famous Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Famous%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-45x45-karis-bianco",
+    "name": "Karis Bianco",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Karis%20Bianco.png"
+  },
+  {
+    "id": "bien-serami-k-45x45-mood-beige",
+    "name": "Mood Beige",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Mood%20Beige.png"
+  },
+  {
+    "id": "bien-serami-k-45x45-mood-white",
+    "name": "Mood White",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Mood%20White.png"
+  },
+  {
+    "id": "bien-serami-k-45x45-terra-beyaz",
+    "name": "Terra Beyaz",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Terra%20Beyaz.png"
+  },
+  {
+    "id": "bien-serami-k-45x45-terra-gri",
+    "name": "Terra Gri",
+    "brand": "BIEN SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/45x45/Terra%20Gri.png"
+  },
+  {
+    "id": "bien-serami-k-50x50-arno",
+    "name": "ARNO",
+    "brand": "BIEN SERAMİK",
+    "size": "50x50",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/50x50/ARNO.png"
+  },
+  {
+    "id": "bien-serami-k-50x50-homey-bej",
+    "name": "HOMEY BEJ",
+    "brand": "BIEN SERAMİK",
+    "size": "50x50",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/50x50/HOMEY%20BEJ.png"
+  },
+  {
+    "id": "bien-serami-k-50x50-homey-bone",
+    "name": "HOMEY BONE",
+    "brand": "BIEN SERAMİK",
+    "size": "50x50",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/50x50/HOMEY%20BONE.png"
+  },
+  {
+    "id": "bien-serami-k-50x50-homey-kahve",
+    "name": "HOMEY KAHVE",
+    "brand": "BIEN SERAMİK",
+    "size": "50x50",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/50x50/HOMEY%20KAHVE.png"
+  },
+  {
+    "id": "bien-serami-k-50x50-nevada-a-gri",
+    "name": "NEVADA A.GRİ",
+    "brand": "BIEN SERAMİK",
+    "size": "50x50",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/50x50/NEVADA%20A.GRI%CC%87.png"
+  },
+  {
+    "id": "bien-serami-k-50x50-nevada-bone",
+    "name": "NEVADA BONE",
+    "brand": "BIEN SERAMİK",
+    "size": "50x50",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/50x50/NEVADA%20BONE.png"
+  },
+  {
+    "id": "bien-serami-k-50x50-nevada-gri",
+    "name": "NEVADA GRİ",
+    "brand": "BIEN SERAMİK",
+    "size": "50x50",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/50x50/NEVADA%20GRI%CC%87.png"
+  },
+  {
+    "id": "bien-serami-k-50x50-stacy",
+    "name": "STACY",
+    "brand": "BIEN SERAMİK",
+    "size": "50x50",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/50x50/STACY.png"
+  },
+  {
+    "id": "bien-serami-k-50x50-stuart",
+    "name": "STUART",
+    "brand": "BIEN SERAMİK",
+    "size": "50x50",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/50x50/STUART.jpg"
+  },
+  {
+    "id": "bien-serami-k-60x120-amour",
+    "name": "AMOUR",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/AMOUR.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-arch-a-gri",
     "name": "ARCH A.GRI",
-    "size": "",
-    "image": "/%C3%BCr%C3%BCnler/ARCH%20A.GRI.png"
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/ARCH%20A.GRI.png"
   },
   {
-    "id": "bianco-dolomiti",
+    "id": "bien-serami-k-60x120-arch-grey",
+    "name": "Arch Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Arch%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-arcides-bone",
+    "name": "Arcides Bone",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Arcides%20Bone.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-arcides-smoke",
+    "name": "Arcides Smoke",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Arcides%20Smoke.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-arcos-silver",
+    "name": "Arcos Silver",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Arcos%20Silver.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-arcturuse",
+    "name": "Arcturuse",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Arcturuse.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-atlanti-k",
+    "name": "ATLANTİK",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/ATLANTI%CC%87K.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-boho-dark-grey",
+    "name": "Boho Dark Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Boho%20Dark%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-bona-dea-crema",
+    "name": "Bona Dea Crema",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Bona%20Dea%20Crema.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-bona-dea-dark-grey",
+    "name": "Bona Dea Dark Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Bona%20Dea%20Dark%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-carbon-antrasit",
+    "name": "Carbon Antrasit",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Carbon%20Antrasit.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-carbon-grey",
+    "name": "Carbon Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Carbon%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-cemento-grey",
+    "name": "Cemento Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Cemento%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-concept-antrasit",
+    "name": "Concept Antrasit",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Concept%20Antrasit.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-concept-taupe",
+    "name": "Concept Taupe",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Concept%20Taupe.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-concept-vizon",
+    "name": "Concept Vizon",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Concept%20Vizon.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-crag-antrasit",
+    "name": "Crag Antrasit",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Crag%20Antrasit.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-crag-grey",
+    "name": "Crag Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Crag%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-crag-white",
+    "name": "CRAG WHITE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/CRAG%20WHITE.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-daino-lienzo-bej",
+    "name": "Daino Lienzo Bej",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Daino%20Lienzo%20Bej.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-daino-lienzo-bone",
+    "name": "Daino Lienzo Bone",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Daino%20Lienzo%20Bone.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-darkness",
+    "name": "DARKNESS",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/DARKNESS.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-darwi-n-anthracite",
+    "name": "DARWİN ANTHRACITE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/DARWI%CC%87N%20ANTHRACITE.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-darwi-n-grey",
+    "name": "DARWİN GREY",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/DARWI%CC%87N%20GREY.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-darwi-n-taupe",
+    "name": "DARWİN TAUPE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/DARWI%CC%87N%20TAUPE.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-darwi-n-vi-zon",
+    "name": "DARWİN VİZON",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/DARWI%CC%87N%20VI%CC%87ZON.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-detroi-t",
+    "name": "DETROİT",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/DETROI%CC%87T.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-dune-grey",
+    "name": "Dune Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Dune%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-dune-k-gri",
+    "name": "Dune K.Gri",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Dune%20K.Gri.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-efes",
+    "name": "Efes",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Efes.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-elan-gri",
+    "name": "ELAN GRİ",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/ELAN%20GRI%CC%87.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-eola-grey",
+    "name": "Eola Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Eola%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-galera",
+    "name": "Galera",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Galera.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-grassland-blue",
+    "name": "Grassland Blue",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Grassland%20Blue.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-grassland-green",
+    "name": "Grassland Green",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Grassland%20Green.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-gustavia",
+    "name": "Gustavia",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Gustavia.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-highgate-dark",
+    "name": "Highgate Dark",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Highgate%20Dark.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-joya",
+    "name": "JOYA",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/JOYA.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-kapteyn",
+    "name": "KAPTEYN",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/KAPTEYN.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-las-palmas-beige",
+    "name": "LAS PALMAS BEIGE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/LAS%20PALMAS%20BEIGE.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-las-palmas-gri",
+    "name": "Las Palmas Gri",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Las%20Palmas%20Gri.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-las-palmas-white",
+    "name": "LAS PALMAS WHITE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/LAS%20PALMAS%20WHITE.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-li-mra-grey",
+    "name": "LİMRA GREY",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/LI%CC%87MRA%20GREY.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-magnifique-black",
+    "name": "Magnifique Black",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Magnifique%20Black.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-mia",
+    "name": "Mia",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Mia.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-moonland-beige",
+    "name": "MOONLAND BEIGE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/MOONLAND%20BEIGE.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-nomerles-grey",
+    "name": "NOMERLES GREY",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/NOMERLES%20GREY.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-nomerles-white",
+    "name": "Nomerles White",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Nomerles%20White.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-optima-3d-plus",
+    "name": "Optima 3D Plus",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Optima%203D%20Plus.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-palazzo-grey",
+    "name": "Palazzo Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Palazzo%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-pamfi-lya-a-gri",
+    "name": "PAMFİLYA A.GRİ",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/PAMFI%CC%87LYA%20A.GRI%CC%87.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-quark-bone",
+    "name": "Quark Bone",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Quark%20Bone.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-quark-gri",
+    "name": "QUARK GRİ",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/QUARK%20GRI%CC%87.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-rock-candy",
+    "name": "Rock Candy",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Rock%20Candy.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-root-silver",
+    "name": "Root Silver",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Root%20Silver.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-salt-cave-almond",
+    "name": "Salt Cave Almond",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Salt%20Cave%20Almond.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-salt-cave-ice",
+    "name": "Salt Cave Ice",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Salt%20Cave%20Ice.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-salus-grey",
+    "name": "Salus Grey",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Salus%20Grey.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-sara-bone",
+    "name": "SARA BONE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/SARA%20BONE.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-statuario-goya",
+    "name": "STATUARIO GOYA",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/STATUARIO%20GOYA.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-swan",
+    "name": "Swan",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Swan.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-tiger-black",
+    "name": "Tiger Black",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Tiger%20Black.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-venus-grey",
+    "name": "VENUS GREY",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/VENUS%20GREY.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-venus-white",
+    "name": "VENUS WHITE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/VENUS%20WHITE.png"
+  },
+  {
+    "id": "bien-serami-k-60x120-yoppie",
+    "name": "Yoppie",
+    "brand": "BIEN SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x120/Yoppie.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-magellan-bone",
+    "name": " MAGELLAN BONE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/%20MAGELLAN%20BONE.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-abella-whi-te",
+    "name": "ABELLA WHİTE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/ABELLA%20WHI%CC%87TE.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-adoni-s-beyaz",
+    "name": "ADONİS BEYAZ",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/ADONI%CC%87S%20BEYAZ.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-agatha-parlak-beyaz",
+    "name": "AGATHA PARLAK BEYAZ",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/AGATHA%20PARLAK%20BEYAZ.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-alaska-blue",
+    "name": "ALASKA BLUE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/ALASKA%20BLUE.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-alyssa-bone",
+    "name": "ALYSSA BONE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/ALYSSA%20BONE.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-atlas",
+    "name": "ATLAS",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/ATLAS.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-bergama-parlak",
+    "name": "BERGAMA PARLAK",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/BERGAMA%20PARLAK.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-desti-ny-parlak-beyaz",
+    "name": "DESTİNY PARLAK BEYAZ",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/DESTI%CC%87NY%20PARLAK%20BEYAZ.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-imperi-al-parlak-beyaz",
+    "name": "IMPERİAL PARLAK BEYAZ",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/IMPERI%CC%87AL%20PARLAK%20BEYAZ.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-lexa-parlak",
+    "name": "LEXA PARLAK",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/LEXA%20PARLAK.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-li-ma-parlak",
+    "name": "LİMA PARLAK",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/LI%CC%87MA%20PARLAK.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-marmol-shadow",
+    "name": "MARMOL SHADOW",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/MARMOL%20SHADOW.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-maxi",
+    "name": "MAXİ",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/MAXI%CC%87.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-ni-le-antrasi-t",
+    "name": "NİLE ANTRASİT",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/NI%CC%87LE%20ANTRASI%CC%87T.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-pera-grey",
+    "name": "PERA GREY",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/PERA%20GREY.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-quartz-antrasit",
+    "name": "QUARTZ ANTRASIT",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/QUARTZ%20ANTRASIT.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-tuana-grey",
+    "name": "TUANA GREY",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/TUANA%20GREY.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-urban-antrasi-t",
+    "name": "URBAN ANTRASİT",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/URBAN%20ANTRASI%CC%87T.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-urban-dunkel",
+    "name": "URBAN DUNKEL",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/URBAN%20DUNKEL.png"
+  },
+  {
+    "id": "bien-serami-k-60x60-urban-latte",
+    "name": "URBAN LATTE",
+    "brand": "BIEN SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/BIEN%20SERAMI%CC%87K/60x60/URBAN%20LATTE.png"
+  },
+  {
+    "id": "c-anakkale-serami-k-40x80-luna-kemi-k-fon",
+    "name": "LUNA KEMİK FON",
+    "brand": "ÇANAKKALE SERAMİK",
+    "size": "40x80",
+    "image": "/ürünler/C%CC%A7ANAKKALE%20SERAMI%CC%87K/40x80/LUNA%20KEMI%CC%87K%20FON.png"
+  },
+  {
+    "id": "c-anakkale-serami-k-45x45-volga-ac-ik-gri-gs-d6446",
+    "name": "VOLGA AÇIK GRİ GS-D6446",
+    "brand": "ÇANAKKALE SERAMİK",
+    "size": "45x45",
+    "image": "/ürünler/C%CC%A7ANAKKALE%20SERAMI%CC%87K/45x45/VOLGA%20AC%CC%A7IK%20GRI%CC%87%20GS-D6446.png"
+  },
+  {
+    "id": "c-anakkale-serami-k-60x120-calacatta-macchi-a-vecchi-a",
+    "name": "CALACATTA MACCHİA VECCHİA",
+    "brand": "ÇANAKKALE SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/C%CC%A7ANAKKALE%20SERAMI%CC%87K/60x120/CALACATTA%20MACCHI%CC%87A%20VECCHI%CC%87A.png"
+  },
+  {
+    "id": "c-anakkale-serami-k-60x120-marrakesh-krem-parlak-1",
+    "name": "MARRAKESH KREM PARLAK 1.",
+    "brand": "ÇANAKKALE SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/C%CC%A7ANAKKALE%20SERAMI%CC%87K/60x120/MARRAKESH%20KREM%20PARLAK%201..png"
+  },
+  {
+    "id": "c-anakkale-serami-k-60x120-metalix-kemi-k-parlak-1",
+    "name": "METALIX KEMİK PARLAK 1.",
+    "brand": "ÇANAKKALE SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/C%CC%A7ANAKKALE%20SERAMI%CC%87K/60x120/METALIX%20KEMI%CC%87K%20PARLAK%201..png"
+  },
+  {
+    "id": "c-anakkale-serami-k-60x120-mineral-linght-gmb-r1158-mat",
+    "name": "MINERAL LINGHT GMB-R1158 MAT",
+    "brand": "ÇANAKKALE SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/C%CC%A7ANAKKALE%20SERAMI%CC%87K/60x120/MINERAL%20LINGHT%20GMB-R1158%20MAT.png"
+  },
+  {
+    "id": "c-anakkale-serami-k-60x120-si-lver-ri-ver-li-ght",
+    "name": "SİLVER RİVER LİGHT",
+    "brand": "ÇANAKKALE SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/C%CC%A7ANAKKALE%20SERAMI%CC%87K/60x120/SI%CC%87LVER%20RI%CC%87VER%20LI%CC%87GHT.png"
+  },
+  {
+    "id": "c-anakkale-serami-k-60x60-cement-gri-mat-gmb-uo0707",
+    "name": "CEMENT GRİ MAT GMB-UO0707",
+    "brand": "ÇANAKKALE SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/C%CC%A7ANAKKALE%20SERAMI%CC%87K/60x60/CEMENT%20GRI%CC%87%20MAT%20GMB-UO0707.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-aleats-antrasit-flp",
+    "name": "ALEATS ANTRASIT FLP",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/ALEATS%20ANTRASIT%20FLP.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-aleats-antrasi-t-mat",
+    "name": "ALEATS ANTRASİT MAT",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/ALEATS%20ANTRASI%CC%87T%20MAT.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-aleats-grey",
+    "name": "ALEATS GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/ALEATS%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-calacatta-grigio",
+    "name": "CALACATTA GRIGIO",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/CALACATTA%20GRIGIO.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-carmen-antrasi-t",
+    "name": "CARMEN ANTRASİT",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/CARMEN%20ANTRASI%CC%87T.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-carmen-beige",
+    "name": "CARMEN BEIGE",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/CARMEN%20BEIGE.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-carmen-grey",
+    "name": "CARMEN GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/CARMEN%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-carmen-white",
+    "name": "CARMEN WHITE",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/CARMEN%20WHITE.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-eban-bej",
+    "name": "EBAN BEJ",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/EBAN%20BEJ.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-eban-grey",
+    "name": "EBAN GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/EBAN%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-essential-black",
+    "name": "ESSENTIAL BLACK",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/ESSENTIAL%20BLACK.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-essential-grey",
+    "name": "ESSENTIAL GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/ESSENTIAL%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-essential-white",
+    "name": "ESSENTIAL WHITE",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/ESSENTIAL%20WHITE.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-frey-antrasi-t",
+    "name": "FREY ANTRASİT",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/FREY%20ANTRASI%CC%87T.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-granada-black",
+    "name": "GRANADA BLACK",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/GRANADA%20BLACK.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-misha-dark-grey",
+    "name": "MISHA DARK GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/MISHA%20DARK%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-mi-ra-black",
+    "name": "MİRA BLACK",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/MI%CC%87RA%20BLACK.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-stori-a-dark-green",
+    "name": "STORİA DARK GREEN",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/STORI%CC%87A%20DARK%20GREEN.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x120-volcano-grey",
+    "name": "VOLCANO GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x120/VOLCANO%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-capel-mi-nk",
+    "name": "CAPEL MİNK",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/CAPEL%20MI%CC%87NK.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-cemento-li-ght-grey",
+    "name": "CEMENTO LİGHT GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/CEMENTO%20LI%CC%87GHT%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-essential-black",
+    "name": "ESSENTIAL BLACK",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/ESSENTIAL%20BLACK.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-essential-grey",
+    "name": "ESSENTIAL GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/ESSENTIAL%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-essential-white",
+    "name": "ESSENTIAL WHITE",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/ESSENTIAL%20WHITE.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-lazaward-antrasit",
+    "name": "LAZAWARD ANTRASIT",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/LAZAWARD%20ANTRASIT.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-lazaward-whi-te",
+    "name": "LAZAWARD WHİTE",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/LAZAWARD%20WHI%CC%87TE.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-mi-sha-dark-grey",
+    "name": "MİSHA DARK GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/MI%CC%87SHA%20DARK%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-nice-grey",
+    "name": "NICE GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/NICE%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-optal-grey",
+    "name": "OPTAL GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/OPTAL%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-pi-edra-latte",
+    "name": "PİEDRA LATTE",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/PI%CC%87EDRA%20LATTE.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-smeralda-grey",
+    "name": "SMERALDA GREY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/SMERALDA%20GREY.png"
+  },
+  {
+    "id": "gu-ral-serami-k-60x60-volcano-i-vory",
+    "name": "VOLCANO İVORY",
+    "brand": "GÜRAL SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/GU%CC%88RAL%20SERAMI%CC%87K/60x60/VOLCANO%20I%CC%87VORY.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-alder-chestnut",
+    "name": "Alder Chestnut",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Alder%20Chestnut.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-cenova-honey",
+    "name": "Cenova Honey",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Cenova%20Honey.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-chelsea-white-oak",
+    "name": "Chelsea White Oak",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Chelsea%20White%20Oak.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-diamond-chestnut",
+    "name": "Diamond Chestnut",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Diamond%20Chestnut.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-diamond-maple",
+    "name": "Diamond Maple",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Diamond%20Maple.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-hardy-natural",
+    "name": "Hardy Natural",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Hardy%20Natural.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-manoir-oak",
+    "name": "Manoir Oak",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Manoir%20Oak.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-novilon-pine",
+    "name": "Novilon Pine",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Novilon%20Pine.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-novilon-taupe",
+    "name": "Novilon Taupe",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Novilon%20Taupe.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-prestige-noce",
+    "name": "Prestige Noce",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Prestige%20Noce.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-smooth-white",
+    "name": "Smooth White",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Smooth%20White.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-trend-wood-natural",
+    "name": "Trend Wood Natural",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Trend%20Wood%20Natural.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-trend-wood-oak",
+    "name": "Trend Wood Oak",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Trend%20Wood%20Oak.png"
+  },
+  {
+    "id": "qua-serami-k-20x120-virginia-oak",
+    "name": "Virginia Oak",
+    "brand": "QUA SERAMİK",
+    "size": "20x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/20x120/Virginia%20Oak.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-alpi",
+    "name": "ALPİ",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/ALPI%CC%87.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-arabescato",
+    "name": "ARABESCATO",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/ARABESCATO.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-ark-anthracite",
+    "name": "Ark Anthracite",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Ark%20Anthracite.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-ark-black",
+    "name": "Ark Black",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Ark%20Black.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-ark-ivory",
+    "name": "Ark Ivory",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Ark%20Ivory.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-ark-silver",
+    "name": "Ark Silver",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Ark%20Silver.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-bianco-dolomiti",
     "name": "BIANCO DOLOMITI",
-    "size": "",
-    "image": "/%C3%BCr%C3%BCnler/BIANCO%20DOLOMITI.png"
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/BIANCO%20DOLOMITI.png"
   },
   {
-    "id": "karbone-black-f-lapp",
+    "id": "qua-serami-k-60x120-bianco-river",
+    "name": "Bianco River",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Bianco%20River.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-cafe-travertino",
+    "name": "Cafe Travertino",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Cafe%20Travertino.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-calacatta-saten",
+    "name": "Calacatta Saten",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Calacatta%20Saten.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-caldera-latte",
+    "name": "Caldera Latte",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Caldera%20Latte.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-cameli-dekor",
+    "name": "Cameli Dekor",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Cameli%20Dekor.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-canyon-grigio",
+    "name": "Canyon Grigio",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Canyon%20Grigio.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-canyon-oro",
+    "name": "Canyon Oro",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Canyon%20Oro.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-capri-oak",
+    "name": "Capri Oak",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Capri%20Oak.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-celi-na",
+    "name": "CELİNA",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/CELI%CC%87NA.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-cemento-urban-antrasit",
+    "name": "Cemento Urban Antrasit",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Cemento%20Urban%20Antrasit.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-choice-grey",
+    "name": "Choice Grey",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Choice%20Grey.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-choice-red",
+    "name": "Choice Red",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Choice%20Red.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-choice-white",
+    "name": "Choice White",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Choice%20White.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-cipollino-nero",
+    "name": "Cipollino Nero",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Cipollino%20Nero.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-cipollino-white",
+    "name": "Cipollino White",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Cipollino%20White.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-crema-travertino",
+    "name": "Crema Travertino",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Crema%20Travertino.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-creme-blanc",
+    "name": "Creme Blanc",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Creme%20Blanc.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-deepstone",
+    "name": "Deepstone",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Deepstone.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-earthy-lime",
+    "name": "Earthy Lime",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Earthy%20Lime.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-earthy-sky",
+    "name": "Earthy Sky",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Earthy%20Sky.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-epoch-silver",
+    "name": "Epoch Silver",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Epoch%20Silver.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-firoza",
+    "name": "Firoza",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Firoza.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-gaios",
+    "name": "Gaios",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Gaios.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-gluck-stone",
+    "name": "Gluck Stone",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Gluck%20Stone.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-gracia-clay",
+    "name": "Gracia Clay",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Gracia%20Clay.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-gracia-warm-grey",
+    "name": "Gracia Warm Grey",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Gracia%20Warm%20Grey.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-gris-travertino",
+    "name": "Gris Travertino",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Gris%20Travertino.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-hielo-light",
+    "name": "Hielo Light",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Hielo%20Light.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-ivorie-terrazzo",
+    "name": "Ivorie Terrazzo",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Ivorie%20Terrazzo.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-i-vori-e-terazzo",
+    "name": "İVORİE TERAZZO",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/I%CC%87VORI%CC%87E%20TERAZZO.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-lagom-gra",
+    "name": "Lagom Gra",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Lagom%20Gra.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-lagom-sand",
+    "name": "Lagom Sand",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Lagom%20Sand.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-lave-dore",
+    "name": "Lave Dore",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Lave%20Dore.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-luna-ash",
+    "name": "Luna Ash",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Luna%20Ash.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-luna-cool-grey",
+    "name": "Luna Cool Grey",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Luna%20Cool%20Grey.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-luna-offwhite",
+    "name": "Luna Offwhite",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Luna%20Offwhite.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-luna-sand",
+    "name": "Luna Sand",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Luna%20Sand.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-mapstone-beige",
+    "name": "Mapstone Beige",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Mapstone%20Beige.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-marjinal-beyaz",
+    "name": "Marjinal Beyaz",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Marjinal%20Beyaz.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-marmi-statuario",
+    "name": "Marmi Statuario",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Marmi%20Statuario.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-martins-marble-dark",
+    "name": "Martins Marble Dark",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Martins%20Marble%20Dark.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-martins-marble-light",
+    "name": "Martins Marble Light",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Martins%20Marble%20Light.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-maya",
+    "name": "Maya",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Maya.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-melden",
+    "name": "Melden",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Melden.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-mercan",
+    "name": "Mercan",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Mercan.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-milano-perla",
+    "name": "Milano Perla",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Milano%20Perla.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-nordic-grey",
+    "name": "Nordic Grey",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Nordic%20Grey.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-nordic-ivory",
+    "name": "Nordic Ivory",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Nordic%20Ivory.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-notte-blue",
+    "name": "Notte Blue",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Notte%20Blue.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-notte-nero",
+    "name": "Notte Nero",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Notte%20Nero.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-opium-ocean",
+    "name": "Opium Ocean",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Opium%20Ocean.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-paonazzo",
+    "name": "Paonazzo",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Paonazzo.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-pastel-sage",
+    "name": "Pastel Sage",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Pastel%20Sage.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-pera-wood-light",
+    "name": "Pera Wood Light",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Pera%20Wood%20Light.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-ponza-night",
+    "name": "Ponza Night",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Ponza%20Night.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-pulpis-grey",
+    "name": "Pulpis Grey",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Pulpis%20Grey.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-pulpis-nero",
+    "name": "Pulpis Nero",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Pulpis%20Nero.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-rasa-nero",
+    "name": "Rasa Nero",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Rasa%20Nero.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-screenshot-2026-01-16-at-3-41-07-pm",
+    "name": "Screenshot 2026-01-16 at 3.41.07 PM",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Screenshot%202026-01-16%20at%203.41.07%E2%80%AFPM.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-screenshot-2026-01-16-at-3-41-24-pm",
+    "name": "Screenshot 2026-01-16 at 3.41.24 PM",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Screenshot%202026-01-16%20at%203.41.24%E2%80%AFPM.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-shanti",
+    "name": "Shanti",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Shanti.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-sombra-black",
+    "name": "Sombra Black",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Sombra%20Black.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-stark-grey",
+    "name": "Stark Grey",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Stark%20Grey.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-stark-smoke",
+    "name": "Stark Smoke",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Stark%20Smoke.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-statuario",
+    "name": "Statuario",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Statuario.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-sun-onyx",
+    "name": "Sun Onyx",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Sun%20Onyx.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-travertine-beige",
+    "name": "Travertine Beige",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Travertine%20Beige.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-vanya",
+    "name": "VANYA",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/VANYA.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-venato-onice-beige",
+    "name": "Venato Onice Beige",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Venato%20Onice%20Beige.png"
+  },
+  {
+    "id": "qua-serami-k-60x120-venato-onice-gris",
+    "name": "Venato Onice Gris",
+    "brand": "QUA SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x120/Venato%20Onice%20Gris.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-aida-beyaz",
+    "name": "AIDA BEYAZ",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/AIDA%20BEYAZ.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-aquiver",
+    "name": "Aquiver",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/Aquiver.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-arcides-antrasi-t",
+    "name": "ARCIDES ANTRASİT",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/ARCIDES%20ANTRASI%CC%87T.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-ark-white",
+    "name": "ARK WHITE",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/ARK%20WHITE.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-benelux-black",
+    "name": "BENELUX BLACK",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/BENELUX%20BLACK.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-cafe-traverti-no",
+    "name": "CAFE TRAVERTİNO",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/CAFE%20TRAVERTI%CC%87NO.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-caldera-latte",
+    "name": "CALDERA LATTE",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/CALDERA%20LATTE.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-canyon-oro",
+    "name": "CANYON ORO",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/CANYON%20ORO.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-cemento-crystile-antrasit",
+    "name": "CEMENTO CRYSTILE ANTRASIT",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/CEMENTO%20CRYSTILE%20ANTRASIT.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-eiffel",
+    "name": "EIFFEL",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/EIFFEL.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-epoch-anthracite",
+    "name": "EPOCH ANTHRACITE",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/EPOCH%20ANTHRACITE.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-espina",
+    "name": "ESPINA",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/ESPINA.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-helen-soft",
+    "name": "HELEN SOFT",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/HELEN%20SOFT.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-loft-beige",
+    "name": "LOFT BEIGE",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/LOFT%20BEIGE.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-loft-bianco",
+    "name": "LOFT BIANCO",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/LOFT%20BIANCO.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-loft-grey",
+    "name": "LOFT GREY",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/LOFT%20GREY.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-luca-bone",
+    "name": "LUCA BONE",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/LUCA%20BONE.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-luna-ash",
+    "name": "LUNA ASH",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/LUNA%20ASH.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-luna-copper",
+    "name": "LUNA COPPER",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/LUNA%20COPPER.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-lunar-bronz",
+    "name": "LUNAR BRONZ",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/LUNAR%20BRONZ.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-lunar-sand",
+    "name": "LUNAR SAND",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/LUNAR%20SAND.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-magnifique-black",
+    "name": "MAGNIFIQUE BLACK",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/MAGNIFIQUE%20BLACK.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-maren",
+    "name": "MAREN",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/MAREN.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-margot-parlak",
+    "name": "MARGOT PARLAK",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/MARGOT%20PARLAK.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-neroli-parlak",
+    "name": "NEROLİ PARLAK",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/NEROLI%CC%87%20PARLAK.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-opus-gold",
+    "name": "OPUS GOLD",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/OPUS%20GOLD.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-opus-luce",
+    "name": "OPUS LUCE",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/OPUS%20LUCE.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-opus-noce",
+    "name": "OPUS NOCE",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/OPUS%20NOCE.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-pi-etra-grey",
+    "name": "PİETRA GREY",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/PI%CC%87ETRA%20GREY.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-pulpi-s-nero",
+    "name": "PULPİS NERO",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/PULPI%CC%87S%20NERO.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-salamanca-cassano",
+    "name": "SALAMANCA CASSANO",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/SALAMANCA%20CASSANO.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-silvana-antrasit",
+    "name": "silvana antrasit",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/silvana%20antrasit.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-space-grey",
+    "name": "SPACE GREY",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/SPACE%20GREY.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-stark-graphite",
+    "name": "STARK GRAPHITE",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/STARK%20GRAPHITE.png"
+  },
+  {
+    "id": "qua-serami-k-60x60-vegha-mink",
+    "name": "VEGHA MINK",
+    "brand": "QUA SERAMİK",
+    "size": "60x60",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/60x60/VEGHA%20MINK.png"
+  },
+  {
+    "id": "qua-serami-k-80x80-ark-anthracite",
+    "name": "ARK ANTHRACITE",
+    "brand": "QUA SERAMİK",
+    "size": "80x80",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/80x80/ARK%20ANTHRACITE.png"
+  },
+  {
+    "id": "qua-serami-k-80x80-ark-black",
+    "name": "ARK BLACK",
+    "brand": "QUA SERAMİK",
+    "size": "80x80",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/80x80/ARK%20BLACK.png"
+  },
+  {
+    "id": "qua-serami-k-80x80-ark-ivory",
+    "name": "ARK IVORY",
+    "brand": "QUA SERAMİK",
+    "size": "80x80",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/80x80/ARK%20IVORY.png"
+  },
+  {
+    "id": "qua-serami-k-80x80-ark-silver",
+    "name": "ARK SILVER",
+    "brand": "QUA SERAMİK",
+    "size": "80x80",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/80x80/ARK%20SILVER.png"
+  },
+  {
+    "id": "qua-serami-k-80x80-ark-white",
+    "name": "ARK WHITE",
+    "brand": "QUA SERAMİK",
+    "size": "80x80",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/80x80/ARK%20WHITE.png"
+  },
+  {
+    "id": "qua-serami-k-80x80-bona-dea-beige",
+    "name": "BONA DEA BEIGE",
+    "brand": "QUA SERAMİK",
+    "size": "80x80",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/80x80/BONA%20DEA%20BEIGE.png"
+  },
+  {
+    "id": "qua-serami-k-80x80-core-ivory",
+    "name": "CORE IVORY",
+    "brand": "QUA SERAMİK",
+    "size": "80x80",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/80x80/CORE%20IVORY.png"
+  },
+  {
+    "id": "qua-serami-k-80x80-pulpis-grey",
+    "name": "PULPIS GREY",
+    "brand": "QUA SERAMİK",
+    "size": "80x80",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/80x80/PULPIS%20GREY.png"
+  },
+  {
+    "id": "qua-serami-k-80x80-stark-grey",
+    "name": "STARK GREY",
+    "brand": "QUA SERAMİK",
+    "size": "80x80",
+    "image": "/ürünler/QUA%20SERAMI%CC%87K/80x80/STARK%20GREY.png"
+  },
+  {
+    "id": "ri-no-serami-k-60x120-karbone-black-f-lapp",
     "name": "KARBONE BLACK F.LAPP",
-    "size": "",
-    "image": "/%C3%BCr%C3%BCnler/KARBONE%20BLACK%20F.LAPP.png"
-  },
-  {
-    "id": "martins-marble-light",
-    "name": "MARTINS MARBLE LIGHT",
-    "size": "",
-    "image": "/%C3%BCr%C3%BCnler/MARTINS%20MARBLE%20LIGHT.png"
-  },
-  {
-    "id": "nordic-grey",
-    "name": "NORDIC GREY",
-    "size": "",
-    "image": "/%C3%BCr%C3%BCnler/NORDIC%20GREY.png"
-  },
-  {
-    "id": "nordic-ivory",
-    "name": "NORDIC IVORY",
-    "size": "",
-    "image": "/%C3%BCr%C3%BCnler/NORDIC%20IVORY.png"
-  },
-  {
-    "id": "paonazzo",
-    "name": "PAONAZZO",
-    "size": "",
-    "image": "/%C3%BCr%C3%BCnler/PAONAZZO.png"
+    "brand": "RİNO SERAMİK",
+    "size": "60x120",
+    "image": "/ürünler/RI%CC%87NO%20SERAMI%CC%87K/60x120/KARBONE%20BLACK%20F.LAPP.png"
   }
 ]
