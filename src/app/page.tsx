@@ -23,6 +23,7 @@ type SlotState = {
   darkText: boolean;
   surface: "FLP" | "SEMİ LAPP." | "MAT";
   grade: "1." | "END.";
+  isRec: boolean;
 };
 
 type DraftV1 = {
@@ -48,7 +49,7 @@ type PdfQueueItemV1 = {
   snapshot: DraftV1;
 };
 
-const TEMPLATES_DEFAULT: TemplateCount[] = [1, 2, 4, 6, 8];
+const TEMPLATES_DEFAULT: TemplateCount[] = [1, 2, 3, 4, 5, 6, 8];
 const TEMPLATES_PARQUET: TemplateCount[] = [1, 2, 3, 4, 5];
 
 const CANVAS_W = 1080;
@@ -58,15 +59,17 @@ const DEFAULT_UNIT_NAME = "m²";
 const DEFAULT_GLOBAL_FONT_SIZE = 24;
 const PARQUET_DEFAULT_FONT_SIZE = 38;
 const SIZE_OPTIONS = [
+  "15x60",
+  "20x120",
   "60x60",
-  "80x80",
   "60x120",
   "30x60",
   "30x90",
-  "120x180",
   "45x45",
   "50x50",
-  "20x120",
+  "80x80",
+  "100x100",
+  "120x180",
 ] as const;
 
 type SizeOption = (typeof SIZE_OPTIONS)[number];
@@ -83,6 +86,7 @@ function emptySlot(): SlotState {
     darkText: false,
     surface: "FLP",
     grade: "1.",
+    isRec: false,
   };
 }
 
@@ -94,9 +98,16 @@ function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
       ...existing,
       surface: existing.surface ?? "FLP",
       grade: existing.grade ?? "1.",
+      isRec: typeof existing.isRec === "boolean" ? existing.isRec : false,
     };
   });
   return base;
+}
+
+function formatSlotGrade(slot?: SlotState | null) {
+  const grade = slot?.grade ?? "";
+  if (!grade) return "";
+  return slot?.isRec ? `REC ${grade}` : grade;
 }
 
 function digitsOnly(input: string) {
@@ -301,6 +312,8 @@ export default function Home() {
   }, [globalFontSize]);
 
   const isParquetMode = productImageAspect === "parquet";
+  const isThreeVertical =
+    !isParquetMode && selectedTemplate === 3 && productImageAspect === "square";
   const isParquetFour = isParquetMode && selectedTemplate === 4;
   const isParquetSix = isParquetMode && selectedTemplate === 6;
   const isParquetThree = isParquetMode && selectedTemplate === 3;
@@ -404,7 +417,7 @@ export default function Home() {
 
   function selectProductForActiveSlot(productId: string) {
     const idx = activeSlotIndex;
-    updateSlot(idx, { productId, surface: "FLP", grade: "1." });
+    updateSlot(idx, { productId, surface: "FLP", grade: "1.", isRec: false });
     setImageErrorBySlot((prev) => {
       const next = { ...prev };
       delete next[idx];
@@ -731,6 +744,7 @@ export default function Home() {
               ? s.surface
               : "FLP",
           grade: s.grade === "1." || s.grade === "END." ? s.grade : "1.",
+          isRec: typeof s.isRec === "boolean" ? s.isRec : false,
         };
       });
 
@@ -1041,26 +1055,17 @@ export default function Home() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="text-xs font-semibold text-zinc-600">Boyut</div>
-                  <div className="grid grid-cols-3 gap-2 w-full min-w-0">
-                    {SIZE_OPTIONS.map((opt) => {
-                      const active = opt === selectedTemplateSize;
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setSelectedTemplateSize(opt)}
-                          className={[
-                            "w-full rounded-lg border px-2 py-2 text-xs font-semibold font-mono transition",
-                            active
-                              ? "border-zinc-900 bg-zinc-900 text-white"
-                              : "border-zinc-200 bg-white text-zinc-900 hover:border-zinc-300 hover:bg-zinc-50",
-                          ].join(" ")}
-                        >
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <select
+                    value={selectedTemplateSize}
+                    onChange={(e) => setSelectedTemplateSize(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                  >
+                    {SIZE_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <label className="space-y-2">
                   <div className="text-xs font-semibold text-zinc-600">Marka</div>
@@ -1295,19 +1300,38 @@ export default function Home() {
                             <div className="text-xs font-semibold text-zinc-600">
                               Sınıf
                             </div>
-                            <select
-                              value={s.grade}
-                              onChange={(e) =>
-                                updateSlot(idx, {
-                                  grade: e.target.value as SlotState["grade"],
-                                })
-                              }
-                              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                              disabled={!s.productId}
-                            >
-                              <option value="1.">1.</option>
-                              <option value="END.">END.</option>
-                            </select>
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={s.grade}
+                                onChange={(e) =>
+                                  updateSlot(idx, {
+                                    grade: e.target.value as SlotState["grade"],
+                                  })
+                                }
+                                className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                disabled={!s.productId}
+                              >
+                                <option value="1.">1.</option>
+                                <option value="END.">END.</option>
+                              </select>
+
+                              <label
+                                className={[
+                                  "inline-flex h-[38px] items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-800",
+                                  !s.productId ? "opacity-50" : "hover:bg-zinc-50",
+                                ].join(" ")}
+                                title="REC"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(s.isRec)}
+                                  onChange={(e) => updateSlot(idx, { isRec: e.target.checked })}
+                                  disabled={!s.productId}
+                                  className="h-4 w-4 accent-zinc-900"
+                                />
+                                <span className="font-semibold">REC</span>
+                              </label>
+                            </div>
                           </label>
                         </div>
 
@@ -1393,6 +1417,7 @@ export default function Home() {
                     ref={exportCanvasRef}
                     className={[
                       "h-full w-full flex flex-col",
+                      isThreeVertical ? "h-screen overflow-hidden" : "",
                       isDarkBg ? "text-white" : "text-black",
                     ].join(" ")}
                     style={{ width: CANVAS_W, height: CANVAS_H, background: canvasBg }}
@@ -1613,7 +1638,7 @@ export default function Home() {
                                         style={{ fontSize: globalFontSize }}
                                       >
                                         {p
-                                          ? `${p.name} ${slot?.surface ?? ""} ${slot?.grade ?? ""}`
+                                          ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
                                               .trim()
                                               .toUpperCase()
                                           : "—"}
@@ -1662,7 +1687,104 @@ export default function Home() {
                         )}
                         {!isParquetMode && (
                           <>
-                        {selectedTemplate === 1 ? (
+                        {selectedTemplate === 3 && productImageAspect === "square" ? (
+                          <div className="h-full w-full flex items-center justify-center overflow-hidden">
+                            <div className="w-full h-full flex flex-col overflow-hidden">
+                              <div className="grid grid-rows-3 h-[75vh] overflow-hidden">
+                                {[0, 1, 2].map((idx) => {
+                                  const slot = slots[idx];
+                                  const p =
+                                    slot?.productId != null
+                                      ? productsById.get(slot.productId)
+                                      : undefined;
+                                  const hasImageError = Boolean(imageErrorBySlot[idx]);
+
+                                  return (
+                                    <div
+                                      key={idx}
+                                      className="flex flex-col items-center justify-center min-h-0 pb-1 overflow-hidden"
+                                      style={{ background: canvasBg }}
+                                    >
+                                      <div className="w-full overflow-hidden flex items-center justify-center">
+                                        <div className="w-auto h-full max-h-[22vh] aspect-square mx-auto overflow-hidden">
+                                          {p && !hasImageError ? (
+                                            <img
+                                              src={p.image}
+                                              alt={p.name}
+                                              crossOrigin="anonymous"
+                                              className="h-full w-full object-cover"
+                                              onError={() =>
+                                                setImageErrorBySlot((prev) => ({
+                                                  ...prev,
+                                                  [idx]: true,
+                                                }))
+                                              }
+                                              onLoad={() =>
+                                                setImageErrorBySlot((prev) => {
+                                                  if (!prev[idx]) return prev;
+                                                  const next = { ...prev };
+                                                  delete next[idx];
+                                                  return next;
+                                                })
+                                              }
+                                            />
+                                          ) : (
+                                            <div className="h-full w-full" />
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div
+                                        className={[
+                                          "px-2 pt-1 pb-0 flex flex-col items-center gap-y-1",
+                                          productDetailsTextColorClass,
+                                        ].join(" ")}
+                                      >
+                                        <div
+                                          className="font-semibold leading-tight tracking-wide text-center uppercase"
+                                          style={{ fontSize: globalFontSize }}
+                                        >
+                                          {p
+                                            ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(
+                                                slot,
+                                              )}`
+                                                .trim()
+                                                .toUpperCase()
+                                            : "—"}
+                                        </div>
+                                        <div
+                                          className="font-bold leading-tight text-center"
+                                          style={{ fontSize: globalFontSize }}
+                                        >
+                                          Stok{" "}
+                                          <span className="tabular-nums font-extrabold">
+                                            {slot?.stock?.trim()
+                                              ? slot.stock.trim()
+                                              : "—"}
+                                          </span>{" "}
+                                          <span className="font-extrabold">
+                                            {unitName?.trim() ? unitName.trim() : "m²"}
+                                          </span>
+                                        </div>
+                                        <div
+                                          className="font-bold leading-tight text-center"
+                                          style={{ fontSize: globalFontSize }}
+                                        >
+                                          <span className="tabular-nums font-extrabold">
+                                            {slot?.price?.trim()
+                                              ? slot.price.trim()
+                                              : "—"}
+                                          </span>{" "}
+                                          <span className="font-extrabold">+ KDV</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        ) : selectedTemplate === 1 ? (
                           <div className="h-full flex flex-col items-center justify-center">
                             {(() => {
                               const idx = 0;
@@ -1729,7 +1851,7 @@ export default function Home() {
                                       style={{ fontSize: globalFontSize }}
                                     >
                                       {p
-                                        ? `${p.name} ${slot?.surface ?? ""} ${slot?.grade ?? ""}`
+                                        ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
                                             .trim()
                                             .toUpperCase()
                                         : "—"}
@@ -1843,7 +1965,7 @@ export default function Home() {
                                       style={{ fontSize: globalFontSize }}
                                     >
                                       {p
-                                        ? `${p.name} ${slot?.surface ?? ""} ${slot?.grade ?? ""}`
+                                        ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
                                             .trim()
                                             .toUpperCase()
                                         : "—"}
@@ -1948,7 +2070,7 @@ export default function Home() {
                                           style={{ fontSize: globalFontSize }}
                                         >
                                           {p
-                                            ? `${p.name} ${slot?.surface ?? ""} ${slot?.grade ?? ""}`
+                                            ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
                                                 .trim()
                                                 .toUpperCase()
                                             : "—"}
@@ -2060,7 +2182,7 @@ export default function Home() {
                                             style={{ fontSize: globalFontSize }}
                                           >
                                             {p
-                                              ? `${p.name} ${slot?.surface ?? ""} ${slot?.grade ?? ""}`
+                                              ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
                                                   .trim()
                                                   .toUpperCase()
                                               : "—"}
@@ -2175,7 +2297,7 @@ export default function Home() {
                                             style={{ fontSize: globalFontSize }}
                                           >
                                             {p
-                                              ? `${p.name} ${slot?.surface ?? ""} ${slot?.grade ?? ""}`
+                                              ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
                                                   .trim()
                                                   .toUpperCase()
                                               : "—"}
@@ -2292,7 +2414,7 @@ export default function Home() {
                                           style={{ fontSize: globalFontSize }}
                                         >
                                           {p
-                                            ? `${p.name} ${slot?.surface ?? ""} ${slot?.grade ?? ""}`
+                                            ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
                                                 .trim()
                                                 .toUpperCase()
                                             : "—"}
@@ -2407,7 +2529,7 @@ export default function Home() {
                                       style={{ fontSize: globalFontSize }}
                                     >
                                       {p
-                                        ? `${p.name} ${slot?.surface ?? ""} ${slot?.grade ?? ""}`
+                                        ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
                                             .trim()
                                             .toUpperCase()
                                         : "—"}
