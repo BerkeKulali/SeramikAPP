@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toJpeg } from "html-to-image";
 import { jsPDF } from "jspdf";
-import { Search } from "lucide-react";
+import { Images, RotateCcw, Search, Upload } from "lucide-react";
 
 type TemplateCount = 1 | 2 | 3 | 4 | 5 | 6 | 8;
 type ProductImageAspect = "square" | "threeTwo" | "video" | "parquet";
@@ -154,6 +154,12 @@ function imageSrcForSlot(p: Product | undefined, slot?: SlotState | null) {
   const override = slot?.imageUrlOverride;
   if (typeof override === "string" && override.trim()) return override;
   return p?.image ?? "";
+}
+
+function slotHasAssignableMedia(s: SlotState | undefined) {
+  return Boolean(
+    s?.productId || (s?.imageUrlOverride && s.imageUrlOverride.trim()),
+  );
 }
 
 function digitsOnly(input: string) {
@@ -316,6 +322,22 @@ export default function Home() {
   const [uploadLibraryItems, setUploadLibraryItems] = useState<UploadLibraryItem[]>([]);
   const [isLoadingUploadLibrary, setIsLoadingUploadLibrary] = useState(false);
   const [uploadLibraryError, setUploadLibraryError] = useState<string | null>(null);
+  const [libraryPickerSlotIndex, setLibraryPickerSlotIndex] = useState<
+    number | null
+  >(null);
+  const [uploadingSlotIndex, setUploadingSlotIndex] = useState<number | null>(
+    null,
+  );
+  const [cloudinaryUiError, setCloudinaryUiError] = useState<string | null>(
+    null,
+  );
+  const slotFileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingUploadSlotIndex, setPendingUploadSlotIndex] = useState<
+    number | null
+  >(null);
+  const [productPickerTab, setProductPickerTab] = useState<
+    "catalog" | "cloudinary"
+  >("catalog");
 
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const exportCanvasRef = useRef<HTMLDivElement | null>(null);
@@ -333,6 +355,16 @@ export default function Home() {
       );
     });
   }, [products, searchTerm]);
+
+  const filteredUploadLibraryItems = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return uploadLibraryItems;
+    return uploadLibraryItems.filter((item) => {
+      const name = (item.originalFilename || "").toLowerCase();
+      const pid = (item.publicId || "").toLowerCase();
+      return name.includes(q) || pid.includes(q);
+    });
+  }, [uploadLibraryItems, searchTerm]);
 
   const productsById = useMemo(() => {
     const map = new Map<string, Product>();
@@ -500,18 +532,79 @@ export default function Home() {
     idx: number,
     uploaded: { publicId: string; url: string; originalFilename?: string },
   ) {
-    const title = (uploaded.originalFilename || "").trim();
-    updateSlot(idx, {
-      imageUrlOverride: uploaded.url,
-      imagePublicId: uploaded.publicId,
-      customName: (slots[idx]?.customName ?? "").trim() ? slots[idx]!.customName : title,
-    });
+    const rawTitle = (uploaded.originalFilename || "").trim();
+    const baseName = rawTitle.replace(/\.[^.]+$/, "") || rawTitle;
+    setSlots((prev) =>
+      prev.map((s, i) => {
+        if (i !== idx) return s;
+        const keepCustom = (s.customName ?? "").trim();
+        return {
+          ...s,
+          imageUrlOverride: uploaded.url,
+          imagePublicId: uploaded.publicId,
+          customName: keepCustom ? s.customName : baseName || s.customName,
+        };
+      }),
+    );
     setImageErrorBySlot((prev) => {
       if (!prev[idx]) return prev;
       const next = { ...prev };
       delete next[idx];
       return next;
     });
+  }
+
+  function clearCloudImageForSlot(index: number) {
+    updateSlot(index, { imageUrlOverride: null, imagePublicId: null });
+    setImageErrorBySlot((prev) => {
+      if (!prev[index]) return prev;
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+  }
+
+  function openUploadPickerForSlot(idx: number) {
+    setCloudinaryUiError(null);
+    setPendingUploadSlotIndex(idx);
+    slotFileInputRef.current?.click();
+  }
+
+  function openLibraryPickerForSlot(idx: number) {
+    setCloudinaryUiError(null);
+    setUploadLibraryError(null);
+    setLibraryPickerSlotIndex(idx);
+    setIsUploadLibraryOpen(true);
+    void refreshUploadLibrary();
+  }
+
+  function closeUploadLibraryModal() {
+    setIsUploadLibraryOpen(false);
+    setLibraryPickerSlotIndex(null);
+  }
+
+  async function onSlotImageFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const idx = pendingUploadSlotIndex;
+    e.target.value = "";
+    if (!file || idx === null) {
+      setPendingUploadSlotIndex(null);
+      return;
+    }
+    try {
+      setCloudinaryUiError(null);
+      setUploadingSlotIndex(idx);
+      const result = await uploadImageToLibrary(file);
+      applyUploadedImageToSlot(idx, result);
+      await refreshUploadLibrary();
+    } catch (err) {
+      setCloudinaryUiError(
+        (err as Error)?.message ?? "Görsel yüklenemedi",
+      );
+    } finally {
+      setUploadingSlotIndex(null);
+      setPendingUploadSlotIndex(null);
+    }
   }
 
   function selectProductForActiveSlot(productId: string) {
@@ -545,7 +638,7 @@ export default function Home() {
       if (!price) return prev;
       return prev.map((s, idx) => {
         if (idx === sourceIndex) return s;
-        if (!s.productId) return s;
+        if (!slotHasAssignableMedia(s)) return s;
         return { ...s, price };
       });
     });
@@ -1056,7 +1149,14 @@ export default function Home() {
           "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'",
       }}
     >
-      <aside className="w-[380px] shrink-0 border-r border-zinc-200 bg-white">
+      <aside className="relative w-[380px] shrink-0 border-r border-zinc-200 bg-white">
+        <input
+          ref={slotFileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onSlotImageFileChange}
+        />
         <div className="h-full flex flex-col">
           <div className="p-5 border-b border-zinc-200">
             <div className="flex items-center justify-between">
@@ -1428,71 +1528,191 @@ export default function Home() {
             <section className="space-y-3">
               <div className="text-sm font-semibold text-zinc-900">Ürün Ara</div>
 
+              <div
+                className="flex rounded-lg border border-zinc-200 bg-zinc-50 p-0.5"
+                role="tablist"
+                aria-label="Ürün kaynağı"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={productPickerTab === "catalog"}
+                  onClick={() => setProductPickerTab("catalog")}
+                  className={[
+                    "flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition",
+                    productPickerTab === "catalog"
+                      ? "bg-white text-zinc-900 shadow-sm"
+                      : "text-zinc-600 hover:text-zinc-900",
+                  ].join(" ")}
+                >
+                  Katalog
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={productPickerTab === "cloudinary"}
+                  onClick={() => {
+                    setProductPickerTab("cloudinary");
+                    setUploadLibraryError(null);
+                    void refreshUploadLibrary();
+                  }}
+                  className={[
+                    "flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition",
+                    productPickerTab === "cloudinary"
+                      ? "bg-white text-zinc-900 shadow-sm"
+                      : "text-zinc-600 hover:text-zinc-900",
+                  ].join(" ")}
+                >
+                  Cloudinary
+                </button>
+              </div>
+
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                 <input
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Ürün Ara..."
+                  placeholder={
+                    productPickerTab === "catalog"
+                      ? "İsim, marka, boyut…"
+                      : "Dosya adı veya public id…"
+                  }
                   className="w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 py-2 text-sm outline-none focus:border-zinc-400"
+                  aria-label="Ara"
                 />
               </div>
 
-              <div className="text-[11px] text-zinc-500">
-                products:{" "}
-                <span className="font-semibold text-zinc-800">{products.length}</span> •
-                filtered:{" "}
-                <span className="font-semibold text-zinc-800">
-                  {filteredProducts.length}
-                </span>{" "}
-                • loading:{" "}
-                <span className="font-semibold text-zinc-800">
-                  {String(isLoadingProducts)}
-                </span>{" "}
-                • error:{" "}
-                <span className="font-semibold text-zinc-800">
-                  {productsError ?? "null"}
-                </span>
-              </div>
+              {productPickerTab === "catalog" ? (
+                <div className="text-[11px] text-zinc-500">
+                  <span className="font-semibold text-zinc-700">
+                    {filteredProducts.length}
+                  </span>
+                  {" / "}
+                  {products.length} katalog
+                  {productsError ? (
+                    <span className="text-red-600"> • liste hatası</span>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-500">
+                  <span>
+                    <span className="font-semibold text-zinc-700">
+                      {filteredUploadLibraryItems.length}
+                    </span>{" "}
+                    görsel
+                    {uploadLibraryError ? (
+                      <span className="text-red-600"> • yükleme hatası</span>
+                    ) : null}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void refreshUploadLibrary()}
+                    disabled={isLoadingUploadLibrary}
+                    className="rounded-md border border-zinc-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                  >
+                    Yenile
+                  </button>
+                </div>
+              )}
 
               <div className="max-h-[400px] overflow-y-auto rounded-lg border border-zinc-200 bg-white">
-                {productsError ? (
-                  <div className="px-3 py-3 text-sm text-zinc-500">
-                    {productsError}
+                {productPickerTab === "catalog" ? (
+                  productsError ? (
+                    <div className="px-3 py-3 text-sm text-zinc-500">
+                      {productsError}
+                    </div>
+                  ) : isLoadingProducts ? (
+                    <div className="px-3 py-3 text-sm text-zinc-500">
+                      Yükleniyor…
+                    </div>
+                  ) : filteredProducts.length === 0 ? (
+                    <div className="px-3 py-3 text-sm text-zinc-500">
+                      Ürün bulunamadı
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-zinc-100">
+                      {filteredProducts.map((p) => {
+                        const isSelected =
+                          slots[activeSlotIndex]?.productId === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => selectProductForActiveSlot(p.id)}
+                            className={[
+                              "w-full text-left px-3 py-2 transition",
+                              isSelected
+                                ? "bg-zinc-50"
+                                : "hover:bg-zinc-50",
+                            ].join(" ")}
+                            title="Aktif slota yerleştir"
+                          >
+                            <div className="text-sm font-semibold text-zinc-900">
+                              {p.name}
+                            </div>
+                            <div className="text-xs text-zinc-500 font-montserrat">
+                              {(p.size?.trim() ? p.size : "—") +
+                                " • " +
+                                (p.brand?.trim() ? p.brand : "—")}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )
+                ) : uploadLibraryError ? (
+                  <div className="px-3 py-3 text-sm text-red-700">
+                    {uploadLibraryError}
                   </div>
-                ) : isLoadingProducts ? (
+                ) : isLoadingUploadLibrary &&
+                  uploadLibraryItems.length === 0 ? (
                   <div className="px-3 py-3 text-sm text-zinc-500">
-                    Yükleniyor…
+                    Cloudinary listesi yükleniyor…
                   </div>
-                ) : filteredProducts.length === 0 ? (
+                ) : filteredUploadLibraryItems.length === 0 ? (
                   <div className="px-3 py-3 text-sm text-zinc-500">
-                    Ürün bulunamadı
+                    {uploadLibraryItems.length === 0
+                      ? "Henüz yüklenmiş görsel yok. Slot kartından “Yükle” kullanın."
+                      : "Aramanızla eşleşen görsel yok."}
                   </div>
                 ) : (
-                  <div className="divide-y divide-zinc-100">
-                    {filteredProducts.map((p) => {
-                      const isSelected =
-                        slots[activeSlotIndex]?.productId === p.id;
+                  <div className="grid grid-cols-2 gap-2 p-2">
+                    {filteredUploadLibraryItems.map((item) => {
+                      const slot = slots[activeSlotIndex];
+                      const isCloudSelected = Boolean(
+                        slot?.imagePublicId &&
+                          slot.imagePublicId === item.publicId,
+                      );
                       return (
                         <button
-                          key={p.id}
+                          key={item.publicId}
                           type="button"
-                          onClick={() => selectProductForActiveSlot(p.id)}
+                          onClick={() => {
+                            setCloudinaryUiError(null);
+                            applyUploadedImageToSlot(activeSlotIndex, {
+                              publicId: item.publicId,
+                              url: item.url,
+                              originalFilename: item.originalFilename,
+                            });
+                          }}
                           className={[
-                            "w-full text-left px-3 py-2 transition",
-                            isSelected
-                              ? "bg-zinc-50"
-                              : "hover:bg-zinc-50",
+                            "overflow-hidden rounded-lg border text-left transition",
+                            isCloudSelected
+                              ? "border-zinc-900 ring-1 ring-zinc-900"
+                              : "border-zinc-200 hover:border-zinc-400",
                           ].join(" ")}
-                          title="Aktif slota yerleştir"
+                          title="Aktif slota Cloudinary görseli olarak yerleştir"
                         >
-                          <div className="text-sm font-semibold text-zinc-900">
-                            {p.name}
+                          <div className="aspect-square w-full overflow-hidden bg-zinc-100">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={item.url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
                           </div>
-                          <div className="text-xs text-zinc-500 font-montserrat">
-                            {(p.size?.trim() ? p.size : "—") +
-                              " • " +
-                              (p.brand?.trim() ? p.brand : "—")}
+                          <div className="line-clamp-2 px-1.5 py-1 text-[10px] font-medium text-zinc-800">
+                            {item.originalFilename || item.publicId}
                           </div>
                         </button>
                       );
@@ -1502,11 +1722,24 @@ export default function Home() {
               </div>
 
               <div className="text-xs text-zinc-500">
-                Listeden bir ürüne tıklayınca{" "}
-                <span className="font-semibold text-zinc-900">
-                  aktif slota
-                </span>{" "}
-                yerleşir.
+                {productPickerTab === "catalog" ? (
+                  <>
+                    Listeden bir ürüne tıklayınca{" "}
+                    <span className="font-semibold text-zinc-900">
+                      aktif slota
+                    </span>{" "}
+                    yerleşir.
+                  </>
+                ) : (
+                  <>
+                    Bir görsele tıklayınca{" "}
+                    <span className="font-semibold text-zinc-900">
+                      aktif slot
+                    </span>
+                    , Cloudinary görseliyle güncellenir (katalog ürünü
+                    seçiliyse görsel değişir; ürün bilgisi kalır).
+                  </>
+                )}
               </div>
             </section>
 
@@ -1514,11 +1747,31 @@ export default function Home() {
               <div className="text-sm font-semibold text-zinc-900">
                 Slotlar (Ürün / Stok / Fiyat)
               </div>
+              {cloudinaryUiError ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                  {cloudinaryUiError}
+                </div>
+              ) : null}
 
               <div className="space-y-3">
                 {slots.map((s, idx) => {
                   const p = s.productId ? productsById.get(s.productId) : null;
                   const isActive = idx === activeSlotIndex;
+                  const hasCloudOverride = Boolean(
+                    (s.imageUrlOverride && s.imageUrlOverride.trim()) ||
+                      s.imagePublicId,
+                  );
+                  const mediaOk = slotHasAssignableMedia(s);
+                  const titleLine = p
+                    ? p.name
+                    : hasCloudOverride
+                      ? (s.customName || "").trim() || "Özel görsel"
+                      : "Ürün seçilmedi";
+                  const subLine = p
+                    ? `${p.size} • ${p.id}`
+                    : hasCloudOverride
+                      ? "Cloudinary"
+                      : "—";
                   return (
                     <div
                       key={idx}
@@ -1538,18 +1791,16 @@ export default function Home() {
                             Slot {idx + 1}
                           </div>
                           <div className="text-sm font-semibold text-zinc-900">
-                            {p ? p.name : "Ürün seçilmedi"}
+                            {titleLine}
                           </div>
-                          <div className="text-xs text-zinc-500">
-                            {p ? `${p.size} • ${p.id}` : "—"}
-                          </div>
+                          <div className="text-xs text-zinc-500">{subLine}</div>
                         </button>
 
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => applyPriceToAll(idx)}
-                            disabled={!s.productId || !s.price.trim()}
+                            disabled={!mediaOk || !s.price.trim()}
                             title="Fiyatı tüm dolu slotlara uygula"
                             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 disabled:bg-zinc-50 disabled:text-zinc-300"
                           >
@@ -1560,7 +1811,7 @@ export default function Home() {
                             onClick={() =>
                               updateSlot(idx, { darkText: !slots[idx]?.darkText })
                             }
-                            disabled={!s.productId}
+                            disabled={!mediaOk}
                             title="Koyu Yazı (slot metni ters çevir)"
                             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 disabled:bg-zinc-50 disabled:text-zinc-300"
                           >
@@ -1577,6 +1828,40 @@ export default function Home() {
                         </div>
                       </div>
 
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openUploadPickerForSlot(idx)}
+                          disabled={uploadingSlotIndex !== null}
+                          className="inline-flex min-w-[104px] flex-1 items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                        >
+                          <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          {uploadingSlotIndex === idx ? "Yükleniyor…" : "Yükle"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openLibraryPickerForSlot(idx)}
+                          disabled={uploadingSlotIndex !== null}
+                          className="inline-flex min-w-[104px] flex-1 items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                        >
+                          <Images className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          Kütüphane
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCloudinaryUiError(null);
+                            clearCloudImageForSlot(idx);
+                          }}
+                          disabled={!hasCloudOverride}
+                          title="Özel görseli kaldır (katalog görseline dön)"
+                          className="inline-flex min-w-[104px] flex-1 items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-40"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          Sıfırla
+                        </button>
+                      </div>
+
                       <div className="mt-3 space-y-2">
                         <label className="space-y-1 block">
                           <div className="text-xs font-semibold text-zinc-600">
@@ -1587,7 +1872,7 @@ export default function Home() {
                             onChange={(e) => updateSlot(idx, { customName: e.target.value })}
                             placeholder="Boş bırakırsan otomatik ad kullanılır"
                             className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                            disabled={!s.productId}
+                            disabled={!mediaOk}
                           />
                         </label>
                         <div className="grid grid-cols-2 gap-2">
@@ -1603,7 +1888,7 @@ export default function Home() {
                                 })
                               }
                               className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                              disabled={!s.productId}
+                              disabled={!mediaOk}
                             >
                               <option value="">Boş</option>
                               <option value="FLP">FLP</option>
@@ -1625,7 +1910,7 @@ export default function Home() {
                                   })
                                 }
                                 className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                                disabled={!s.productId}
+                                disabled={!mediaOk}
                               >
                                 <option value="">Boş</option>
                                 <option value="1.">1.</option>
@@ -1635,7 +1920,7 @@ export default function Home() {
                               <label
                                 className={[
                                   "inline-flex h-[38px] items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-800",
-                                  !s.productId ? "opacity-50" : "hover:bg-zinc-50",
+                                  !mediaOk ? "opacity-50" : "hover:bg-zinc-50",
                                 ].join(" ")}
                                 title="REC"
                               >
@@ -1643,7 +1928,7 @@ export default function Home() {
                                   type="checkbox"
                                   checked={Boolean(s.isRec)}
                                   onChange={(e) => updateSlot(idx, { isRec: e.target.checked })}
-                                  disabled={!s.productId}
+                                  disabled={!mediaOk}
                                   className="h-4 w-4 accent-zinc-900"
                                 />
                                 <span className="font-semibold">REC</span>
@@ -1665,7 +1950,7 @@ export default function Home() {
                               placeholder="örn. 51.2"
                               inputMode="numeric"
                               className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                              disabled={!s.productId}
+                              disabled={!mediaOk}
                             />
                           </label>
 
@@ -1685,7 +1970,7 @@ export default function Home() {
                               placeholder="örn. 1.250"
                               inputMode="numeric"
                               className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                              disabled={!s.productId}
+                              disabled={!mediaOk}
                             />
                           </label>
                         </div>
@@ -1697,6 +1982,100 @@ export default function Home() {
             </section>
           </div>
         </div>
+
+        {isUploadLibraryOpen && libraryPickerSlotIndex !== null ? (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upload-library-title"
+            onClick={closeUploadLibraryModal}
+          >
+            <div
+              className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-zinc-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-4 py-3">
+                <div>
+                  <div
+                    id="upload-library-title"
+                    className="text-sm font-semibold text-zinc-900"
+                  >
+                    Kütüphaneden seç
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    Slot {libraryPickerSlotIndex + 1} • Cloudinary
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void refreshUploadLibrary()}
+                    disabled={isLoadingUploadLibrary}
+                    className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                  >
+                    Yenile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeUploadLibraryModal}
+                    className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50"
+                  >
+                    Kapat
+                  </button>
+                </div>
+              </div>
+              {uploadLibraryError ? (
+                <div className="border-b border-red-100 bg-red-50 px-4 py-2 text-xs text-red-800">
+                  {uploadLibraryError}
+                </div>
+              ) : null}
+              <div className="min-h-[200px] flex-1 overflow-y-auto p-3">
+                {isLoadingUploadLibrary && uploadLibraryItems.length === 0 ? (
+                  <div className="px-2 py-8 text-center text-sm text-zinc-500">
+                    Yükleniyor…
+                  </div>
+                ) : uploadLibraryItems.length === 0 ? (
+                  <div className="px-2 py-8 text-center text-sm text-zinc-500">
+                    Henüz yükleme yok. Önce bu slota &quot;Yükle&quot; ile görsel
+                    gönderin.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {uploadLibraryItems.map((item) => (
+                      <button
+                        key={item.publicId}
+                        type="button"
+                        onClick={() => {
+                          setCloudinaryUiError(null);
+                          applyUploadedImageToSlot(libraryPickerSlotIndex, {
+                            publicId: item.publicId,
+                            url: item.url,
+                            originalFilename: item.originalFilename,
+                          });
+                          closeUploadLibraryModal();
+                        }}
+                        className="group overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 text-left transition hover:border-zinc-400 hover:bg-white"
+                      >
+                        <div className="aspect-square w-full overflow-hidden bg-zinc-100">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={item.url}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="line-clamp-2 px-2 py-1.5 text-[10px] font-medium text-zinc-700 group-hover:text-zinc-900">
+                          {item.originalFilename || item.publicId}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </aside>
 
       <main className="flex-1 bg-zinc-100">
@@ -1911,10 +2290,10 @@ export default function Home() {
                                             : undefined
                                         }
                                       >
-                                      {p && !hasImageError ? (
+                                      {imageSrcForSlot(p, slot) && !hasImageError ? (
                                         <img
                                           src={imageSrcForSlot(p, slot)}
-                                          alt={p.name}
+                                          alt={displayNameForSlot(p, slot)}
                                           crossOrigin="anonymous"
                                           className="h-full w-full object-cover object-center"
                                           onError={() =>
@@ -2020,10 +2399,10 @@ export default function Home() {
                                     >
                                       <div className="w-full overflow-hidden flex items-center justify-center">
                                         <div className="h-[38vh] max-h-[560px] aspect-square mx-auto overflow-hidden">
-                                          {p && !hasImageError ? (
+                                          {imageSrcForSlot(p, slot) && !hasImageError ? (
                                             <img
                                               src={imageSrcForSlot(p, slot)}
-                                              alt={p.name}
+                                              alt={displayNameForSlot(p, slot)}
                                               crossOrigin="anonymous"
                                               className="h-full w-full object-cover"
                                               onError={() =>
@@ -2131,10 +2510,10 @@ export default function Home() {
                                             aspectClass,
                                           ].join(" ")}
                                         >
-                                          {p && !hasImageError ? (
+                                          {imageSrcForSlot(p, slot) && !hasImageError ? (
                                             <img
                                               src={imageSrcForSlot(p, slot)}
-                                              alt={p.name}
+                                              alt={displayNameForSlot(p, slot)}
                                               crossOrigin="anonymous"
                                               className="h-full w-full object-cover object-center"
                                               onError={() =>
@@ -2236,10 +2615,10 @@ export default function Home() {
                                       " ",
                                     )}
                                   >
-                                    {p && !hasImageError ? (
+                                    {imageSrcForSlot(p, slot) && !hasImageError ? (
                                       <img
                                         src={imageSrcForSlot(p, slot)}
-                                        alt={p.name}
+                                        alt={displayNameForSlot(p, slot)}
                                         crossOrigin="anonymous"
                                         className="h-full w-full object-cover object-center"
                                         onError={() =>
@@ -2346,10 +2725,10 @@ export default function Home() {
                                       " ",
                                     )}
                                   >
-                                    {p && !hasImageError ? (
+                                    {imageSrcForSlot(p, slot) && !hasImageError ? (
                                       <img
                                         src={imageSrcForSlot(p, slot)}
-                                        alt={p.name}
+                                        alt={displayNameForSlot(p, slot)}
                                         crossOrigin="anonymous"
                                         className="h-full w-full object-cover object-center"
                                         onError={() =>
@@ -2447,10 +2826,10 @@ export default function Home() {
                                           aspectClass,
                                         ].join(" ")}
                                       >
-                                        {p && !hasImageError ? (
+                                        {imageSrcForSlot(p, slot) && !hasImageError ? (
                                           <img
                                             src={imageSrcForSlot(p, slot)}
-                                            alt={p.name}
+                                            alt={displayNameForSlot(p, slot)}
                                             crossOrigin="anonymous"
                                             className="h-full w-full object-cover object-center"
                                             onError={() =>
@@ -2565,10 +2944,10 @@ export default function Home() {
                                               transformOrigin: "center",
                                             }}
                                           >
-                                            {p && !hasImageError ? (
+                                            {imageSrcForSlot(p, slot) && !hasImageError ? (
                                               <img
                                                 src={imageSrcForSlot(p, slot)}
-                                                alt={p.name}
+                                                alt={displayNameForSlot(p, slot)}
                                                 crossOrigin="anonymous"
                                                 className="h-full w-full object-cover object-center"
                                                 onError={() =>
@@ -2677,10 +3056,10 @@ export default function Home() {
                                             aspectClass,
                                           ].join(" ")}
                                         >
-                                          {p && !hasImageError ? (
+                                          {imageSrcForSlot(p, slot) && !hasImageError ? (
                                             <img
                                               src={imageSrcForSlot(p, slot)}
-                                              alt={p.name}
+                                              alt={displayNameForSlot(p, slot)}
                                               crossOrigin="anonymous"
                                               className="h-full w-full object-cover object-center"
                                               onError={() =>
@@ -2790,10 +3169,10 @@ export default function Home() {
                                           aspectClass,
                                         ].join(" ")}
                                       >
-                                        {p && !hasImageError ? (
+                                        {imageSrcForSlot(p, slot) && !hasImageError ? (
                                           <img
                                             src={imageSrcForSlot(p, slot)}
-                                            alt={p.name}
+                                            alt={displayNameForSlot(p, slot)}
                                             crossOrigin="anonymous"
                                             className="h-full w-full object-cover object-center"
                                             onError={() =>
@@ -2907,10 +3286,10 @@ export default function Home() {
                                             aspectClass,
                                           ].join(" ")}
                                         >
-                                          {p && !hasImageError ? (
+                                          {imageSrcForSlot(p, slot) && !hasImageError ? (
                                             <img
                                               src={imageSrcForSlot(p, slot)}
-                                              alt={p.name}
+                                              alt={displayNameForSlot(p, slot)}
                                               crossOrigin="anonymous"
                                               className="h-full w-full object-cover object-center"
                                               onError={() =>
@@ -3009,10 +3388,10 @@ export default function Home() {
                                             aspectClass,
                                           ].join(" ")}
                                         >
-                                          {p && !hasImageError ? (
+                                          {imageSrcForSlot(p, slot) && !hasImageError ? (
                                             <img
                                               src={imageSrcForSlot(p, slot)}
-                                              alt={p.name}
+                                              alt={displayNameForSlot(p, slot)}
                                               crossOrigin="anonymous"
                                               className="h-full w-full object-cover object-center"
                                               onError={() =>
@@ -3128,10 +3507,10 @@ export default function Home() {
                                             aspectClass,
                                           ].join(" ")}
                                         >
-                                          {p && !hasImageError ? (
+                                          {imageSrcForSlot(p, slot) && !hasImageError ? (
                                             <img
                                               src={imageSrcForSlot(p, slot)}
-                                              alt={p.name}
+                                              alt={displayNameForSlot(p, slot)}
                                               crossOrigin="anonymous"
                                               className="h-full w-full object-cover object-center"
                                               onError={() =>
@@ -3237,10 +3616,10 @@ export default function Home() {
                                       " ",
                                     )}
                                   >
-                                    {p && !hasImageError ? (
+                                    {imageSrcForSlot(p, slot) && !hasImageError ? (
                                       <img
                                         src={imageSrcForSlot(p, slot)}
-                                        alt={p.name}
+                                        alt={displayNameForSlot(p, slot)}
                                         crossOrigin="anonymous"
                                         className="h-full w-full object-cover object-center"
                                         onError={() =>
