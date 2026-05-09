@@ -20,11 +20,22 @@ type UploadLibraryItem = {
   publicId: string;
   url: string;
   originalFilename: string;
+  /** Okunabilir etiket (dosya adı veya public_id son segmenti) */
+  displayName?: string;
   bytes: number | null;
   width: number | null;
   height: number | null;
   createdAt: string;
 };
+
+function cloudItemLabel(item: UploadLibraryItem): string {
+  const d = (item.displayName ?? "").trim();
+  if (d) return d;
+  const o = (item.originalFilename ?? "").trim();
+  if (o) return o;
+  const seg = item.publicId.split("/").pop() || item.publicId;
+  return seg;
+}
 
 type SlotState = {
   productId: string | null;
@@ -360,9 +371,9 @@ export default function Home() {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return uploadLibraryItems;
     return uploadLibraryItems.filter((item) => {
-      const name = (item.originalFilename || "").toLowerCase();
+      const label = cloudItemLabel(item).toLowerCase();
       const pid = (item.publicId || "").toLowerCase();
-      return name.includes(q) || pid.includes(q);
+      return label.includes(q) || pid.includes(q);
     });
   }, [uploadLibraryItems, searchTerm]);
 
@@ -525,14 +536,24 @@ export default function Home() {
       publicId: string;
       url: string;
       originalFilename: string;
+      displayName?: string;
     };
   }
 
   function applyUploadedImageToSlot(
     idx: number,
-    uploaded: { publicId: string; url: string; originalFilename?: string },
+    uploaded: {
+      publicId: string;
+      url: string;
+      originalFilename?: string;
+      displayName?: string;
+    },
   ) {
-    const rawTitle = (uploaded.originalFilename || "").trim();
+    const rawTitle = (
+      uploaded.displayName ||
+      uploaded.originalFilename ||
+      ""
+    ).trim();
     const baseName = rawTitle.replace(/\.[^.]+$/, "") || rawTitle;
     setSlots((prev) =>
       prev.map((s, i) => {
@@ -1693,6 +1714,7 @@ export default function Home() {
                               publicId: item.publicId,
                               url: item.url,
                               originalFilename: item.originalFilename,
+                              displayName: item.displayName,
                             });
                           }}
                           className={[
@@ -1712,7 +1734,7 @@ export default function Home() {
                             />
                           </div>
                           <div className="line-clamp-2 px-1.5 py-1 text-[10px] font-medium text-zinc-800">
-                            {item.originalFilename || item.publicId}
+                            {cloudItemLabel(item)}
                           </div>
                         </button>
                       );
@@ -2052,6 +2074,7 @@ export default function Home() {
                             publicId: item.publicId,
                             url: item.url,
                             originalFilename: item.originalFilename,
+                            displayName: item.displayName,
                           });
                           closeUploadLibraryModal();
                         }}
@@ -2066,7 +2089,7 @@ export default function Home() {
                           />
                         </div>
                         <div className="line-clamp-2 px-2 py-1.5 text-[10px] font-medium text-zinc-700 group-hover:text-zinc-900">
-                          {item.originalFilename || item.publicId}
+                          {cloudItemLabel(item)}
                         </div>
                       </button>
                     ))}

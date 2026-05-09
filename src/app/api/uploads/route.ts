@@ -20,6 +20,43 @@ function initCloudinary() {
 
 const FOLDER = "banner-studio/uploads";
 
+function slugifyUploadBase(filename: string): string {
+  const base = filename.replace(/\.[^/.]+$/, "").trim() || "gorsel";
+  let s = base
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (!s) s = "gorsel";
+  if (s.length > 80) s = s.slice(0, 80).replace(/-+$/, "");
+  return s;
+}
+
+function displayNameForResource(r: {
+  original_filename?: string;
+  public_id?: string;
+}): string {
+  const orig = String(r.original_filename ?? "").trim();
+  if (orig) return orig;
+  const pid = String(r.public_id ?? "");
+  const seg = pid.split("/").pop() || pid;
+  return seg || "gorsel";
+}
+
+function isPublicIdConflict(err: unknown): boolean {
+  const msg = String(
+    (err as { error?: { message?: string } })?.error?.message ??
+      (err as Error)?.message ??
+      "",
+  ).toLowerCase();
+  return (
+    msg.includes("already exists") ||
+    msg.includes("resource with given public id") ||
+    msg.includes("public id") && msg.includes("exists")
+  );
+}
+
 export async function GET() {
   try {
     initCloudinary();
@@ -27,19 +64,27 @@ export async function GET() {
     const result = await cloudinary.search
       .expression(`folder:${FOLDER} AND resource_type:image`)
       .sort_by("created_at", "desc")
-      .max_results(60)
+      .max_results(120)
       .execute();
 
     const items = Array.isArray(result?.resources)
-      ? result.resources.map((r: any) => ({
-          publicId: String(r.public_id ?? ""),
-          url: String(r.secure_url ?? r.url ?? ""),
-          originalFilename: String(r.original_filename ?? ""),
-          bytes: typeof r.bytes === "number" ? r.bytes : null,
-          width: typeof r.width === "number" ? r.width : null,
-          height: typeof r.height === "number" ? r.height : null,
-          createdAt: String(r.created_at ?? ""),
-        }))
+      ? result.resources.map((r: any) => {
+          const originalFilename = String(r.original_filename ?? "");
+          const displayName = displayNameForResource({
+            original_filename: originalFilename,
+            public_id: r.public_id,
+          });
+          return {
+            publicId: String(r.public_id ?? ""),
+            url: String(r.secure_url ?? r.url ?? ""),
+            originalFilename,
+            displayName,
+            bytes: typeof r.bytes === "number" ? r.bytes : null,
+            width: typeof r.width === "number" ? r.width : null,
+            height: typeof r.height === "number" ? r.height : null,
+            createdAt: String(r.created_at ?? ""),
+          };
+        })
       : [];
 
     return NextResponse.json({ folder: FOLDER, items });
@@ -75,17 +120,46 @@ export async function POST(req: Request) {
     const mime = file.type || "application/octet-stream";
     const dataUri = `data:${mime};base64,${base64}`;
 
-    const uploaded = await cloudinary.uploader.upload(dataUri, {
-      folder: FOLDER,
-      resource_type: "image",
-      use_filename: true,
-      unique_filename: true,
+    const clientName = file.name?.trim() || "upload";
+    const slug = slugifyUploadBase(clientName);
+
+    let uploaded: Awaited<ReturnType<typeof cloudinary.uploader.upload>> | null =
+      null;
+    for (let attempt = 0; attempt < 25; attempt++) {
+      const idPart = attempt === 0 ? slug : `${slug}-${attempt + 1}`;
+      const publicId = `${FOLDER}/${idPart}`;
+      try {
+        uploaded = await cloudinary.uploader.upload(dataUri, {
+          public_id: publicId,
+          resource_type: "image",
+          overwrite: false,
+          filename_override: clientName,
+          use_filename: false,
+          unique_filename: false,
+        });
+        break;
+      } catch (err) {
+        if (isPublicIdConflict(err) && attempt < 24) continue;
+        throw err;
+      }
+    }
+
+    if (!uploaded) {
+      return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    }
+
+    const originalFilename =
+      String(uploaded.original_filename ?? "").trim() || clientName;
+    const displayName = displayNameForResource({
+      original_filename: originalFilename,
+      public_id: uploaded.public_id,
     });
 
     return NextResponse.json({
       publicId: uploaded.public_id,
       url: uploaded.secure_url,
-      originalFilename: uploaded.original_filename ?? "",
+      originalFilename: clientName,
+      displayName,
       bytes: uploaded.bytes ?? null,
       width: uploaded.width ?? null,
       height: uploaded.height ?? null,
