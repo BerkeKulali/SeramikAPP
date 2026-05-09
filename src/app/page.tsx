@@ -16,13 +16,26 @@ type Product = {
   image: string;
 };
 
+type UploadLibraryItem = {
+  publicId: string;
+  url: string;
+  originalFilename: string;
+  bytes: number | null;
+  width: number | null;
+  height: number | null;
+  createdAt: string;
+};
+
 type SlotState = {
   productId: string | null;
   stock: string;
   price: string;
   darkText: boolean;
-  surface: "FLP" | "SEMİ LAPP." | "MAT";
-  grade: "1." | "END.";
+  customName: string;
+  imageUrlOverride: string | null;
+  imagePublicId: string | null;
+  surface: "" | "FLP" | "SEMİ LAPP." | "MAT";
+  grade: "" | "1." | "END.";
   isRec: boolean;
 };
 
@@ -47,6 +60,12 @@ type PdfQueueItemV1 = {
   title: string;
   thumbnailDataUrl: string | null;
   snapshot: DraftV1;
+};
+
+type PdfQueueExportV1 = {
+  version: 1;
+  savedAt: string;
+  items: PdfQueueItemV1[];
 };
 
 const TEMPLATES_DEFAULT: TemplateCount[] = [1, 2, 3, 4, 5, 6, 8];
@@ -84,8 +103,11 @@ function emptySlot(): SlotState {
     stock: "",
     price: "",
     darkText: false,
-    surface: "FLP",
-    grade: "1.",
+    customName: "",
+    imageUrlOverride: null,
+    imagePublicId: null,
+    surface: "",
+    grade: "",
     isRec: false,
   };
 }
@@ -96,8 +118,17 @@ function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
     if (!existing) return emptySlot();
     return {
       ...existing,
-      surface: existing.surface ?? "FLP",
-      grade: existing.grade ?? "1.",
+      customName: typeof existing.customName === "string" ? existing.customName : "",
+      imageUrlOverride:
+        typeof existing.imageUrlOverride === "string" || existing.imageUrlOverride === null
+          ? existing.imageUrlOverride
+          : null,
+      imagePublicId:
+        typeof existing.imagePublicId === "string" || existing.imagePublicId === null
+          ? existing.imagePublicId
+          : null,
+      surface: existing.surface ?? "",
+      grade: existing.grade ?? "",
       isRec: typeof existing.isRec === "boolean" ? existing.isRec : false,
     };
   });
@@ -108,6 +139,21 @@ function formatSlotGrade(slot?: SlotState | null) {
   const grade = slot?.grade ?? "";
   if (!grade) return "";
   return slot?.isRec ? `REC ${grade}` : grade;
+}
+
+function displayNameForSlot(p: Product | undefined, slot?: SlotState | null) {
+  const manual = (slot?.customName ?? "").trim();
+  if (manual) return manual;
+  if (!p) return "—";
+  return `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
+    .trim()
+    .toUpperCase();
+}
+
+function imageSrcForSlot(p: Product | undefined, slot?: SlotState | null) {
+  const override = slot?.imageUrlOverride;
+  if (typeof override === "string" && override.trim()) return override;
+  return p?.image ?? "";
 }
 
 function digitsOnly(input: string) {
@@ -155,16 +201,17 @@ function normalizeSizeText(input: string): SizeOption {
 
 function aspectClassForSize(sizeText: string) {
   // Portrait canvas içinde bile tüm ürün görselleri yatay kalmalı.
-  // Boyuta göre değişmez: sabit yatay oran.
+  // Boyuta göre değişmez: 60x120 (1:2) yatay oranı.
   void sizeText;
-  return "aspect-video";
+  return "aspect-[2/1]";
 }
 
 function aspectClassForProductImage(aspect: ProductImageAspect) {
   if (aspect === "square") return "aspect-square";
   if (aspect === "threeTwo") return "aspect-[3/2]";
   if (aspect === "parquet") return "aspect-[6/1]";
-  return "aspect-video";
+  // "video" seçeneği: 60x120 (1:2) yatay görsel oranı
+  return "aspect-[2/1]";
 }
 
 function normalizeHexColor(input: string) {
@@ -265,6 +312,10 @@ export default function Home() {
   const [pdfQueue, setPdfQueue] = useState<PdfQueueItemV1[]>([]);
   const [pdfEditingIndex, setPdfEditingIndex] = useState<number | null>(null);
   const [isBuildingPdf, setIsBuildingPdf] = useState(false);
+  const [isUploadLibraryOpen, setIsUploadLibraryOpen] = useState(false);
+  const [uploadLibraryItems, setUploadLibraryItems] = useState<UploadLibraryItem[]>([]);
+  const [isLoadingUploadLibrary, setIsLoadingUploadLibrary] = useState(false);
+  const [uploadLibraryError, setUploadLibraryError] = useState<string | null>(null);
 
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const exportCanvasRef = useRef<HTMLDivElement | null>(null);
@@ -307,7 +358,7 @@ export default function Home() {
   const eightSquareImageScale = useMemo(() => {
     // Only for (8'li + Kare): keep bottom row within safe area as text grows.
     const delta = Math.max(0, globalFontSize - DEFAULT_GLOBAL_FONT_SIZE);
-    const scaled = 0.88 - delta * 0.004; // tiny shrink as text grows
+    const scaled = 0.86 - delta * 0.004; // tiny shrink as text grows
     return Math.max(0.78, Math.min(0.88, scaled));
   }, [globalFontSize]);
 
@@ -415,9 +466,65 @@ export default function Home() {
     );
   }
 
+  async function refreshUploadLibrary() {
+    try {
+      setIsLoadingUploadLibrary(true);
+      setUploadLibraryError(null);
+      const res = await fetch("/api/uploads", { cache: "no-store" });
+      if (!res.ok) throw new Error(`Upload list failed: ${res.status}`);
+      const data = (await res.json()) as { items?: UploadLibraryItem[] };
+      setUploadLibraryItems(Array.isArray(data?.items) ? data.items : []);
+    } catch (e) {
+      setUploadLibraryError((e as Error)?.message ?? "Upload list failed");
+    } finally {
+      setIsLoadingUploadLibrary(false);
+    }
+  }
+
+  async function uploadImageToLibrary(file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/uploads", { method: "POST", body: fd });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      throw new Error(txt || `Upload failed: ${res.status}`);
+    }
+    return (await res.json()) as {
+      publicId: string;
+      url: string;
+      originalFilename: string;
+    };
+  }
+
+  function applyUploadedImageToSlot(
+    idx: number,
+    uploaded: { publicId: string; url: string; originalFilename?: string },
+  ) {
+    const title = (uploaded.originalFilename || "").trim();
+    updateSlot(idx, {
+      imageUrlOverride: uploaded.url,
+      imagePublicId: uploaded.publicId,
+      customName: (slots[idx]?.customName ?? "").trim() ? slots[idx]!.customName : title,
+    });
+    setImageErrorBySlot((prev) => {
+      if (!prev[idx]) return prev;
+      const next = { ...prev };
+      delete next[idx];
+      return next;
+    });
+  }
+
   function selectProductForActiveSlot(productId: string) {
     const idx = activeSlotIndex;
-    updateSlot(idx, { productId, surface: "FLP", grade: "1.", isRec: false });
+    updateSlot(idx, {
+      productId,
+      customName: "",
+      imageUrlOverride: null,
+      imagePublicId: null,
+      surface: "",
+      grade: "",
+      isRec: false,
+    });
     setImageErrorBySlot((prev) => {
       const next = { ...prev };
       delete next[idx];
@@ -457,7 +564,7 @@ export default function Home() {
         });
         if (!res.ok) throw new Error(`Products fetch failed: ${res.status}`);
         const data = (await res.json()) as Product[];
-        console.log(data);
+        console.log("Gelen Veri:", data);
         setProducts(Array.isArray(data) ? data : []);
       } catch (err) {
         if ((err as { name?: string })?.name === "AbortError") return;
@@ -471,6 +578,14 @@ export default function Home() {
     loadProducts();
     return () => ac.abort();
   }, []);
+
+  useEffect(() => {
+    console.log("Products state:", products);
+  }, [products]);
+
+  useEffect(() => {
+    console.log("Filtrelenmiş Veri:", filteredProducts);
+  }, [filteredProducts]);
 
   useEffect(() => {
     function recalcScale() {
@@ -704,6 +819,144 @@ export default function Home() {
     }
   }
 
+  function exportPdfQueueJson() {
+    try {
+      const baseName = sanitizeFileComponent(fileName) || "katalog-ciktisi";
+      const sizePart = sanitizeFileComponent(selectedTemplateSize) || "boyut";
+
+      const payload: PdfQueueExportV1 = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        items: pdfQueue,
+      };
+
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${sizePart}_${baseName}_PDFKuyrugu.json`;
+      a.click();
+
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      // swallow: export should never crash UI
+    }
+  }
+
+  function normalizeDraftLike(input: unknown): DraftV1 | null {
+    if (!input || typeof input !== "object") return null;
+    const parsed = input as Partial<DraftV1>;
+    if (parsed.version !== 1) return null;
+
+    const allowedTemplates: TemplateCount[] = [...TEMPLATES_DEFAULT, ...TEMPLATES_PARQUET];
+    if (!allowedTemplates.includes(parsed.selectedTemplate as TemplateCount)) return null;
+    const nextTemplate = parsed.selectedTemplate as TemplateCount;
+
+    const nextAspect: ProductImageAspect =
+      parsed.productImageAspect === "square" ||
+      parsed.productImageAspect === "threeTwo" ||
+      parsed.productImageAspect === "video" ||
+      parsed.productImageAspect === "parquet"
+        ? parsed.productImageAspect
+        : "square";
+
+    const nextGlobalFont =
+      typeof parsed.globalFontSize === "number" && Number.isFinite(parsed.globalFontSize)
+        ? Math.max(12, Math.min(64, Math.round(parsed.globalFontSize)))
+        : DEFAULT_GLOBAL_FONT_SIZE;
+
+    const nextIsDarkBg = typeof parsed.isDarkBg === "boolean" ? parsed.isDarkBg : false;
+    const nextCanvasBgColor =
+      typeof parsed.canvasBgColor === "string" && parsed.canvasBgColor.trim()
+        ? parsed.canvasBgColor
+        : nextIsDarkBg
+          ? "#1D1616"
+          : "#F5F5F5";
+
+    const slotsFromFile = Array.isArray(parsed.slots) ? parsed.slots : [];
+    const normalizedSlots: SlotState[] = Array.from({ length: nextTemplate }, (_, idx) => {
+      const s = slotsFromFile[idx] as Partial<SlotState> | undefined;
+      if (!s || typeof s !== "object") return emptySlot();
+        return {
+          productId: typeof s.productId === "string" ? s.productId : null,
+          stock: typeof s.stock === "string" ? s.stock : "",
+          price: typeof s.price === "string" ? s.price : "",
+          darkText: typeof s.darkText === "boolean" ? s.darkText : false,
+          customName: typeof s.customName === "string" ? s.customName : "",
+        imageUrlOverride:
+          typeof s.imageUrlOverride === "string" || s.imageUrlOverride === null
+            ? s.imageUrlOverride
+            : null,
+        imagePublicId:
+          typeof s.imagePublicId === "string" || s.imagePublicId === null ? s.imagePublicId : null,
+          surface:
+            s.surface === "" || s.surface === "FLP" || s.surface === "SEMİ LAPP." || s.surface === "MAT"
+              ? s.surface
+              : "",
+          grade: s.grade === "" || s.grade === "1." || s.grade === "END." ? s.grade : "",
+          isRec: typeof s.isRec === "boolean" ? s.isRec : false,
+        };
+    });
+
+    return {
+      version: 1,
+      savedAt: typeof parsed.savedAt === "string" && parsed.savedAt ? parsed.savedAt : new Date().toISOString(),
+      selectedTemplate: nextTemplate,
+      productImageAspect: nextAspect,
+      globalFontSize: nextGlobalFont,
+      canvasBgColor: nextCanvasBgColor,
+      isDarkBg: nextIsDarkBg,
+      selectedTemplateSize: typeof parsed.selectedTemplateSize === "string" && parsed.selectedTemplateSize.trim()
+        ? parsed.selectedTemplateSize
+        : "30x60",
+      selectedManufacturer: typeof parsed.selectedManufacturer === "string" && parsed.selectedManufacturer.trim()
+        ? parsed.selectedManufacturer
+        : "QUA SERAMİK",
+      headerRightText: typeof parsed.headerRightText === "string" && parsed.headerRightText.trim()
+        ? parsed.headerRightText
+        : "SÖKE FABRİKA SEVK",
+      unitName: typeof parsed.unitName === "string" && parsed.unitName.trim() ? parsed.unitName : DEFAULT_UNIT_NAME,
+      fileName: typeof parsed.fileName === "string" ? parsed.fileName : "",
+      slots: normalizedSlots,
+    };
+  }
+
+  async function importPdfQueueFile(file: File) {
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as Partial<PdfQueueExportV1>;
+      if (!parsed || typeof parsed !== "object") return;
+      if (parsed.version !== 1) return;
+      if (!Array.isArray(parsed.items)) return;
+
+      const items: PdfQueueItemV1[] = parsed.items
+        .map((it) => {
+          if (!it || typeof it !== "object") return null;
+          const obj = it as Partial<PdfQueueItemV1>;
+          if (typeof obj.id !== "string" || !obj.id.trim()) return null;
+          const snap = normalizeDraftLike(obj.snapshot);
+          if (!snap) return null;
+          return {
+            id: obj.id,
+            title: typeof obj.title === "string" ? obj.title : snapshotTitle(),
+            thumbnailDataUrl:
+              typeof obj.thumbnailDataUrl === "string" || obj.thumbnailDataUrl === null
+                ? obj.thumbnailDataUrl
+                : null,
+            snapshot: snap,
+          } satisfies PdfQueueItemV1;
+        })
+        .filter(Boolean) as PdfQueueItemV1[];
+
+      setPdfQueue(items);
+      setPdfEditingIndex(null);
+    } catch {
+      // invalid JSON or unexpected shape: ignore safely
+    }
+  }
+
   async function importDraftFile(file: File) {
     try {
       const text = await file.text();
@@ -739,11 +992,18 @@ export default function Home() {
           stock: typeof s.stock === "string" ? s.stock : "",
           price: typeof s.price === "string" ? s.price : "",
           darkText: typeof s.darkText === "boolean" ? s.darkText : false,
+          customName: typeof s.customName === "string" ? s.customName : "",
+          imageUrlOverride:
+            typeof s.imageUrlOverride === "string" || s.imageUrlOverride === null
+              ? s.imageUrlOverride
+              : null,
+          imagePublicId:
+            typeof s.imagePublicId === "string" || s.imagePublicId === null ? s.imagePublicId : null,
           surface:
-            s.surface === "FLP" || s.surface === "SEMİ LAPP." || s.surface === "MAT"
+            s.surface === "" || s.surface === "FLP" || s.surface === "SEMİ LAPP." || s.surface === "MAT"
               ? s.surface
-              : "FLP",
-          grade: s.grade === "1." || s.grade === "END." ? s.grade : "1.",
+              : "",
+          grade: s.grade === "" || s.grade === "1." || s.grade === "END." ? s.grade : "",
           isRec: typeof s.isRec === "boolean" ? s.isRec : false,
         };
       });
@@ -836,6 +1096,23 @@ export default function Home() {
                     aria-label="Taslak yükle"
                   />
                 </div>
+                <div className="mt-3">
+                  <label className="block text-[12px] font-montserrat font-bold text-zinc-900">
+                    PDF Kuyruğu Yükle
+                  </label>
+                  <input
+                    type="file"
+                    accept="application/json,.json"
+                    onChange={(e) => {
+                      const f = e.currentTarget.files?.[0];
+                      if (!f) return;
+                      void importPdfQueueFile(f);
+                      e.currentTarget.value = "";
+                    }}
+                    className="mt-1 block w-[220px] text-xs text-zinc-600 file:mr-3 file:rounded-md file:border file:border-zinc-200 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-zinc-800 hover:file:bg-zinc-50"
+                    aria-label="PDF kuyruğu yükle"
+                  />
+                </div>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <button
@@ -864,6 +1141,15 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
+                  onClick={exportPdfQueueJson}
+                  disabled={pdfQueue.length === 0 || isDownloading || isBuildingPdf}
+                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+                  title={pdfQueue.length === 0 ? "PDF kuyruğu boş" : "PDF kuyruğunu JSON olarak kaydet"}
+                >
+                  PDF Kuyruğunu Kaydet (.json)
+                </button>
+                <button
+                  type="button"
                   onClick={() => void downloadPdfFromQueue()}
                   disabled={pdfQueue.length === 0 || isDownloading || isBuildingPdf}
                   className="inline-flex items-center gap-2 justify-center rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
@@ -875,7 +1161,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="p-5 space-y-5 overflow-auto">
+          <div className="p-5 pb-24 space-y-5 overflow-auto">
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold text-zinc-900">PDF Kuyruğu</div>
@@ -1133,7 +1419,7 @@ export default function Home() {
               >
                 <option value="square">Kare (1:1)</option>
                 <option value="threeTwo">Yatay (3:2)</option>
-                <option value="video">Geniş (16:9)</option>
+                <option value="video">60×120 (1:2)</option>
                 <option value="parquet">Parke (1:6)</option>
               </select>
             </section>
@@ -1150,6 +1436,23 @@ export default function Home() {
                   placeholder="Ürün Ara..."
                   className="w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 py-2 text-sm outline-none focus:border-zinc-400"
                 />
+              </div>
+
+              <div className="text-[11px] text-zinc-500">
+                products:{" "}
+                <span className="font-semibold text-zinc-800">{products.length}</span> •
+                filtered:{" "}
+                <span className="font-semibold text-zinc-800">
+                  {filteredProducts.length}
+                </span>{" "}
+                • loading:{" "}
+                <span className="font-semibold text-zinc-800">
+                  {String(isLoadingProducts)}
+                </span>{" "}
+                • error:{" "}
+                <span className="font-semibold text-zinc-800">
+                  {productsError ?? "null"}
+                </span>
               </div>
 
               <div className="max-h-[400px] overflow-y-auto rounded-lg border border-zinc-200 bg-white">
@@ -1275,6 +1578,18 @@ export default function Home() {
                       </div>
 
                       <div className="mt-3 space-y-2">
+                        <label className="space-y-1 block">
+                          <div className="text-xs font-semibold text-zinc-600">
+                            Ürün Adı (Opsiyonel)
+                          </div>
+                          <input
+                            value={s.customName}
+                            onChange={(e) => updateSlot(idx, { customName: e.target.value })}
+                            placeholder="Boş bırakırsan otomatik ad kullanılır"
+                            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                            disabled={!s.productId}
+                          />
+                        </label>
                         <div className="grid grid-cols-2 gap-2">
                           <label className="space-y-1">
                             <div className="text-xs font-semibold text-zinc-600">
@@ -1290,6 +1605,7 @@ export default function Home() {
                               className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                               disabled={!s.productId}
                             >
+                              <option value="">Boş</option>
                               <option value="FLP">FLP</option>
                               <option value="SEMİ LAPP.">SEMİ LAPP.</option>
                               <option value="MAT">MAT</option>
@@ -1311,6 +1627,7 @@ export default function Home() {
                                 className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                                 disabled={!s.productId}
                               >
+                                <option value="">Boş</option>
                                 <option value="1.">1.</option>
                                 <option value="END.">END.</option>
                               </select>
@@ -1596,7 +1913,7 @@ export default function Home() {
                                       >
                                       {p && !hasImageError ? (
                                         <img
-                                          src={p.image}
+                                          src={imageSrcForSlot(p, slot)}
                                           alt={p.name}
                                           crossOrigin="anonymous"
                                           className="h-full w-full object-cover object-center"
@@ -1637,11 +1954,7 @@ export default function Home() {
                                         className="font-semibold leading-tight tracking-wide text-center uppercase"
                                         style={{ fontSize: globalFontSize }}
                                       >
-                                        {p
-                                          ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
-                                              .trim()
-                                              .toUpperCase()
-                                          : "—"}
+                                        {displayNameForSlot(p, slot)}
                                       </div>
                                       <div
                                         className={[
@@ -1690,7 +2003,7 @@ export default function Home() {
                         {selectedTemplate === 3 && productImageAspect === "square" ? (
                           <div className="h-full w-full flex items-center justify-center overflow-hidden">
                             <div className="w-full h-full flex flex-col overflow-hidden">
-                              <div className="grid grid-rows-3 h-[75vh] overflow-hidden">
+                              <div className="grid grid-rows-3 h-full overflow-hidden gap-y-10 py-10">
                                 {[0, 1, 2].map((idx) => {
                                   const slot = slots[idx];
                                   const p =
@@ -1706,10 +2019,10 @@ export default function Home() {
                                       style={{ background: canvasBg }}
                                     >
                                       <div className="w-full overflow-hidden flex items-center justify-center">
-                                        <div className="w-auto h-full max-h-[22vh] aspect-square mx-auto overflow-hidden">
+                                        <div className="h-[38vh] max-h-[560px] aspect-square mx-auto overflow-hidden">
                                           {p && !hasImageError ? (
                                             <img
-                                              src={p.image}
+                                              src={imageSrcForSlot(p, slot)}
                                               alt={p.name}
                                               crossOrigin="anonymous"
                                               className="h-full w-full object-cover"
@@ -1744,13 +2057,7 @@ export default function Home() {
                                           className="font-semibold leading-tight tracking-wide text-center uppercase"
                                           style={{ fontSize: globalFontSize }}
                                         >
-                                          {p
-                                            ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(
-                                                slot,
-                                              )}`
-                                                .trim()
-                                                .toUpperCase()
-                                            : "—"}
+                                          {displayNameForSlot(p, slot)}
                                         </div>
                                         <div
                                           className="font-bold leading-tight text-center"
@@ -1784,6 +2091,118 @@ export default function Home() {
                               </div>
                             </div>
                           </div>
+                        ) : selectedTemplate === 3 && productImageAspect === "video" ? (
+                          <div className="h-full w-full flex items-start justify-center overflow-hidden">
+                            <div className="w-full h-full flex flex-col overflow-hidden pt-4 pb-8">
+                              <div
+                                className="w-full"
+                                style={{ transform: "scale(0.86)", transformOrigin: "top center" }}
+                              >
+                              <div className="grid grid-rows-3 h-full overflow-hidden gap-y-7">
+                                {[0, 1, 2].map((idx) => {
+                                  const slot = slots[idx];
+                                  const p =
+                                    slot?.productId != null
+                                      ? productsById.get(slot.productId)
+                                      : undefined;
+                                  const hasImageError = Boolean(imageErrorBySlot[idx]);
+                                  const stockPriceFontSize = Math.max(
+                                    14,
+                                    Math.round(globalFontSize * 0.9),
+                                  );
+                                  const aspectClass = aspectClassForProductImage(
+                                    productImageAspect,
+                                  );
+
+                                  return (
+                                    <div
+                                      key={idx}
+                                      className="flex flex-col items-center justify-center min-h-0 overflow-hidden"
+                                      style={{ background: canvasBg }}
+                                    >
+                                      <div
+                                        className={[
+                                          "w-full max-w-[860px] overflow-hidden flex items-center justify-center",
+                                        ].join(" ")}
+                                      >
+                                        <div
+                                          className={[
+                                            "w-full overflow-hidden",
+                                            aspectClass,
+                                          ].join(" ")}
+                                        >
+                                          {p && !hasImageError ? (
+                                            <img
+                                              src={imageSrcForSlot(p, slot)}
+                                              alt={p.name}
+                                              crossOrigin="anonymous"
+                                              className="h-full w-full object-cover object-center"
+                                              onError={() =>
+                                                setImageErrorBySlot((prev) => ({
+                                                  ...prev,
+                                                  [idx]: true,
+                                                }))
+                                              }
+                                              onLoad={() =>
+                                                setImageErrorBySlot((prev) => {
+                                                  if (!prev[idx]) return prev;
+                                                  const next = { ...prev };
+                                                  delete next[idx];
+                                                  return next;
+                                                })
+                                              }
+                                            />
+                                          ) : (
+                                            <div className="h-full w-full" />
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div
+                                        className={[
+                                          "px-2 pt-3 pb-0 flex flex-col items-center gap-y-1",
+                                          productDetailsTextColorClass,
+                                        ].join(" ")}
+                                      >
+                                        <div
+                                          className="font-semibold leading-tight tracking-wide text-center uppercase"
+                                          style={{ fontSize: globalFontSize }}
+                                        >
+                                          {displayNameForSlot(p, slot)}
+                                        </div>
+                                        <div
+                                          className="font-bold leading-tight text-center"
+                                          style={{ fontSize: stockPriceFontSize }}
+                                        >
+                                          Stok{" "}
+                                          <span className="tabular-nums font-extrabold">
+                                            {slot?.stock?.trim()
+                                              ? slot.stock.trim()
+                                              : "—"}
+                                          </span>{" "}
+                                          <span className="font-extrabold">
+                                            {unitName?.trim() ? unitName.trim() : "m²"}
+                                          </span>
+                                        </div>
+                                        <div
+                                          className="font-bold leading-tight text-center"
+                                          style={{ fontSize: stockPriceFontSize }}
+                                        >
+                                          <span className="tabular-nums font-extrabold">
+                                            {slot?.price?.trim()
+                                              ? slot.price.trim()
+                                              : "—"}
+                                          </span>{" "}
+                                          <span className="font-extrabold">+ KDV</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              </div>
+                            </div>
+                          </div>
                         ) : selectedTemplate === 1 ? (
                           <div className="h-full flex flex-col items-center justify-center">
                             {(() => {
@@ -1804,7 +2223,12 @@ export default function Home() {
 
                               return (
                                 <div
-                                  className="w-full max-w-[860px] flex flex-col items-stretch overflow-hidden"
+                                  className={[
+                                    "w-full flex flex-col items-stretch overflow-hidden",
+                                    productImageAspect === "square"
+                                      ? "max-w-[560px]"
+                                      : "max-w-[860px]",
+                                  ].join(" ")}
                                   style={{ background: canvasBg }}
                                 >
                                   <div
@@ -1814,7 +2238,7 @@ export default function Home() {
                                   >
                                     {p && !hasImageError ? (
                                       <img
-                                        src={p.image}
+                                        src={imageSrcForSlot(p, slot)}
                                         alt={p.name}
                                         crossOrigin="anonymous"
                                         className="h-full w-full object-cover object-center"
@@ -1850,11 +2274,7 @@ export default function Home() {
                                       className="font-semibold leading-tight tracking-wide text-center uppercase"
                                       style={{ fontSize: globalFontSize }}
                                     >
-                                      {p
-                                        ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
-                                            .trim()
-                                            .toUpperCase()
-                                        : "—"}
+                                      {displayNameForSlot(p, slot)}
                                     </div>
                                     <div
                                       className="mt-3 font-bold leading-snug text-center"
@@ -1928,7 +2348,7 @@ export default function Home() {
                                   >
                                     {p && !hasImageError ? (
                                       <img
-                                        src={p.image}
+                                        src={imageSrcForSlot(p, slot)}
                                         alt={p.name}
                                         crossOrigin="anonymous"
                                         className="h-full w-full object-cover object-center"
@@ -1964,11 +2384,7 @@ export default function Home() {
                                       className="font-semibold leading-tight tracking-wide text-center uppercase"
                                       style={{ fontSize: globalFontSize }}
                                     >
-                                      {p
-                                        ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
-                                            .trim()
-                                            .toUpperCase()
-                                        : "—"}
+                                      {displayNameForSlot(p, slot)}
                                     </div>
                                     <div
                                       className="mt-3 font-bold leading-snug text-center"
@@ -2033,7 +2449,7 @@ export default function Home() {
                                       >
                                         {p && !hasImageError ? (
                                           <img
-                                            src={p.image}
+                                            src={imageSrcForSlot(p, slot)}
                                             alt={p.name}
                                             crossOrigin="anonymous"
                                             className="h-full w-full object-cover object-center"
@@ -2069,11 +2485,7 @@ export default function Home() {
                                           className="font-semibold leading-tight tracking-wide text-center uppercase"
                                           style={{ fontSize: globalFontSize }}
                                         >
-                                          {p
-                                            ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
-                                                .trim()
-                                                .toUpperCase()
-                                            : "—"}
+                                          {displayNameForSlot(p, slot)}
                                         </div>
                                         <div
                                           className="mt-2 font-bold leading-snug text-center"
@@ -2125,28 +2537,37 @@ export default function Home() {
                                         ? productsById.get(slot.productId)
                                         : undefined;
                                     const hasImageError = Boolean(imageErrorBySlot[idx]);
-                                    const stockPriceFontSize = Math.max(
+                                    const stockPriceFontSizeBase = Math.max(
                                       14,
                                       Math.round(globalFontSize * 0.9),
+                                    );
+                                    // 8'li Kare: yazıların taşmaması için çok hafif küçült.
+                                    const eightTitleFontSize = Math.max(
+                                      12,
+                                      Math.round(globalFontSize * 0.92),
+                                    );
+                                    const eightStockPriceFontSize = Math.max(
+                                      12,
+                                      Math.round(stockPriceFontSizeBase * 0.92),
                                     );
 
                                     return (
                                       <div
                                         key={idx}
-                                        className="flex h-[400px] flex-col overflow-hidden"
+                                        className="flex h-[382px] flex-col overflow-hidden"
                                         style={{ background: canvasBg }}
                                       >
                                         <div className="flex-1 min-h-0 flex items-center justify-center">
                                           <div
                                             className="h-full aspect-square max-w-full overflow-hidden"
                                             style={{
-                                              transform: `scale(${eightSquareImageScale})`,
+                                              transform: `translateY(-1px) scale(${eightSquareImageScale})`,
                                               transformOrigin: "center",
                                             }}
                                           >
                                             {p && !hasImageError ? (
                                               <img
-                                                src={p.image}
+                                                src={imageSrcForSlot(p, slot)}
                                                 alt={p.name}
                                                 crossOrigin="anonymous"
                                                 className="h-full w-full object-cover object-center"
@@ -2179,17 +2600,13 @@ export default function Home() {
                                         >
                                           <div
                                             className="font-semibold leading-[1.1] tracking-wide text-center uppercase"
-                                            style={{ fontSize: globalFontSize }}
+                                            style={{ fontSize: eightTitleFontSize }}
                                           >
-                                            {p
-                                              ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
-                                                  .trim()
-                                                  .toUpperCase()
-                                              : "—"}
+                                            {displayNameForSlot(p, slot)}
                                           </div>
                                           <div
                                             className="mt-0 font-bold leading-[1.1] text-center"
-                                            style={{ fontSize: stockPriceFontSize }}
+                                            style={{ fontSize: eightStockPriceFontSize }}
                                           >
                                             Stok{" "}
                                             <span className="tabular-nums font-extrabold">
@@ -2205,7 +2622,7 @@ export default function Home() {
                                           </div>
                                           <div
                                             className="mt-0 font-bold leading-[1.1] text-center"
-                                            style={{ fontSize: stockPriceFontSize }}
+                                            style={{ fontSize: eightStockPriceFontSize }}
                                           >
                                             <span className="tabular-nums font-extrabold">
                                               {slot?.price?.trim()
@@ -2262,7 +2679,7 @@ export default function Home() {
                                         >
                                           {p && !hasImageError ? (
                                             <img
-                                              src={p.image}
+                                              src={imageSrcForSlot(p, slot)}
                                               alt={p.name}
                                               crossOrigin="anonymous"
                                               className="h-full w-full object-cover object-center"
@@ -2296,11 +2713,7 @@ export default function Home() {
                                             className="font-semibold leading-tight tracking-wide text-center uppercase"
                                             style={{ fontSize: globalFontSize }}
                                           >
-                                            {p
-                                              ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
-                                                  .trim()
-                                                  .toUpperCase()
-                                              : "—"}
+                                            {displayNameForSlot(p, slot)}
                                           </div>
                                           <div
                                             className="mt-0.5 font-bold leading-snug text-center"
@@ -2347,9 +2760,9 @@ export default function Home() {
                                 "w-full max-w-full",
                                 isSixOrEightSquare ? "mt-[-150px]" : "",
                               ].join(" ")}
-                              style={{ transform: "scale(0.78)", transformOrigin: "center" }}
+                              style={{ transform: "scale(0.76)", transformOrigin: "center" }}
                             >
-                              <div className="grid grid-cols-2 gap-x-7 gap-y-1">
+                              <div className="grid grid-cols-2 gap-x-7 gap-y-10">
                                 {Array.from({ length: selectedTemplate }, (_, idx) => {
                                   const slot = slots[idx];
                                   const p =
@@ -2379,7 +2792,7 @@ export default function Home() {
                                       >
                                         {p && !hasImageError ? (
                                           <img
-                                            src={p.image}
+                                            src={imageSrcForSlot(p, slot)}
                                             alt={p.name}
                                             crossOrigin="anonymous"
                                             className="h-full w-full object-cover object-center"
@@ -2413,11 +2826,7 @@ export default function Home() {
                                           className="font-semibold leading-tight tracking-wide text-center uppercase"
                                           style={{ fontSize: globalFontSize }}
                                         >
-                                          {p
-                                            ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
-                                                .trim()
-                                                .toUpperCase()
-                                            : "—"}
+                                          {displayNameForSlot(p, slot)}
                                         </div>
                                         <div
                                           className="mt-0.5 font-bold leading-snug text-center"
@@ -2452,6 +2861,345 @@ export default function Home() {
                                     </div>
                                   );
                                 })}
+                              </div>
+                            </div>
+                          </div>
+                        ) : selectedTemplate === 5 &&
+                          productImageAspect === "video" ? (
+                          <div className="h-full w-full flex items-start justify-center overflow-hidden">
+                            <div className="w-full h-full flex flex-col overflow-hidden pt-4 pb-8">
+                              <div
+                                className="w-full"
+                                style={{
+                                  transform: "translateY(14px) scale(0.9)",
+                                  transformOrigin: "top center",
+                                }}
+                              >
+                                <div
+                                  className="w-full"
+                                  style={{ transform: "scale(1.08)", transformOrigin: "top center" }}
+                                >
+                                <div className="grid grid-cols-2 gap-x-8 gap-y-8">
+                                  {[0, 1, 2, 3].map((idx) => {
+                                    const slot = slots[idx];
+                                    const p =
+                                      slot?.productId != null
+                                        ? productsById.get(slot.productId)
+                                        : undefined;
+                                    const hasImageError = Boolean(imageErrorBySlot[idx]);
+                                    const stockPriceFontSize = Math.max(
+                                      14,
+                                      Math.round(globalFontSize * 0.9),
+                                    );
+                                    const aspectClass = aspectClassForProductImage(
+                                      productImageAspect,
+                                    );
+
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className="flex flex-col items-stretch overflow-hidden"
+                                        style={{ background: canvasBg }}
+                                      >
+                                        <div
+                                          className={[
+                                            "w-full overflow-hidden",
+                                            aspectClass,
+                                          ].join(" ")}
+                                        >
+                                          {p && !hasImageError ? (
+                                            <img
+                                              src={imageSrcForSlot(p, slot)}
+                                              alt={p.name}
+                                              crossOrigin="anonymous"
+                                              className="h-full w-full object-cover object-center"
+                                              onError={() =>
+                                                setImageErrorBySlot((prev) => ({
+                                                  ...prev,
+                                                  [idx]: true,
+                                                }))
+                                              }
+                                              onLoad={() =>
+                                                setImageErrorBySlot((prev) => {
+                                                  if (!prev[idx]) return prev;
+                                                  const next = { ...prev };
+                                                  delete next[idx];
+                                                  return next;
+                                                })
+                                              }
+                                            />
+                                          ) : (
+                                            <div className="h-full w-full" />
+                                          )}
+                                        </div>
+
+                                        <div
+                                          className={[
+                                            "mt-3 px-3 pt-2 pb-2 flex flex-col items-center justify-start",
+                                            productDetailsTextColorClass,
+                                          ].join(" ")}
+                                        >
+                                          <div
+                                            className="font-semibold leading-tight tracking-wide text-center uppercase"
+                                            style={{ fontSize: globalFontSize }}
+                                          >
+                                              {displayNameForSlot(p, slot)}
+                                          </div>
+                                          <div
+                                            className="mt-1 font-bold leading-snug text-center"
+                                            style={{ fontSize: stockPriceFontSize }}
+                                          >
+                                            Stok{" "}
+                                            <span className="tabular-nums font-extrabold">
+                                              {slot?.stock?.trim()
+                                                ? slot.stock.trim()
+                                                : "—"}
+                                            </span>{" "}
+                                            <span className="font-extrabold">
+                                              {unitName?.trim()
+                                                ? unitName.trim()
+                                                : "m²"}
+                                            </span>
+                                          </div>
+                                          <div
+                                            className="mt-0.5 font-bold leading-snug text-center"
+                                            style={{ fontSize: stockPriceFontSize }}
+                                          >
+                                            <span className="tabular-nums font-extrabold">
+                                              {slot?.price?.trim()
+                                                ? slot.price.trim()
+                                                : "—"}
+                                            </span>{" "}
+                                            <span className="font-extrabold">
+                                              + KDV
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                </div>
+
+                                <div className="mt-28 flex items-start justify-center">
+                                  {(() => {
+                                    const idx = 4;
+                                    const slot = slots[idx];
+                                    const p =
+                                      slot?.productId != null
+                                        ? productsById.get(slot.productId)
+                                        : undefined;
+                                    const hasImageError = Boolean(imageErrorBySlot[idx]);
+                                    const stockPriceFontSize = Math.max(
+                                      14,
+                                      Math.round(globalFontSize * 0.9),
+                                    );
+                                    const aspectClass = aspectClassForProductImage(
+                                      productImageAspect,
+                                    );
+
+                                    return (
+                                      <div
+                                        className="w-full max-w-[680px] mx-auto flex flex-col items-stretch overflow-hidden"
+                                        style={{ background: canvasBg }}
+                                      >
+                                        <div
+                                          className={[
+                                            "w-full overflow-hidden",
+                                            aspectClass,
+                                          ].join(" ")}
+                                        >
+                                          {p && !hasImageError ? (
+                                            <img
+                                              src={imageSrcForSlot(p, slot)}
+                                              alt={p.name}
+                                              crossOrigin="anonymous"
+                                              className="h-full w-full object-cover object-center"
+                                              onError={() =>
+                                                setImageErrorBySlot((prev) => ({
+                                                  ...prev,
+                                                  [idx]: true,
+                                                }))
+                                              }
+                                              onLoad={() =>
+                                                setImageErrorBySlot((prev) => {
+                                                  if (!prev[idx]) return prev;
+                                                  const next = { ...prev };
+                                                  delete next[idx];
+                                                  return next;
+                                                })
+                                              }
+                                            />
+                                          ) : (
+                                            <div className="h-full w-full" />
+                                          )}
+                                        </div>
+
+                                        <div
+                                          className={[
+                                            "mt-3 px-3 pt-2 pb-2 flex flex-col items-center justify-start",
+                                            productDetailsTextColorClass,
+                                          ].join(" ")}
+                                        >
+                                          <div
+                                            className="font-semibold leading-tight tracking-wide text-center uppercase"
+                                            style={{ fontSize: globalFontSize }}
+                                          >
+                                              {displayNameForSlot(p, slot)}
+                                          </div>
+                                          <div
+                                            className="mt-1 font-bold leading-snug text-center"
+                                            style={{ fontSize: stockPriceFontSize }}
+                                          >
+                                            Stok{" "}
+                                            <span className="tabular-nums font-extrabold">
+                                              {slot?.stock?.trim()
+                                                ? slot.stock.trim()
+                                                : "—"}
+                                            </span>{" "}
+                                            <span className="font-extrabold">
+                                              {unitName?.trim()
+                                                ? unitName.trim()
+                                                : "m²"}
+                                            </span>
+                                          </div>
+                                          <div
+                                            className="mt-0.5 font-bold leading-snug text-center"
+                                            style={{ fontSize: stockPriceFontSize }}
+                                          >
+                                            <span className="tabular-nums font-extrabold">
+                                              {slot?.price?.trim()
+                                                ? slot.price.trim()
+                                                : "—"}
+                                            </span>{" "}
+                                            <span className="font-extrabold">
+                                              + KDV
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : selectedTemplate === 5 &&
+                          productImageAspect === "square" ? (
+                          <div className="h-full flex items-start justify-center pt-2 overflow-hidden">
+                            <div className="w-full max-w-full">
+                              <div
+                                className="w-full"
+                                style={{
+                                  transform: "translateY(24px) scale(0.82)",
+                                  transformOrigin: "top center",
+                                }}
+                              >
+                                <div className="grid grid-cols-2 grid-rows-3 gap-x-8 gap-y-4">
+                                  {Array.from({ length: 6 }, (_, cellIdx) => {
+                                    if (cellIdx >= 5) {
+                                      return <div key="empty-5" className="opacity-0" />;
+                                    }
+
+                                    const idx = cellIdx;
+                                    const slot = slots[idx];
+                                    const p =
+                                      slot?.productId != null
+                                        ? productsById.get(slot.productId)
+                                        : undefined;
+                                    const hasImageError = Boolean(imageErrorBySlot[idx]);
+                                    const stockPriceFontSize = Math.max(
+                                      14,
+                                      Math.round(globalFontSize * 0.9),
+                                    );
+                                    const aspectClass = aspectClassForProductImage(
+                                      productImageAspect,
+                                    );
+
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className="flex flex-col items-stretch overflow-hidden"
+                                        style={{ background: canvasBg }}
+                                      >
+                                        <div
+                                          className={[
+                                            "w-full overflow-hidden",
+                                            aspectClass,
+                                          ].join(" ")}
+                                        >
+                                          {p && !hasImageError ? (
+                                            <img
+                                              src={imageSrcForSlot(p, slot)}
+                                              alt={p.name}
+                                              crossOrigin="anonymous"
+                                              className="h-full w-full object-cover object-center"
+                                              onError={() =>
+                                                setImageErrorBySlot((prev) => ({
+                                                  ...prev,
+                                                  [idx]: true,
+                                                }))
+                                              }
+                                              onLoad={() =>
+                                                setImageErrorBySlot((prev) => {
+                                                  if (!prev[idx]) return prev;
+                                                  const next = { ...prev };
+                                                  delete next[idx];
+                                                  return next;
+                                                })
+                                              }
+                                            />
+                                          ) : (
+                                            <div className="h-full w-full" />
+                                          )}
+                                        </div>
+
+                                        <div
+                                          className={[
+                                            "mt-2 px-3 pt-2 pb-2 flex flex-col items-center justify-start",
+                                            productDetailsTextColorClass,
+                                          ].join(" ")}
+                                        >
+                                          <div
+                                            className="font-semibold leading-tight tracking-wide text-center uppercase"
+                                            style={{ fontSize: globalFontSize }}
+                                          >
+                                            {displayNameForSlot(p, slot)}
+                                          </div>
+                                          <div
+                                            className="mt-1 font-bold leading-snug text-center"
+                                            style={{ fontSize: stockPriceFontSize }}
+                                          >
+                                            Stok{" "}
+                                            <span className="tabular-nums font-extrabold">
+                                              {slot?.stock?.trim()
+                                                ? slot.stock.trim()
+                                                : "—"}
+                                            </span>{" "}
+                                            <span className="font-extrabold">
+                                              {unitName?.trim()
+                                                ? unitName.trim()
+                                                : "m²"}
+                                            </span>
+                                          </div>
+                                          <div
+                                            className="mt-0.5 font-bold leading-snug text-center"
+                                            style={{ fontSize: stockPriceFontSize }}
+                                          >
+                                            <span className="tabular-nums font-extrabold">
+                                              {slot?.price?.trim()
+                                                ? slot.price.trim()
+                                                : "—"}
+                                            </span>{" "}
+                                            <span className="font-extrabold">
+                                              + KDV
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -2491,7 +3239,7 @@ export default function Home() {
                                   >
                                     {p && !hasImageError ? (
                                       <img
-                                        src={p.image}
+                                        src={imageSrcForSlot(p, slot)}
                                         alt={p.name}
                                         crossOrigin="anonymous"
                                         className="h-full w-full object-cover object-center"
@@ -2528,11 +3276,7 @@ export default function Home() {
                                       className="font-semibold leading-tight tracking-wide text-center uppercase"
                                       style={{ fontSize: globalFontSize }}
                                     >
-                                      {p
-                                        ? `${p.name} ${slot?.surface ?? ""} ${formatSlotGrade(slot)}`
-                                            .trim()
-                                            .toUpperCase()
-                                        : "—"}
+                                      {displayNameForSlot(p, slot)}
                                     </div>
                                     <div
                                       className="mt-2 font-bold leading-snug text-center"
