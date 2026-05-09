@@ -53,39 +53,68 @@ function isPublicIdConflict(err: unknown): boolean {
   return (
     msg.includes("already exists") ||
     msg.includes("resource with given public id") ||
-    msg.includes("public id") && msg.includes("exists")
+    (msg.includes("public id") && msg.includes("exists"))
   );
+}
+
+/** List images whose public_id starts with prefix (Admin API). Search API `folder:` does not match public_id paths like `banner-studio/uploads/foo`. */
+async function listImageResourcesByPrefix(prefix: string): Promise<any[]> {
+  const all: any[] = [];
+  let next_cursor: string | undefined;
+  const maxPerPage = 200;
+  for (let page = 0; page < 10; page++) {
+    const batch: {
+      resources?: any[];
+      next_cursor?: string;
+    } = await new Promise((resolve, reject) => {
+      cloudinary.api.resources(
+        {
+          type: "upload",
+          resource_type: "image",
+          prefix,
+          max_results: maxPerPage,
+          ...(next_cursor ? { next_cursor } : {}),
+        },
+        (err, result) => {
+          if (err) reject(err);
+          else resolve(result as { resources?: any[]; next_cursor?: string });
+        },
+      );
+    });
+    if (Array.isArray(batch.resources)) all.push(...batch.resources);
+    next_cursor = batch.next_cursor;
+    if (!next_cursor) break;
+  }
+  all.sort((a, b) => {
+    const ta = new Date(String(a.created_at ?? 0)).getTime();
+    const tb = new Date(String(b.created_at ?? 0)).getTime();
+    return tb - ta;
+  });
+  return all;
 }
 
 export async function GET() {
   try {
     initCloudinary();
 
-    const result = await cloudinary.search
-      .expression(`folder:${FOLDER} AND resource_type:image`)
-      .sort_by("created_at", "desc")
-      .max_results(120)
-      .execute();
-
-    const items = Array.isArray(result?.resources)
-      ? result.resources.map((r: any) => {
-          const originalFilename = String(r.original_filename ?? "");
-          const displayName = displayNameForResource({
-            original_filename: originalFilename,
-            public_id: r.public_id,
-          });
-          return {
-            publicId: String(r.public_id ?? ""),
-            url: String(r.secure_url ?? r.url ?? ""),
-            originalFilename,
-            displayName,
-            bytes: typeof r.bytes === "number" ? r.bytes : null,
-            width: typeof r.width === "number" ? r.width : null,
-            height: typeof r.height === "number" ? r.height : null,
-            createdAt: String(r.created_at ?? ""),
-          };
-        })
-      : [];
+    const resources = await listImageResourcesByPrefix(FOLDER);
+    const items = resources.map((r: any) => {
+      const originalFilename = String(r.original_filename ?? "");
+      const displayName = displayNameForResource({
+        original_filename: originalFilename,
+        public_id: r.public_id,
+      });
+      return {
+        publicId: String(r.public_id ?? ""),
+        url: String(r.secure_url ?? r.url ?? ""),
+        originalFilename,
+        displayName,
+        bytes: typeof r.bytes === "number" ? r.bytes : null,
+        width: typeof r.width === "number" ? r.width : null,
+        height: typeof r.height === "number" ? r.height : null,
+        createdAt: String(r.created_at ?? ""),
+      };
+    });
 
     return NextResponse.json({ folder: FOLDER, items });
   } catch (e) {
