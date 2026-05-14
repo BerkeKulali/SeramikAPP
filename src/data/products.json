@@ -3224,14 +3224,14 @@
     "name": "adria-anthracite",
     "brand": "bien-seramik",
     "size": "katalog",
-    "image": "/urunler/bien-seramik/adria-anthracite.png"
+    "image": "/urunler/bien-seramik/60x60/adria-anthracite.png"
   },
   {
     "id": "bien-seramik-katalog-adria-beyaz",
     "name": "adria-beyaz",
     "brand": "bien-seramik",
     "size": "katalog",
-    "image": "/urunler/bien-seramik/adria-beyaz.png"
+    "image": "/urunler/bien-seramik/60x60/adria-beyaz.png"
   },
   {
     "id": "canakkale-seramik-60x120-calacatta-macchia",
@@ -3267,5 +3267,439 @@
     "brand": "qua-seramik",
     "size": "60x60",
     "image": "/urunler/qua-seramik/60x60/mood-ivory.png"
+  },
+  {
+    "id": "bien-seramik-30x60-saros-gri",
+    "name": "saros-gri",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/saros-gri.png"
+  },
+  {
+    "id": "bien-seramik-30x90-estel-azul",
+    "name": "estel-azul",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/estel-azul.png"
+  },
+  {
+    "id": "bien-seramik-30x90-estel-latte",
+    "name": "estel-latte",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/estel-latte.png"
+  },
+  {
+    "id": "bien-seramik-30x90-estel-olive",
+    "name": "estel-olive",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/estel-olive.png"
+  },
+  {
+    "id": "bien-seramik-30x90-pera-grey",
+    "name": "pera-grey",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/pera-grey.png"
+  },
+  {
+    "id": "bien-seramik-45x45-priene",
+    "name": "priene",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/priene.png"
+  },
+  {
+    "id": "bien-seramik-60x60-alin",
+    "name": "alin",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/alin.png"
+  },
+  {
+    "id": "bien-seramik-60x60-alyssa-grey",
+    "name": "alyssa-grey",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/alyssa-grey.png"
+  },
+  {
+    "id": "bien-seramik-katalog-miranda",
+    "name": "miranda",
+    "brand": "bien-seramik",
+    "size": "katalog",
+    "image": "/urunler/bien-seramik/miranda.png"
+  },
+  {
+    "id": "gural-seramik-60x120-abaco-bambu",
+    "name": "abaco-bambu",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/abaco-bambu.png"
+  },
+  {
+    "id": "gural-seramik-60x120-agate",
+    "name": "agate",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/agate.png"
+  },
+  {
+    "id": "gural-seramik-60x120-alaska-grey",
+    "name": "alaska-grey",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/alaska-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-amazonite-turquoise",
+    "name": "amazonite-turquoise",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/amazonite-turquoise.png"
+  },
+  {
+    "id": "gural-seramik-60x120-calacatta-mia",
+    "name": "calacatta-mia",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/calacatta-mia.png"
+  },
+  {
+    "id": "gural-seramik-60x120-ceres-grey",
+    "name": "ceres-grey",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/ceres-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-concrete-beige",
+    "name": "concrete-beige",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/concrete-beige.png"
+  },
+  {
+    "id": "gural-seramik-60x120-cosmo-grey",
+    "name": "cosmo-grey",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/cosmo-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-elegant-vizon",
+    "name": "elegant-vizon",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/elegant-vizon.png"
+  },
+  {
+    "id": "gural-seramik-60x120-frey-anthracite",
+    "name": "frey-anthracite",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/frey-anthracite.png"
+  },
+  {
+    "id": "gural-seramik-60x120-kastilya-grey",
+    "name": "kastilya-grey",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/kastilya-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-larkin",
+    "name": "larkin",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/larkin.png"
+  },
+  {
+    "id": "gural-seramik-60x120-loa",
+    "name": "loa",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/loa.png"
+  },
+  {
+    "id": "gural-seramik-60x120-marmo-venato-latte",
+    "name": "marmo-venato-latte",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/marmo-venato-latte.png"
+  },
+  {
+    "id": "gural-seramik-60x120-mega-white",
+    "name": "mega-white",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/mega-white.png"
+  },
+  {
+    "id": "gural-seramik-60x120-milge-gold",
+    "name": "milge-gold",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/milge-gold.png"
+  },
+  {
+    "id": "gural-seramik-60x120-misha-anthracite",
+    "name": "misha-anthracite",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/misha-anthracite.png"
+  },
+  {
+    "id": "gural-seramik-60x120-misha-beige",
+    "name": "misha-beige",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/misha-beige.png"
+  },
+  {
+    "id": "gural-seramik-60x120-misha-grey",
+    "name": "misha-grey",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/misha-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-norma-ceviz",
+    "name": "norma-ceviz",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/norma-ceviz.png"
+  },
+  {
+    "id": "gural-seramik-60x120-ocean-blue",
+    "name": "ocean-blue",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/ocean-blue.png"
+  },
+  {
+    "id": "gural-seramik-60x120-onice-levigato",
+    "name": "onice-levigato",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/onice-levigato.png"
+  },
+  {
+    "id": "gural-seramik-60x120-onyx-grey",
+    "name": "onyx-grey",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/onyx-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-optal-almond",
+    "name": "optal-almond",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/optal-almond.png"
+  },
+  {
+    "id": "gural-seramik-60x120-salda-blue",
+    "name": "salda-blue",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/salda-blue.png"
+  },
+  {
+    "id": "gural-seramik-60x120-selva-oak",
+    "name": "selva-oak",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/selva-oak.png"
+  },
+  {
+    "id": "gural-seramik-60x120-telliurio-l-grey",
+    "name": "telliurio-l.grey",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/telliurio-l.grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-travertino",
+    "name": "travertino",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/travertino.png"
+  },
+  {
+    "id": "gural-seramik-60x120-volcano-ice",
+    "name": "volcano-ice",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/volcano-ice.png"
+  },
+  {
+    "id": "gural-seramik-60x120-white-silver",
+    "name": "white-silver",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/white-silver.png"
+  },
+  {
+    "id": "gural-seramik-60x60-telliurio-dark-grey",
+    "name": "telliurio-dark-grey",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/TELLIURIO-DARK-GREY.png"
+  },
+  {
+    "id": "gural-seramik-60x60-abella",
+    "name": "abella",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/abella.png"
+  },
+  {
+    "id": "gural-seramik-60x60-alacati-blue",
+    "name": "alaçatı-blue",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/alaçatı-blue.png"
+  },
+  {
+    "id": "gural-seramik-60x60-alba-madera",
+    "name": "alba-madera",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/alba-madera.png"
+  },
+  {
+    "id": "gural-seramik-60x60-alba-oak",
+    "name": "alba-oak",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/alba-oak.png"
+  },
+  {
+    "id": "gural-seramik-60x60-biblo-brown",
+    "name": "biblo-brown",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/biblo-brown.png"
+  },
+  {
+    "id": "gural-seramik-60x60-biblo-dark",
+    "name": "biblo-dark",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/biblo-dark.png"
+  },
+  {
+    "id": "gural-seramik-60x60-biblo-taupe",
+    "name": "biblo-taupe",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/biblo-taupe.png"
+  },
+  {
+    "id": "gural-seramik-60x60-calacatta-grigio",
+    "name": "calacatta-grigio",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/calacatta-grigio.png"
+  },
+  {
+    "id": "gural-seramik-60x60-krea-mink",
+    "name": "krea-mink",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/krea-mink.png"
+  },
+  {
+    "id": "gural-seramik-60x60-mega-white",
+    "name": "mega-white",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/mega-white.png"
+  },
+  {
+    "id": "gural-seramik-60x60-misha-antrasit",
+    "name": "misha-antrasit",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/misha-antrasit.png"
+  },
+  {
+    "id": "gural-seramik-60x60-misha-bej",
+    "name": "misha-bej",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/misha-bej.png"
+  },
+  {
+    "id": "gural-seramik-60x60-misha-grey",
+    "name": "misha-grey",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/misha-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x60-misha-ivory",
+    "name": "misha-ivory",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/misha-ivory.png"
+  },
+  {
+    "id": "gural-seramik-60x60-mosaic-white",
+    "name": "mosaic-white",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/mosaic-white.png"
+  },
+  {
+    "id": "gural-seramik-60x60-olvido-grey",
+    "name": "olvido-grey",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/olvido-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x60-oregon",
+    "name": "oregon",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/oregon.png"
+  },
+  {
+    "id": "gural-seramik-60x60-smeralda-antrasit",
+    "name": "smeralda-antrasit",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/smeralda-antrasit.png"
+  },
+  {
+    "id": "gural-seramik-60x60-smeralda-bej",
+    "name": "smeralda-bej",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/smeralda-bej.png"
+  },
+  {
+    "id": "gural-seramik-60x60-terra",
+    "name": "terra",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/terra.png"
+  },
+  {
+    "id": "gural-seramik-60x60-volcano-l-grey",
+    "name": "volcano-l.grey",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/volcano-l.grey.png"
+  },
+  {
+    "id": "qua-seramik-60x120-zenith",
+    "name": "zenith",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/zenith.png"
   }
 ]
