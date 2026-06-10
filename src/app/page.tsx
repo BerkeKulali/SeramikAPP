@@ -91,14 +91,16 @@ const PARQUET_DEFAULT_FONT_SIZE = 38;
 const SIZE_OPTIONS = [
   "15x60",
   "20x120",
-  "60x60",
-  "60x120",
   "30x60",
   "30x90",
   "45x45",
   "50x50",
+  "60x60",
+  "61x61",
+  "60x120",
   "80x80",
   "100x100",
+  "120x120",
   "120x180",
 ] as const;
 
@@ -1460,20 +1462,21 @@ export default function Home() {
                 />
               </label>
               <div className="space-y-4">
-                <div className="space-y-2">
+                <label className="space-y-2">
                   <div className="text-xs font-semibold text-zinc-600">Boyut</div>
-                  <select
+                  <input
+                    list="size-options"
                     value={selectedTemplateSize}
                     onChange={(e) => setSelectedTemplateSize(e.target.value)}
+                    placeholder="örn. 60x120"
                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                  >
+                  />
+                  <datalist id="size-options">
                     {SIZE_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
+                      <option key={opt} value={opt} />
                     ))}
-                  </select>
-                </div>
+                  </datalist>
+                </label>
                 <label className="space-y-2">
                   <div className="text-xs font-semibold text-zinc-600">Marka</div>
                   <input
