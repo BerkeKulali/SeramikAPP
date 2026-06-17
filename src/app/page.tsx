@@ -41,6 +41,11 @@ type SlotState = {
   productId: string | null;
   stock: string;
   price: string;
+  dualStock: boolean;
+  primaryStockLabel: string;
+  endStockLabel: string;
+  endStock: string;
+  endStockPrice: string;
   darkText: boolean;
   customName: string;
   imageUrlOverride: string | null;
@@ -115,6 +120,11 @@ function emptySlot(): SlotState {
     productId: null,
     stock: "",
     price: "",
+    dualStock: false,
+    primaryStockLabel: "1.Stok",
+    endStockLabel: "END.Stok",
+    endStock: "",
+    endStockPrice: "",
     darkText: false,
     customName: "",
     imageUrlOverride: null,
@@ -125,12 +135,63 @@ function emptySlot(): SlotState {
   };
 }
 
+function normalizeSlotFromPartial(s: Partial<SlotState> | undefined): SlotState {
+  if (!s || typeof s !== "object") return emptySlot();
+  return {
+    productId: typeof s.productId === "string" ? s.productId : null,
+    stock: typeof s.stock === "string" ? s.stock : "",
+    price: typeof s.price === "string" ? s.price : "",
+    dualStock: typeof s.dualStock === "boolean" ? s.dualStock : false,
+    primaryStockLabel:
+      typeof s.primaryStockLabel === "string" && s.primaryStockLabel.trim()
+        ? s.primaryStockLabel
+        : "1.Stok",
+    endStockLabel:
+      typeof s.endStockLabel === "string" && s.endStockLabel.trim()
+        ? s.endStockLabel
+        : "END.Stok",
+    endStock: typeof s.endStock === "string" ? s.endStock : "",
+    endStockPrice: typeof s.endStockPrice === "string" ? s.endStockPrice : "",
+    darkText: typeof s.darkText === "boolean" ? s.darkText : false,
+    customName: typeof s.customName === "string" ? s.customName : "",
+    imageUrlOverride:
+      typeof s.imageUrlOverride === "string" || s.imageUrlOverride === null
+        ? s.imageUrlOverride
+        : null,
+    imagePublicId:
+      typeof s.imagePublicId === "string" || s.imagePublicId === null
+        ? s.imagePublicId
+        : null,
+    surface:
+      s.surface === "" ||
+      s.surface === "FLP" ||
+      s.surface === "SEMİ LAPP." ||
+      s.surface === "MAT"
+        ? s.surface
+        : "",
+    grade: s.grade === "" || s.grade === "1." || s.grade === "END." ? s.grade : "",
+    isRec: typeof s.isRec === "boolean" ? s.isRec : false,
+  };
+}
+
 function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
   const base: SlotState[] = Array.from({ length: count }, (_, idx) => {
     const existing = prev?.[idx];
     if (!existing) return emptySlot();
     return {
       ...existing,
+      dualStock: typeof existing.dualStock === "boolean" ? existing.dualStock : false,
+      primaryStockLabel:
+        typeof existing.primaryStockLabel === "string" && existing.primaryStockLabel.trim()
+          ? existing.primaryStockLabel
+          : "1.Stok",
+      endStockLabel:
+        typeof existing.endStockLabel === "string" && existing.endStockLabel.trim()
+          ? existing.endStockLabel
+          : "END.Stok",
+      endStock: typeof existing.endStock === "string" ? existing.endStock : "",
+      endStockPrice:
+        typeof existing.endStockPrice === "string" ? existing.endStockPrice : "",
       customName: typeof existing.customName === "string" ? existing.customName : "",
       imageUrlOverride:
         typeof existing.imageUrlOverride === "string" || existing.imageUrlOverride === null
@@ -172,6 +233,82 @@ function imageSrcForSlot(p: Product | undefined, slot?: SlotState | null) {
 function slotHasAssignableMedia(s: SlotState | undefined) {
   return Boolean(
     s?.productId || (s?.imageUrlOverride && s.imageUrlOverride.trim()),
+  );
+}
+
+function SlotStockPriceDisplay({
+  slot,
+  unitName,
+  fontSize,
+  stockLineClassName = "font-bold leading-snug text-center",
+  priceLineClassName,
+}: {
+  slot?: SlotState | null;
+  unitName: string;
+  fontSize: number;
+  stockLineClassName?: string;
+  priceLineClassName?: string;
+}) {
+  const unit = unitName?.trim() || "m²";
+  const priceClass = priceLineClassName ?? stockLineClassName;
+  const priceValue = (value?: string) =>
+    value?.trim() ? value.trim() : "—";
+
+  if (slot?.dualStock) {
+    const primaryLabel = slot.primaryStockLabel?.trim() || "1.Stok";
+    const endLabel = slot.endStockLabel?.trim() || "END.Stok";
+    return (
+      <div className="w-full">
+        <div className="grid grid-cols-2 gap-x-2">
+          <div className={stockLineClassName} style={{ fontSize }}>
+            {primaryLabel}:{" "}
+            <span className="tabular-nums font-extrabold">
+              {priceValue(slot.stock)}
+            </span>{" "}
+            <span className="font-extrabold">{unit}</span>
+          </div>
+          <div className={stockLineClassName} style={{ fontSize }}>
+            {endLabel}:{" "}
+            <span className="tabular-nums font-extrabold">
+              {priceValue(slot.endStock)}
+            </span>{" "}
+            <span className="font-extrabold">{unit}</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-x-2">
+          <div className={priceClass} style={{ fontSize }}>
+            <span className="tabular-nums font-extrabold">
+              {priceValue(slot.price)}
+            </span>{" "}
+            <span className="font-extrabold">+ KDV</span>
+          </div>
+          <div className={priceClass} style={{ fontSize }}>
+            <span className="tabular-nums font-extrabold">
+              {priceValue(slot.endStockPrice)}
+            </span>{" "}
+            <span className="font-extrabold">+ KDV</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className={stockLineClassName} style={{ fontSize }}>
+        Stok{" "}
+        <span className="tabular-nums font-extrabold">
+          {priceValue(slot?.stock)}
+        </span>{" "}
+        <span className="font-extrabold">{unit}</span>
+      </div>
+      <div className={priceClass} style={{ fontSize }}>
+        <span className="tabular-nums font-extrabold">
+          {priceValue(slot?.price)}
+        </span>{" "}
+        <span className="font-extrabold">+ KDV</span>
+      </div>
+    </>
   );
 }
 
@@ -994,26 +1131,7 @@ export default function Home() {
     const slotsFromFile = Array.isArray(parsed.slots) ? parsed.slots : [];
     const normalizedSlots: SlotState[] = Array.from({ length: nextTemplate }, (_, idx) => {
       const s = slotsFromFile[idx] as Partial<SlotState> | undefined;
-      if (!s || typeof s !== "object") return emptySlot();
-        return {
-          productId: typeof s.productId === "string" ? s.productId : null,
-          stock: typeof s.stock === "string" ? s.stock : "",
-          price: typeof s.price === "string" ? s.price : "",
-          darkText: typeof s.darkText === "boolean" ? s.darkText : false,
-          customName: typeof s.customName === "string" ? s.customName : "",
-        imageUrlOverride:
-          typeof s.imageUrlOverride === "string" || s.imageUrlOverride === null
-            ? s.imageUrlOverride
-            : null,
-        imagePublicId:
-          typeof s.imagePublicId === "string" || s.imagePublicId === null ? s.imagePublicId : null,
-          surface:
-            s.surface === "" || s.surface === "FLP" || s.surface === "SEMİ LAPP." || s.surface === "MAT"
-              ? s.surface
-              : "",
-          grade: s.grade === "" || s.grade === "1." || s.grade === "END." ? s.grade : "",
-          isRec: typeof s.isRec === "boolean" ? s.isRec : false,
-        };
+      return normalizeSlotFromPartial(s);
     });
 
     return {
@@ -1102,26 +1220,7 @@ export default function Home() {
       const slotsFromFile = Array.isArray(parsed.slots) ? parsed.slots : [];
       const normalizedSlots: SlotState[] = Array.from({ length: nextTemplate }, (_, idx) => {
         const s = slotsFromFile[idx] as Partial<SlotState> | undefined;
-        if (!s || typeof s !== "object") return emptySlot();
-        return {
-          productId: typeof s.productId === "string" ? s.productId : null,
-          stock: typeof s.stock === "string" ? s.stock : "",
-          price: typeof s.price === "string" ? s.price : "",
-          darkText: typeof s.darkText === "boolean" ? s.darkText : false,
-          customName: typeof s.customName === "string" ? s.customName : "",
-          imageUrlOverride:
-            typeof s.imageUrlOverride === "string" || s.imageUrlOverride === null
-              ? s.imageUrlOverride
-              : null,
-          imagePublicId:
-            typeof s.imagePublicId === "string" || s.imagePublicId === null ? s.imagePublicId : null,
-          surface:
-            s.surface === "" || s.surface === "FLP" || s.surface === "SEMİ LAPP." || s.surface === "MAT"
-              ? s.surface
-              : "",
-          grade: s.grade === "" || s.grade === "1." || s.grade === "END." ? s.grade : "",
-          isRec: typeof s.isRec === "boolean" ? s.isRec : false,
-        };
+        return normalizeSlotFromPartial(s);
       });
 
       setIsDarkBg(nextIsDarkBg);
@@ -1962,42 +2061,170 @@ export default function Home() {
                           </label>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
-                          <label className="space-y-1">
-                            <div className="text-xs font-semibold text-zinc-600">
-                              Stok
-                            </div>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-xs text-zinc-700">
                             <input
-                              value={s.stock}
+                              type="checkbox"
+                              checked={s.dualStock}
                               onChange={(e) =>
-                                updateSlot(idx, { stock: e.target.value })
+                                updateSlot(idx, { dualStock: e.target.checked })
                               }
-                              placeholder="örn. 51.2"
-                              inputMode="numeric"
-                              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                               disabled={!mediaOk}
+                              className="h-4 w-4 accent-zinc-900"
                             />
+                            <span className="font-semibold">
+                              Çift stok (1. + END)
+                            </span>
                           </label>
 
-                          <label className="space-y-1">
-                            <div className="text-xs font-semibold text-zinc-600">
-                              Fiyat
+                          {!s.dualStock ? (
+                            <div className="grid grid-cols-2 gap-2">
+                              <label className="space-y-1">
+                                <div className="text-xs font-semibold text-zinc-600">
+                                  Stok
+                                </div>
+                                <input
+                                  value={s.stock}
+                                  onChange={(e) =>
+                                    updateSlot(idx, { stock: e.target.value })
+                                  }
+                                  placeholder="örn. 51.2"
+                                  inputMode="numeric"
+                                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                  disabled={!mediaOk}
+                                />
+                              </label>
+
+                              <label className="space-y-1">
+                                <div className="text-xs font-semibold text-zinc-600">
+                                  Fiyat
+                                </div>
+                                <input
+                                  value={s.price}
+                                  onChange={(e) =>
+                                    updateSlot(idx, {
+                                      price: formatThousandsWithDot(
+                                        digitsOnly(e.target.value),
+                                      ),
+                                    })
+                                  }
+                                  placeholder="örn. 1.250"
+                                  inputMode="numeric"
+                                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                  disabled={!mediaOk}
+                                />
+                              </label>
                             </div>
-                            <input
-                              value={s.price}
-                              onChange={(e) =>
-                                updateSlot(idx, {
-                                  price: formatThousandsWithDot(
-                                    digitsOnly(e.target.value),
-                                  ),
-                                })
-                              }
-                              placeholder="örn. 1.250"
-                              inputMode="numeric"
-                              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                              disabled={!mediaOk}
-                            />
-                          </label>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <label className="space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    1. stok etiketi
+                                  </div>
+                                  <input
+                                    value={s.primaryStockLabel}
+                                    onChange={(e) =>
+                                      updateSlot(idx, {
+                                        primaryStockLabel: e.target.value,
+                                      })
+                                    }
+                                    placeholder="1.Stok"
+                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                    disabled={!mediaOk}
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    END stok etiketi
+                                  </div>
+                                  <input
+                                    value={s.endStockLabel}
+                                    onChange={(e) =>
+                                      updateSlot(idx, {
+                                        endStockLabel: e.target.value,
+                                      })
+                                    }
+                                    placeholder="END.Stok"
+                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                    disabled={!mediaOk}
+                                  />
+                                </label>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <label className="space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    1. stok miktarı
+                                  </div>
+                                  <input
+                                    value={s.stock}
+                                    onChange={(e) =>
+                                      updateSlot(idx, { stock: e.target.value })
+                                    }
+                                    placeholder="örn. 279"
+                                    inputMode="numeric"
+                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                    disabled={!mediaOk}
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    END stok miktarı
+                                  </div>
+                                  <input
+                                    value={s.endStock}
+                                    onChange={(e) =>
+                                      updateSlot(idx, { endStock: e.target.value })
+                                    }
+                                    placeholder="örn. 48"
+                                    inputMode="numeric"
+                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                    disabled={!mediaOk}
+                                  />
+                                </label>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <label className="space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    1. stok fiyatı
+                                  </div>
+                                  <input
+                                    value={s.price}
+                                    onChange={(e) =>
+                                      updateSlot(idx, {
+                                        price: formatThousandsWithDot(
+                                          digitsOnly(e.target.value),
+                                        ),
+                                      })
+                                    }
+                                    placeholder="örn. 230"
+                                    inputMode="numeric"
+                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                    disabled={!mediaOk}
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    END stok fiyatı
+                                  </div>
+                                  <input
+                                    value={s.endStockPrice}
+                                    onChange={(e) =>
+                                      updateSlot(idx, {
+                                        endStockPrice: formatThousandsWithDot(
+                                          digitsOnly(e.target.value),
+                                        ),
+                                      })
+                                    }
+                                    placeholder="örn. 230"
+                                    inputMode="numeric"
+                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                    disabled={!mediaOk}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2361,41 +2588,13 @@ export default function Home() {
                                       >
                                         {displayNameForSlot(p, slot)}
                                       </div>
-                                      <div
-                                        className={[
-                                          "mt-0 font-bold text-center",
-                                          isParquetSix ? "leading-[1.1]" : "leading-snug",
-                                        ].join(" ")}
-                                        style={{ fontSize: stockPriceFontSize }}
-                                      >
-                                        Stok{" "}
-                                        <span className="tabular-nums font-extrabold">
-                                          {slot?.stock?.trim()
-                                            ? slot.stock.trim()
-                                            : "—"}
-                                        </span>{" "}
-                                        <span className="font-extrabold">
-                                          {unitName?.trim()
-                                            ? unitName.trim()
-                                            : "m²"}
-                                        </span>
-                                      </div>
-                                      <div
-                                        className={[
-                                          "mt-0 font-bold text-center",
-                                          isParquetSix ? "leading-[1.1]" : "leading-snug",
-                                        ].join(" ")}
-                                        style={{ fontSize: stockPriceFontSize }}
-                                      >
-                                        <span className="tabular-nums font-extrabold">
-                                          {slot?.price?.trim()
-                                            ? slot.price.trim()
-                                            : "—"}
-                                        </span>{" "}
-                                        <span className="font-extrabold">
-                                          + KDV
-                                        </span>
-                                      </div>
+                                      <SlotStockPriceDisplay
+                                        slot={slot}
+                                        unitName={unitName}
+                                        fontSize={stockPriceFontSize}
+                                        stockLineClassName="font-bold leading-snug text-center"
+                                        priceLineClassName="font-bold leading-snug text-center"
+                                      />
                                     </div>
                                   </div>
                                 );
@@ -2464,31 +2663,13 @@ export default function Home() {
                                         >
                                           {displayNameForSlot(p, slot)}
                                         </div>
-                                        <div
-                                          className="font-bold leading-tight text-center"
-                                          style={{ fontSize: globalFontSize }}
-                                        >
-                                          Stok{" "}
-                                          <span className="tabular-nums font-extrabold">
-                                            {slot?.stock?.trim()
-                                              ? slot.stock.trim()
-                                              : "—"}
-                                          </span>{" "}
-                                          <span className="font-extrabold">
-                                            {unitName?.trim() ? unitName.trim() : "m²"}
-                                          </span>
-                                        </div>
-                                        <div
-                                          className="font-bold leading-tight text-center"
-                                          style={{ fontSize: globalFontSize }}
-                                        >
-                                          <span className="tabular-nums font-extrabold">
-                                            {slot?.price?.trim()
-                                              ? slot.price.trim()
-                                              : "—"}
-                                          </span>{" "}
-                                          <span className="font-extrabold">+ KDV</span>
-                                        </div>
+                                        <SlotStockPriceDisplay
+                                          slot={slot}
+                                          unitName={unitName}
+                                          fontSize={globalFontSize}
+                                          stockLineClassName={"font-bold leading-tight text-center"}
+                                          priceLineClassName={"font-bold leading-tight text-center"}
+                                        />
                                       </div>
                                     </div>
                                   );
@@ -2575,31 +2756,13 @@ export default function Home() {
                                         >
                                           {displayNameForSlot(p, slot)}
                                         </div>
-                                        <div
-                                          className="font-bold leading-tight text-center"
-                                          style={{ fontSize: stockPriceFontSize }}
-                                        >
-                                          Stok{" "}
-                                          <span className="tabular-nums font-extrabold">
-                                            {slot?.stock?.trim()
-                                              ? slot.stock.trim()
-                                              : "—"}
-                                          </span>{" "}
-                                          <span className="font-extrabold">
-                                            {unitName?.trim() ? unitName.trim() : "m²"}
-                                          </span>
-                                        </div>
-                                        <div
-                                          className="font-bold leading-tight text-center"
-                                          style={{ fontSize: stockPriceFontSize }}
-                                        >
-                                          <span className="tabular-nums font-extrabold">
-                                            {slot?.price?.trim()
-                                              ? slot.price.trim()
-                                              : "—"}
-                                          </span>{" "}
-                                          <span className="font-extrabold">+ KDV</span>
-                                        </div>
+                                        <SlotStockPriceDisplay
+                                          slot={slot}
+                                          unitName={unitName}
+                                          fontSize={stockPriceFontSize}
+                                          stockLineClassName={"font-bold leading-tight text-center"}
+                                          priceLineClassName={"font-bold leading-tight text-center"}
+                                        />
                                       </div>
                                     </div>
                                   );
@@ -2681,31 +2844,13 @@ export default function Home() {
                                     >
                                       {displayNameForSlot(p, slot)}
                                     </div>
-                                    <div
-                                      className="mt-3 font-bold leading-snug text-center"
-                                      style={{ fontSize: stockPriceFontSize }}
-                                    >
-                                      Stok{" "}
-                                      <span className="tabular-nums font-extrabold">
-                                        {slot?.stock?.trim()
-                                          ? slot.stock.trim()
-                                          : "—"}
-                                      </span>{" "}
-                                      <span className="font-extrabold">
-                                        {unitName?.trim() ? unitName.trim() : "m²"}
-                                      </span>
-                                    </div>
-                                    <div
-                                      className="mt-1 font-bold leading-snug text-center"
-                                      style={{ fontSize: stockPriceFontSize }}
-                                    >
-                                      <span className="tabular-nums font-extrabold">
-                                        {slot?.price?.trim()
-                                          ? slot.price.trim()
-                                          : "—"}
-                                      </span>{" "}
-                                      <span className="font-extrabold">+ KDV</span>
-                                    </div>
+                                    <SlotStockPriceDisplay
+                                      slot={slot}
+                                      unitName={unitName}
+                                      fontSize={stockPriceFontSize}
+                                      stockLineClassName={"mt-3 font-bold leading-snug text-center"}
+                                      priceLineClassName={"mt-1 font-bold leading-snug text-center"}
+                                    />
                                   </div>
                                 </div>
                               );
@@ -2791,31 +2936,13 @@ export default function Home() {
                                     >
                                       {displayNameForSlot(p, slot)}
                                     </div>
-                                    <div
-                                      className="mt-3 font-bold leading-snug text-center"
-                                      style={{ fontSize: stockPriceFontSize }}
-                                    >
-                                      Stok{" "}
-                                      <span className="tabular-nums font-extrabold">
-                                        {slot?.stock?.trim()
-                                          ? slot.stock.trim()
-                                          : "—"}
-                                      </span>{" "}
-                                      <span className="font-extrabold">
-                                        {unitName?.trim() ? unitName.trim() : "m²"}
-                                      </span>
-                                    </div>
-                                    <div
-                                      className="mt-1 font-bold leading-snug text-center"
-                                      style={{ fontSize: stockPriceFontSize }}
-                                    >
-                                      <span className="tabular-nums font-extrabold">
-                                        {slot?.price?.trim()
-                                          ? slot.price.trim()
-                                          : "—"}
-                                      </span>{" "}
-                                      <span className="font-extrabold">+ KDV</span>
-                                    </div>
+                                    <SlotStockPriceDisplay
+                                      slot={slot}
+                                      unitName={unitName}
+                                      fontSize={stockPriceFontSize}
+                                      stockLineClassName={"mt-3 font-bold leading-snug text-center"}
+                                      priceLineClassName={"mt-1 font-bold leading-snug text-center"}
+                                    />
                                   </div>
                                 </div>
                               );
@@ -2892,35 +3019,13 @@ export default function Home() {
                                         >
                                           {displayNameForSlot(p, slot)}
                                         </div>
-                                        <div
-                                          className="mt-2 font-bold leading-snug text-center"
-                                          style={{ fontSize: stockPriceFontSize }}
-                                        >
-                                          Stok{" "}
-                                          <span className="tabular-nums font-extrabold">
-                                            {slot?.stock?.trim()
-                                              ? slot.stock.trim()
-                                              : "—"}
-                                          </span>{" "}
-                                          <span className="font-extrabold">
-                                            {unitName?.trim()
-                                              ? unitName.trim()
-                                              : "m²"}
-                                          </span>
-                                        </div>
-                                        <div
-                                          className="mt-1 font-bold leading-snug text-center"
-                                          style={{ fontSize: stockPriceFontSize }}
-                                        >
-                                          <span className="tabular-nums font-extrabold">
-                                            {slot?.price?.trim()
-                                              ? slot.price.trim()
-                                              : "—"}
-                                          </span>{" "}
-                                          <span className="font-extrabold">
-                                            + KDV
-                                          </span>
-                                        </div>
+                                        <SlotStockPriceDisplay
+                                          slot={slot}
+                                          unitName={unitName}
+                                          fontSize={stockPriceFontSize}
+                                          stockLineClassName={"mt-2 font-bold leading-snug text-center"}
+                                          priceLineClassName={"mt-1 font-bold leading-snug text-center"}
+                                        />
                                       </div>
                                     </div>
                                   );
@@ -3009,35 +3114,13 @@ export default function Home() {
                                           >
                                             {displayNameForSlot(p, slot)}
                                           </div>
-                                          <div
-                                            className="mt-0 font-bold leading-[1.1] text-center"
-                                            style={{ fontSize: eightStockPriceFontSize }}
-                                          >
-                                            Stok{" "}
-                                            <span className="tabular-nums font-extrabold">
-                                              {slot?.stock?.trim()
-                                                ? slot.stock.trim()
-                                                : "—"}
-                                            </span>{" "}
-                                            <span className="font-extrabold">
-                                              {unitName?.trim()
-                                                ? unitName.trim()
-                                                : "m²"}
-                                            </span>
-                                          </div>
-                                          <div
-                                            className="mt-0 font-bold leading-[1.1] text-center"
-                                            style={{ fontSize: eightStockPriceFontSize }}
-                                          >
-                                            <span className="tabular-nums font-extrabold">
-                                              {slot?.price?.trim()
-                                                ? slot.price.trim()
-                                                : "—"}
-                                            </span>{" "}
-                                            <span className="font-extrabold">
-                                              + KDV
-                                            </span>
-                                          </div>
+                                          <SlotStockPriceDisplay
+                                            slot={slot}
+                                            unitName={unitName}
+                                            fontSize={eightStockPriceFontSize}
+                                            stockLineClassName={"mt-0 font-bold leading-[1.1] text-center"}
+                                            priceLineClassName={"mt-0 font-bold leading-[1.1] text-center"}
+                                          />
                                         </div>
                                       </div>
                                     );
@@ -3120,35 +3203,13 @@ export default function Home() {
                                           >
                                             {displayNameForSlot(p, slot)}
                                           </div>
-                                          <div
-                                            className="mt-0.5 font-bold leading-snug text-center"
-                                            style={{ fontSize: stockPriceFontSize }}
-                                          >
-                                            Stok{" "}
-                                            <span className="tabular-nums font-extrabold">
-                                              {slot?.stock?.trim()
-                                                ? slot.stock.trim()
-                                                : "—"}
-                                            </span>{" "}
-                                            <span className="font-extrabold">
-                                              {unitName?.trim()
-                                                ? unitName.trim()
-                                                : "m²"}
-                                            </span>
-                                          </div>
-                                          <div
-                                            className="mt-0 font-bold leading-snug text-center"
-                                            style={{ fontSize: stockPriceFontSize }}
-                                          >
-                                            <span className="tabular-nums font-extrabold">
-                                              {slot?.price?.trim()
-                                                ? slot.price.trim()
-                                                : "—"}
-                                            </span>{" "}
-                                            <span className="font-extrabold">
-                                              + KDV
-                                            </span>
-                                          </div>
+                                          <SlotStockPriceDisplay
+                                            slot={slot}
+                                            unitName={unitName}
+                                            fontSize={stockPriceFontSize}
+                                            stockLineClassName={"mt-0.5 font-bold leading-snug text-center"}
+                                            priceLineClassName={"mt-0 font-bold leading-snug text-center"}
+                                          />
                                         </div>
                                       </div>
                                     );
@@ -3233,35 +3294,13 @@ export default function Home() {
                                         >
                                           {displayNameForSlot(p, slot)}
                                         </div>
-                                        <div
-                                          className="mt-0.5 font-bold leading-snug text-center"
-                                          style={{ fontSize: stockPriceFontSize }}
-                                        >
-                                          Stok{" "}
-                                          <span className="tabular-nums font-extrabold">
-                                            {slot?.stock?.trim()
-                                              ? slot.stock.trim()
-                                              : "—"}
-                                          </span>{" "}
-                                          <span className="font-extrabold">
-                                            {unitName?.trim()
-                                              ? unitName.trim()
-                                              : "m²"}
-                                          </span>
-                                        </div>
-                                        <div
-                                          className="mt-0 font-bold leading-snug text-center"
-                                          style={{ fontSize: stockPriceFontSize }}
-                                        >
-                                          <span className="tabular-nums font-extrabold">
-                                            {slot?.price?.trim()
-                                              ? slot.price.trim()
-                                              : "—"}
-                                          </span>{" "}
-                                          <span className="font-extrabold">
-                                            + KDV
-                                          </span>
-                                        </div>
+                                        <SlotStockPriceDisplay
+                                          slot={slot}
+                                          unitName={unitName}
+                                          fontSize={stockPriceFontSize}
+                                          stockLineClassName={"mt-0.5 font-bold leading-snug text-center"}
+                                          priceLineClassName={"mt-0 font-bold leading-snug text-center"}
+                                        />
                                       </div>
                                     </div>
                                   );
@@ -3350,35 +3389,13 @@ export default function Home() {
                                           >
                                               {displayNameForSlot(p, slot)}
                                           </div>
-                                          <div
-                                            className="mt-1 font-bold leading-snug text-center"
-                                            style={{ fontSize: stockPriceFontSize }}
-                                          >
-                                            Stok{" "}
-                                            <span className="tabular-nums font-extrabold">
-                                              {slot?.stock?.trim()
-                                                ? slot.stock.trim()
-                                                : "—"}
-                                            </span>{" "}
-                                            <span className="font-extrabold">
-                                              {unitName?.trim()
-                                                ? unitName.trim()
-                                                : "m²"}
-                                            </span>
-                                          </div>
-                                          <div
-                                            className="mt-0.5 font-bold leading-snug text-center"
-                                            style={{ fontSize: stockPriceFontSize }}
-                                          >
-                                            <span className="tabular-nums font-extrabold">
-                                              {slot?.price?.trim()
-                                                ? slot.price.trim()
-                                                : "—"}
-                                            </span>{" "}
-                                            <span className="font-extrabold">
-                                              + KDV
-                                            </span>
-                                          </div>
+                                          <SlotStockPriceDisplay
+                                            slot={slot}
+                                            unitName={unitName}
+                                            fontSize={stockPriceFontSize}
+                                            stockLineClassName={"mt-1 font-bold leading-snug text-center"}
+                                            priceLineClassName={"mt-0.5 font-bold leading-snug text-center"}
+                                          />
                                         </div>
                                       </div>
                                     );
@@ -3452,35 +3469,13 @@ export default function Home() {
                                           >
                                               {displayNameForSlot(p, slot)}
                                           </div>
-                                          <div
-                                            className="mt-1 font-bold leading-snug text-center"
-                                            style={{ fontSize: stockPriceFontSize }}
-                                          >
-                                            Stok{" "}
-                                            <span className="tabular-nums font-extrabold">
-                                              {slot?.stock?.trim()
-                                                ? slot.stock.trim()
-                                                : "—"}
-                                            </span>{" "}
-                                            <span className="font-extrabold">
-                                              {unitName?.trim()
-                                                ? unitName.trim()
-                                                : "m²"}
-                                            </span>
-                                          </div>
-                                          <div
-                                            className="mt-0.5 font-bold leading-snug text-center"
-                                            style={{ fontSize: stockPriceFontSize }}
-                                          >
-                                            <span className="tabular-nums font-extrabold">
-                                              {slot?.price?.trim()
-                                                ? slot.price.trim()
-                                                : "—"}
-                                            </span>{" "}
-                                            <span className="font-extrabold">
-                                              + KDV
-                                            </span>
-                                          </div>
+                                          <SlotStockPriceDisplay
+                                            slot={slot}
+                                            unitName={unitName}
+                                            fontSize={stockPriceFontSize}
+                                            stockLineClassName={"mt-1 font-bold leading-snug text-center"}
+                                            priceLineClassName={"mt-0.5 font-bold leading-snug text-center"}
+                                          />
                                         </div>
                                       </div>
                                     );
@@ -3571,35 +3566,13 @@ export default function Home() {
                                           >
                                             {displayNameForSlot(p, slot)}
                                           </div>
-                                          <div
-                                            className="mt-1 font-bold leading-snug text-center"
-                                            style={{ fontSize: stockPriceFontSize }}
-                                          >
-                                            Stok{" "}
-                                            <span className="tabular-nums font-extrabold">
-                                              {slot?.stock?.trim()
-                                                ? slot.stock.trim()
-                                                : "—"}
-                                            </span>{" "}
-                                            <span className="font-extrabold">
-                                              {unitName?.trim()
-                                                ? unitName.trim()
-                                                : "m²"}
-                                            </span>
-                                          </div>
-                                          <div
-                                            className="mt-0.5 font-bold leading-snug text-center"
-                                            style={{ fontSize: stockPriceFontSize }}
-                                          >
-                                            <span className="tabular-nums font-extrabold">
-                                              {slot?.price?.trim()
-                                                ? slot.price.trim()
-                                                : "—"}
-                                            </span>{" "}
-                                            <span className="font-extrabold">
-                                              + KDV
-                                            </span>
-                                          </div>
+                                          <SlotStockPriceDisplay
+                                            slot={slot}
+                                            unitName={unitName}
+                                            fontSize={stockPriceFontSize}
+                                            stockLineClassName={"mt-1 font-bold leading-snug text-center"}
+                                            priceLineClassName={"mt-0.5 font-bold leading-snug text-center"}
+                                          />
                                         </div>
                                       </div>
                                     );
@@ -3607,6 +3580,92 @@ export default function Home() {
                                 </div>
                               </div>
                             </div>
+                          </div>
+                        ) : selectedTemplate === 6 &&
+                          productImageAspect === "video" ? (
+                          <div
+                            className="box-border h-full grid gap-x-6 gap-y-6 py-10"
+                            style={{
+                              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                              gridTemplateRows: "repeat(3, minmax(0, 1fr))",
+                            }}
+                          >
+                            {Array.from({ length: 6 }, (_, idx) => {
+                              const slot = slots[idx];
+                              const p =
+                                slot?.productId != null
+                                  ? productsById.get(slot.productId)
+                                  : undefined;
+                              const hasImageError = Boolean(imageErrorBySlot[idx]);
+                              const stockPriceFontSize = Math.max(
+                                14,
+                                Math.round(globalFontSize * 0.9),
+                              );
+                              const aspectClass = aspectClassForProductImage(
+                                productImageAspect,
+                              );
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className="flex h-full min-h-0 flex-col justify-center overflow-hidden"
+                                  style={{ background: canvasBg }}
+                                >
+                                  <div
+                                    className={[
+                                      "w-full shrink-0 overflow-hidden",
+                                      aspectClass,
+                                    ].join(" ")}
+                                  >
+                                    {imageSrcForSlot(p, slot) && !hasImageError ? (
+                                      <img
+                                        src={imageSrcForSlot(p, slot)}
+                                        alt={displayNameForSlot(p, slot)}
+                                        crossOrigin="anonymous"
+                                        className="h-full w-full object-cover object-center"
+                                        onError={() =>
+                                          setImageErrorBySlot((prev) => ({
+                                            ...prev,
+                                            [idx]: true,
+                                          }))
+                                        }
+                                        onLoad={() =>
+                                          setImageErrorBySlot((prev) => {
+                                            if (!prev[idx]) return prev;
+                                            const next = { ...prev };
+                                            delete next[idx];
+                                            return next;
+                                          })
+                                        }
+                                      />
+                                    ) : (
+                                      <div className="h-full w-full" />
+                                    )}
+                                  </div>
+
+                                  <div
+                                    className={[
+                                      "mt-2 shrink-0 px-3 pt-2 pb-1 flex flex-col items-center justify-start",
+                                      productDetailsTextColorClass,
+                                    ].join(" ")}
+                                  >
+                                    <div
+                                      className="font-semibold leading-tight tracking-wide text-center uppercase"
+                                      style={{ fontSize: globalFontSize }}
+                                    >
+                                      {displayNameForSlot(p, slot)}
+                                    </div>
+                                    <SlotStockPriceDisplay
+                                      slot={slot}
+                                      unitName={unitName}
+                                      fontSize={stockPriceFontSize}
+                                      stockLineClassName="mt-1 font-bold leading-snug text-center"
+                                      priceLineClassName="mt-0.5 font-bold leading-snug text-center"
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         ) : (
                           <div
@@ -3683,31 +3742,13 @@ export default function Home() {
                                     >
                                       {displayNameForSlot(p, slot)}
                                     </div>
-                                    <div
-                                      className="mt-2 font-bold leading-snug text-center"
-                                      style={{ fontSize: stockPriceFontSize }}
-                                    >
-                                      Stok{" "}
-                                      <span className="tabular-nums font-extrabold">
-                                        {slot?.stock?.trim()
-                                          ? slot.stock.trim()
-                                          : "—"}
-                                      </span>{" "}
-                                      <span className="font-extrabold">
-                                        {unitName?.trim() ? unitName.trim() : "m²"}
-                                      </span>
-                                    </div>
-                                    <div
-                                      className="mt-1 font-bold leading-snug text-center"
-                                      style={{ fontSize: stockPriceFontSize }}
-                                    >
-                                      <span className="tabular-nums font-extrabold">
-                                        {slot?.price?.trim()
-                                          ? slot.price.trim()
-                                          : "—"}
-                                      </span>{" "}
-                                      <span className="font-extrabold">+ KDV</span>
-                                    </div>
+                                    <SlotStockPriceDisplay
+                                      slot={slot}
+                                      unitName={unitName}
+                                      fontSize={stockPriceFontSize}
+                                      stockLineClassName={"mt-2 font-bold leading-snug text-center"}
+                                      priceLineClassName={"mt-1 font-bold leading-snug text-center"}
+                                    />
                                   </div>
                                 </div>
                               );
