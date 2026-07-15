@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toJpeg } from "html-to-image";
 import { jsPDF } from "jspdf";
-import { Images, RotateCcw, Search, Upload } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Images,
+  RotateCcw,
+  Search,
+  Upload,
+} from "lucide-react";
 
 type TemplateCount = 1 | 2 | 3 | 4 | 5 | 6 | 8;
 type ProductImageAspect = "square" | "threeTwo" | "video" | "parquet";
@@ -646,6 +653,42 @@ export default function Home() {
     setSlots((prev) =>
       prev.map((s, idx) => (idx === index ? { ...s, ...patch } : s)),
     );
+  }
+
+  function moveSlot(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= slots.length) return;
+
+    setSlots((prev) => {
+      const next = [...prev];
+      const tmp = next[index];
+      next[index] = next[target];
+      next[target] = tmp;
+      return next;
+    });
+
+    setImageErrorBySlot((prev) => {
+      const a = Boolean(prev[index]);
+      const b = Boolean(prev[target]);
+      if (!a && !b) return prev;
+      const next = { ...prev };
+      if (b) next[index] = true;
+      else delete next[index];
+      if (a) next[target] = true;
+      else delete next[target];
+      return next;
+    });
+
+    const remapIndex = (i: number | null) => {
+      if (i === null) return null;
+      if (i === index) return target;
+      if (i === target) return index;
+      return i;
+    };
+    setActiveSlotIndex((i) => remapIndex(i) ?? 0);
+    setLibraryPickerSlotIndex((i) => remapIndex(i));
+    setUploadingSlotIndex((i) => remapIndex(i));
+    setPendingUploadSlotIndex((i) => remapIndex(i));
   }
 
   async function refreshUploadLibrary() {
@@ -1921,6 +1964,27 @@ export default function Home() {
                         </button>
 
                         <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => moveSlot(idx, -1)}
+                            disabled={idx === 0}
+                            title="Yukarı taşı"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 disabled:bg-zinc-50 disabled:text-zinc-300"
+                          >
+                            <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveSlot(idx, 1)}
+                            disabled={idx === slots.length - 1}
+                            title="Aşağı taşı"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 disabled:bg-zinc-50 disabled:text-zinc-300"
+                          >
+                            <ChevronDown
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            />
+                          </button>
                           <button
                             type="button"
                             onClick={() => applyPriceToAll(idx)}
