@@ -1949,42 +1949,53 @@ export default function Home() {
                           : "border-zinc-200 bg-white",
                       ].join(" ")}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <button
-                          onClick={() => setActiveSlotIndex(idx)}
-                          className="text-left"
-                        >
-                          <div className="text-xs font-semibold text-zinc-500">
-                            Slot {idx + 1}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 flex-1 items-start gap-1.5">
+                          <div className="flex shrink-0 flex-col gap-0.5 pt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => moveSlot(idx, -1)}
+                              disabled={idx === 0}
+                              title="Yukarı taşı"
+                              aria-label="Yukarı taşı"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-100 disabled:border-zinc-100 disabled:bg-zinc-50 disabled:text-zinc-300"
+                            >
+                              <ChevronUp
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveSlot(idx, 1)}
+                              disabled={idx === slots.length - 1}
+                              title="Aşağı taşı"
+                              aria-label="Aşağı taşı"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-100 disabled:border-zinc-100 disabled:bg-zinc-50 disabled:text-zinc-300"
+                            >
+                              <ChevronDown
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              />
+                            </button>
                           </div>
-                          <div className="text-sm font-semibold text-zinc-900">
-                            {titleLine}
-                          </div>
-                          <div className="text-xs text-zinc-500">{subLine}</div>
-                        </button>
+                          <button
+                            onClick={() => setActiveSlotIndex(idx)}
+                            className="min-w-0 flex-1 text-left"
+                          >
+                            <div className="text-xs font-semibold text-zinc-500">
+                              Slot {idx + 1}
+                            </div>
+                            <div className="truncate text-sm font-semibold text-zinc-900">
+                              {titleLine}
+                            </div>
+                            <div className="truncate text-xs text-zinc-500">
+                              {subLine}
+                            </div>
+                          </button>
+                        </div>
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => moveSlot(idx, -1)}
-                            disabled={idx === 0}
-                            title="Yukarı taşı"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 disabled:bg-zinc-50 disabled:text-zinc-300"
-                          >
-                            <ChevronUp className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveSlot(idx, 1)}
-                            disabled={idx === slots.length - 1}
-                            title="Aşağı taşı"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 disabled:bg-zinc-50 disabled:text-zinc-300"
-                          >
-                            <ChevronDown
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            />
-                          </button>
+                        <div className="flex shrink-0 items-center gap-1">
                           <button
                             type="button"
                             onClick={() => applyPriceToAll(idx)}
