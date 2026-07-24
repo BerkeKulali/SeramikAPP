@@ -1132,42 +1132,6 @@ export default function Home() {
     );
   }
 
-  async function downloadCurrentPdf() {
-    const node = exportCanvasRef.current;
-    if (!node) return;
-    try {
-      setIsBuildingPdf(true);
-      setExportError(null);
-      await ensureExportImagesLoaded(node);
-      const dataUrl = await toJpeg(node, {
-        quality: 0.98,
-        pixelRatio: 2,
-        cacheBust: false,
-        backgroundColor: canvasBg,
-      });
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "px",
-        format: [CANVAS_W, CANVAS_H],
-        compress: true,
-      });
-      doc.addImage(dataUrl, "JPEG", 0, 0, CANVAS_W, CANVAS_H);
-      const raw = fileName.trim();
-      const safe = sanitizeFileComponent(raw);
-      const sizePart = (selectedTemplateSize || "").trim();
-      doc.save(
-        safe
-          ? `${sizePart ? `${sizePart}_` : ""}${safe}.pdf`
-          : "katalog-ciktisi.pdf",
-      );
-    } catch (e) {
-      setExportError(
-        `PDF oluşturulamadı: ${(e as Error)?.message ?? "bilinmeyen hata"}. Görsellerin yüklendiğinden emin olup tekrar deneyin.`,
-      );
-    } finally {
-      setIsBuildingPdf(false);
-    }
-  }
 
   function makeSnapshot(): DraftV1 {
     return {
@@ -1679,162 +1643,187 @@ export default function Home() {
         />
         <div className="h-full flex flex-col">
           <div className="p-5 border-b border-zinc-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold text-zinc-900">
-                  Kulalılar Katalog Studio
-                </div>
-                <div className="text-xs text-zinc-500">
-                  Siyah-beyaz, temiz katalog çıktısı
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-zinc-900">
+                    Kulalılar Katalog Studio
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    Siyah-beyaz, temiz katalog çıktısı
+                  </div>
                 </div>
                 <Link
                   href="/sales"
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50"
+                  className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50"
                 >
-                  Satışlar / Raporlar →
+                  Satışlar →
                 </Link>
-                <div className="mt-3">
-                  <label className="block text-[12px] font-montserrat font-bold text-zinc-900">
-                    Dosya Adı
-                  </label>
-                  <input
-                    value={fileName}
-                    onChange={(e) => setFileName(e.target.value)}
-                    placeholder="örn. Mavi-Picasso"
-                    className="mt-1 w-[220px] rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-zinc-400"
-                    aria-label="Dosya adı"
-                  />
-                </div>
-                <div className="mt-3">
-                  <label className="block text-[12px] font-montserrat font-bold text-zinc-900">
-                    Taslak Yükle
-                  </label>
-                  <input
-                    type="file"
-                    accept="application/json,.json"
-                    onChange={(e) => {
-                      const f = e.currentTarget.files?.[0];
-                      if (!f) return;
-                      void importDraftFile(f);
-                      e.currentTarget.value = "";
-                    }}
-                    className="mt-1 block w-[220px] text-xs text-zinc-600 file:mr-3 file:rounded-md file:border file:border-zinc-200 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-zinc-800 hover:file:bg-zinc-50"
-                    aria-label="Taslak yükle"
-                  />
-                </div>
-                <div className="mt-3">
-                  <label className="block text-[12px] font-montserrat font-bold text-zinc-900">
-                    PDF Kuyruğu Yükle
-                  </label>
-                  <input
-                    type="file"
-                    accept="application/json,.json"
-                    onChange={(e) => {
-                      const f = e.currentTarget.files?.[0];
-                      if (!f) return;
-                      void importPdfQueueFile(f);
-                      e.currentTarget.value = "";
-                    }}
-                    className="mt-1 block w-[220px] text-xs text-zinc-600 file:mr-3 file:rounded-md file:border file:border-zinc-200 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-zinc-800 hover:file:bg-zinc-50"
-                    aria-label="PDF kuyruğu yükle"
-                  />
-                </div>
               </div>
-              <div className="flex flex-col items-end gap-2">
+
+              <div>
+                <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">
+                  Dosya Adı
+                </label>
+                <input
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
+                  placeholder="örn. Mavi-Picasso"
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                  aria-label="Dosya adı"
+                />
+              </div>
+
+              <div>
+                <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-zinc-400">
+                  Dışa Aktar · bu afiş
+                </div>
                 <button
                   onClick={downloadJpg}
                   disabled={isDownloading || isBuildingPdf}
-                  className="inline-flex items-center gap-2 justify-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
                 >
                   <Icon name="download" className="h-4 w-4" />
-                  {isDownloading ? "İndiriliyor..." : "JPG İndir"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void downloadCurrentPdf()}
-                  disabled={isDownloading || isBuildingPdf}
-                  className="inline-flex items-center gap-2 justify-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
-                  title="Bu afişi tek sayfalık PDF olarak indir"
-                >
-                  <Icon name="download" className="h-4 w-4" />
-                  {isBuildingPdf ? "Hazırlanıyor..." : "PDF İndir (bu afiş)"}
+                  {isDownloading ? "İndiriliyor…" : "JPG İndir"}
                 </button>
                 {exportError ? (
-                  <div className="max-w-[220px] text-right text-[11px] text-red-600">
+                  <div className="mt-1.5 text-[11px] text-red-600">
                     {exportError}
                   </div>
                 ) : null}
+              </div>
+
+              <div>
+                <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-zinc-400">
+                  Studio Kayıt
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void saveDraftToCloud()}
+                    disabled={savingDraft || isDownloading || isBuildingPdf}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                    title="Afişi studio'ya (Cloudinary) kaydet"
+                  >
+                    {savingDraft ? "Kaydediliyor…" : "Kaydet"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openSavedModal}
+                    disabled={isDownloading || isBuildingPdf}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-60"
+                    title="Kayıtlı afişleri aç / ürün ismiyle ara"
+                  >
+                    Kayıtlı Afişler
+                  </button>
+                </div>
+                {draftSaveMsg ? (
+                  <div className="mt-1.5 text-[11px] text-blue-700">
+                    {draftSaveMsg}
+                  </div>
+                ) : null}
+              </div>
+
+              <div>
+                <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-zinc-400">
+                  Satış
+                </div>
                 <button
                   type="button"
                   onClick={openSellFromBannerModal}
                   disabled={isRecordingSale || isDownloading || isBuildingPdf}
-                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
                   title="Afişten satılan ürünleri seç ve kaydet"
                 >
                   Afişten satış kaydet…
                 </button>
                 {saleRecordMsg ? (
-                  <div className="max-w-[220px] text-right text-[11px] text-emerald-700">
+                  <div className="mt-1.5 text-[11px] text-emerald-700">
                     {saleRecordMsg}
                   </div>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={() => void addOrUpdatePdfQueueItem()}
-                  disabled={isDownloading || isBuildingPdf}
-                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
-                >
-                  {pdfEditingIndex != null ? "Sayfayı Güncelle" : "PDF Listesine Ekle"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void saveDraftToCloud()}
-                  disabled={savingDraft || isDownloading || isBuildingPdf}
-                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-100 disabled:opacity-60"
-                  title="Afişi studio'ya (Cloudinary) kaydet"
-                >
-                  {savingDraft ? "Kaydediliyor…" : "Studio'ya Kaydet"}
-                </button>
-                <button
-                  type="button"
-                  onClick={openSavedModal}
-                  disabled={isDownloading || isBuildingPdf}
-                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-blue-300 bg-white px-3 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-50 disabled:opacity-60"
-                  title="Kayıtlı afişleri aç / ürün ismiyle ara"
-                >
-                  Kayıtlı Afişler
-                </button>
-                {draftSaveMsg ? (
-                  <div className="max-w-[220px] text-right text-[11px] text-blue-700">
-                    {draftSaveMsg}
-                  </div>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={exportDraftJson}
-                  disabled={isDownloading || isBuildingPdf}
-                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50"
-                >
-                  Taslağı Kaydet (.json)
-                </button>
-                <button
-                  type="button"
-                  onClick={exportPdfQueueJson}
-                  disabled={pdfQueue.length === 0 || isDownloading || isBuildingPdf}
-                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
-                  title={pdfQueue.length === 0 ? "PDF kuyruğu boş" : "PDF kuyruğunu JSON olarak kaydet"}
-                >
-                  PDF Kuyruğunu Kaydet (.json)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void downloadPdfFromQueue()}
-                  disabled={pdfQueue.length === 0 || isDownloading || isBuildingPdf}
-                  className="inline-flex items-center gap-2 justify-center rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
-                  title={pdfQueue.length === 0 ? "PDF kuyruğu boş" : "PDF indir"}
-                >
-                  PDF İndir ({pdfQueue.length})
-                </button>
+              </div>
+
+              <div>
+                <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-zinc-400">
+                  PDF Kuyruğu · toplu katalog
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void addOrUpdatePdfQueueItem()}
+                    disabled={isDownloading || isBuildingPdf}
+                    className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+                  >
+                    {pdfEditingIndex != null ? "Sayfayı Güncelle" : "Listeye Ekle"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void downloadPdfFromQueue()}
+                    disabled={pdfQueue.length === 0 || isDownloading || isBuildingPdf}
+                    className="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
+                    title={pdfQueue.length === 0 ? "PDF kuyruğu boş" : "Kuyruğu PDF indir"}
+                  >
+                    PDF İndir ({pdfQueue.length})
+                  </button>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={exportPdfQueueJson}
+                    disabled={pdfQueue.length === 0 || isDownloading || isBuildingPdf}
+                    className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 disabled:opacity-50"
+                    title={pdfQueue.length === 0 ? "PDF kuyruğu boş" : "PDF kuyruğunu JSON olarak kaydet"}
+                  >
+                    Kuyruğu Kaydet
+                  </button>
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50">
+                    Kuyruğu Yükle
+                    <input
+                      type="file"
+                      accept="application/json,.json"
+                      onChange={(e) => {
+                        const f = e.currentTarget.files?.[0];
+                        if (!f) return;
+                        void importPdfQueueFile(f);
+                        e.currentTarget.value = "";
+                      }}
+                      className="hidden"
+                      aria-label="PDF kuyruğu yükle"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-zinc-400">
+                  Yerel Yedek · .json
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={exportDraftJson}
+                    disabled={isDownloading || isBuildingPdf}
+                    className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 disabled:opacity-60"
+                  >
+                    Taslağı Kaydet
+                  </button>
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50">
+                    Taslak Yükle
+                    <input
+                      type="file"
+                      accept="application/json,.json"
+                      onChange={(e) => {
+                        const f = e.currentTarget.files?.[0];
+                        if (!f) return;
+                        void importDraftFile(f);
+                        e.currentTarget.value = "";
+                      }}
+                      className="hidden"
+                      aria-label="Taslak yükle"
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
