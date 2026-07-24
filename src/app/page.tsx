@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toJpeg } from "html-to-image";
+import Link from "next/link";
 import { jsPDF } from "jspdf";
 import {
   ChevronDown,
@@ -374,6 +375,21 @@ function aspectClassForSize(sizeText: string) {
   return "aspect-[2/1]";
 }
 
+/** Türkçe biçimli sayıyı çözer: "1.250" -> 1250, "51,2" -> 51.2, "1.250,50" -> 1250.5 */
+function parseTrNumber(v: string): number {
+  let x = String(v ?? "").trim();
+  if (!x) return 0;
+  if (x.includes(",")) {
+    x = x.replace(/\./g, "").replace(",", ".");
+  } else {
+    const parts = x.split(".");
+    if (parts.length > 2) x = parts.join("");
+    else if (parts.length === 2 && parts[1].length === 3) x = parts.join("");
+  }
+  const n = parseFloat(x.replace(/[^0-9.\-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
 function aspectClassForProductImage(aspect: ProductImageAspect) {
   if (aspect === "square") return "aspect-square";
   if (aspect === "threeTwo") return "aspect-[3/2]";
@@ -501,6 +517,8 @@ export default function Home() {
   const [cloudinaryUiError, setCloudinaryUiError] = useState<string | null>(
     null,
   );
+  const [isRecordingSale, setIsRecordingSale] = useState(false);
+  const [saleRecordMsg, setSaleRecordMsg] = useState<string | null>(null);
   const slotFileInputRef = useRef<HTMLInputElement>(null);
   const [pendingUploadSlotIndex, setPendingUploadSlotIndex] = useState<
     number | null
@@ -856,6 +874,58 @@ export default function Home() {
     } finally {
       setUploadingSlotIndex(null);
       setPendingUploadSlotIndex(null);
+    }
+  }
+
+  async function recordBannerAsSales() {
+    const records = slots
+      .map((slot) => {
+        const p =
+          slot.productId != null ? productsById.get(slot.productId) : undefined;
+        const name = displayNameForSlot(p, slot);
+        if (!name || name === "\u2014") return null;
+        const size =
+          p?.size && p.size !== "katalog" ? p.size : selectedTemplateSize;
+        return {
+          date: new Date().toISOString().slice(0, 10),
+          productName: name,
+          brand: (p?.brand || selectedManufacturer || "").trim(),
+          size: String(size || "").trim(),
+          quantity: parseTrNumber(slot.stock),
+          unitPrice: parseTrNumber(slot.price),
+          customer: "",
+          note: "Afişten kaydedildi",
+          source: "banner" as const,
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
+
+    if (records.length === 0) {
+      setSaleRecordMsg("Afişte kayıtlı ürün yok.");
+      return;
+    }
+    try {
+      setIsRecordingSale(true);
+      setSaleRecordMsg(null);
+      const res = await fetch("/api/sales", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: records }),
+      });
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const body = (await res.json()) as { error?: string };
+          detail = body?.error ? ` \u2013 ${body.error}` : "";
+        } catch {}
+        throw new Error(`Kaydedilemedi (${res.status})${detail}`);
+      }
+      const data = (await res.json()) as { added?: number };
+      setSaleRecordMsg(`${data.added ?? records.length} satış kaydedildi \u2713`);
+    } catch (e) {
+      setSaleRecordMsg((e as Error)?.message ?? "Kaydedilemedi");
+    } finally {
+      setIsRecordingSale(false);
     }
   }
 
@@ -1384,6 +1454,12 @@ export default function Home() {
                 <div className="text-xs text-zinc-500">
                   Siyah-beyaz, temiz katalog çıktısı
                 </div>
+                <Link
+                  href="/sales"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50"
+                >
+                  Satışlar / Raporlar →
+                </Link>
                 <div className="mt-3">
                   <label className="block text-[12px] font-montserrat font-bold text-zinc-900">
                     Dosya Adı
@@ -1440,6 +1516,20 @@ export default function Home() {
                   <Icon name="download" className="h-4 w-4" />
                   {isDownloading ? "İndiriliyor..." : "JPG İndir"}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => void recordBannerAsSales()}
+                  disabled={isRecordingSale || isDownloading || isBuildingPdf}
+                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
+                  title="Afişteki ürünleri satış olarak kaydet"
+                >
+                  {isRecordingSale ? "Kaydediliyor…" : "Afişi satış olarak kaydet"}
+                </button>
+                {saleRecordMsg ? (
+                  <div className="max-w-[220px] text-right text-[11px] text-emerald-700">
+                    {saleRecordMsg}
+                  </div>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => void addOrUpdatePdfQueueItem()}
