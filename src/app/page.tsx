@@ -13,7 +13,12 @@ import {
 } from "lucide-react";
 
 type TemplateCount = 1 | 2 | 3 | 4 | 5 | 6 | 8;
-type ProductImageAspect = "square" | "threeTwo" | "video" | "parquet";
+type ProductImageAspect =
+  | "square"
+  | "threeTwo"
+  | "video"
+  | "parquet"
+  | "oneThree";
 
 type Product = {
   id: string;
@@ -373,6 +378,7 @@ function aspectClassForProductImage(aspect: ProductImageAspect) {
   if (aspect === "square") return "aspect-square";
   if (aspect === "threeTwo") return "aspect-[3/2]";
   if (aspect === "parquet") return "aspect-[6/1]";
+  if (aspect === "oneThree") return "aspect-[3/1]";
   // "video" seçeneği: 60x120 (1:2) yatay görsel oranı
   return "aspect-[2/1]";
 }
@@ -482,6 +488,13 @@ export default function Home() {
   const [libraryPickerSlotIndex, setLibraryPickerSlotIndex] = useState<
     number | null
   >(null);
+  const [libraryFolders, setLibraryFolders] = useState<
+    { name: string; path: string }[]
+  >([]);
+  const [librarySelectedFolder, setLibrarySelectedFolder] = useState<string>(
+    "banner-studio/uploads",
+  );
+  const [librarySearch, setLibrarySearch] = useState("");
   const [uploadingSlotIndex, setUploadingSlotIndex] = useState<number | null>(
     null,
   );
@@ -522,6 +535,16 @@ export default function Home() {
       return label.includes(q) || pid.includes(q);
     });
   }, [uploadLibraryItems, searchTerm]);
+
+  const libraryModalItems = useMemo(() => {
+    const q = librarySearch.trim().toLowerCase();
+    if (!q) return uploadLibraryItems;
+    return uploadLibraryItems.filter((item) => {
+      const label = cloudItemLabel(item).toLowerCase();
+      const pid = (item.publicId || "").toLowerCase();
+      return label.includes(q) || pid.includes(q);
+    });
+  }, [uploadLibraryItems, librarySearch]);
 
   const productsById = useMemo(() => {
     const map = new Map<string, Product>();
@@ -691,18 +714,42 @@ export default function Home() {
     setPendingUploadSlotIndex((i) => remapIndex(i));
   }
 
-  async function refreshUploadLibrary() {
+  async function refreshUploadLibrary(prefix?: string) {
     try {
       setIsLoadingUploadLibrary(true);
       setUploadLibraryError(null);
-      const res = await fetch("/api/uploads", { cache: "no-store" });
-      if (!res.ok) throw new Error(`Upload list failed: ${res.status}`);
+      const p = (prefix ?? librarySelectedFolder ?? "").trim();
+      const qs = p ? `?prefix=${encodeURIComponent(p)}` : "";
+      const res = await fetch(`/api/uploads${qs}`, { cache: "no-store" });
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const body = (await res.json()) as { error?: string };
+          detail = body?.error ? ` – ${body.error}` : "";
+        } catch {
+          // gövde okunamadı
+        }
+        throw new Error(`Kütüphane yüklenemedi (${res.status})${detail}`);
+      }
       const data = (await res.json()) as { items?: UploadLibraryItem[] };
       setUploadLibraryItems(Array.isArray(data?.items) ? data.items : []);
     } catch (e) {
       setUploadLibraryError((e as Error)?.message ?? "Upload list failed");
     } finally {
       setIsLoadingUploadLibrary(false);
+    }
+  }
+
+  async function fetchLibraryFolders() {
+    try {
+      const res = await fetch("/api/uploads/folders", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        folders?: { name: string; path: string }[];
+      };
+      setLibraryFolders(Array.isArray(data?.folders) ? data.folders : []);
+    } catch {
+      // klasör listesi alınamazsa sessizce geç
     }
   }
 
@@ -778,7 +825,9 @@ export default function Home() {
     setUploadLibraryError(null);
     setLibraryPickerSlotIndex(idx);
     setIsUploadLibraryOpen(true);
-    void refreshUploadLibrary();
+    setLibrarySearch("");
+    void fetchLibraryFolders();
+    void refreshUploadLibrary(librarySelectedFolder);
   }
 
   function closeUploadLibraryModal() {
@@ -960,7 +1009,8 @@ export default function Home() {
       d.productImageAspect === "square" ||
       d.productImageAspect === "threeTwo" ||
       d.productImageAspect === "video" ||
-      d.productImageAspect === "parquet"
+      d.productImageAspect === "parquet" ||
+      d.productImageAspect === "oneThree"
         ? d.productImageAspect
         : "square";
 
@@ -1154,7 +1204,8 @@ export default function Home() {
       parsed.productImageAspect === "square" ||
       parsed.productImageAspect === "threeTwo" ||
       parsed.productImageAspect === "video" ||
-      parsed.productImageAspect === "parquet"
+      parsed.productImageAspect === "parquet" ||
+      parsed.productImageAspect === "oneThree"
         ? parsed.productImageAspect
         : "square";
 
@@ -1249,7 +1300,8 @@ export default function Home() {
         parsed.productImageAspect === "square" ||
         parsed.productImageAspect === "threeTwo" ||
         parsed.productImageAspect === "video" ||
-        parsed.productImageAspect === "parquet"
+        parsed.productImageAspect === "parquet" ||
+        parsed.productImageAspect === "oneThree"
           ? parsed.productImageAspect
           : productImageAspect;
 
@@ -1686,6 +1738,7 @@ export default function Home() {
                 <option value="square">Kare (1:1)</option>
                 <option value="threeTwo">Yatay (3:2)</option>
                 <option value="video">60×120 (1:2)</option>
+                <option value="oneThree">Dikey 1:3 (30×90 / 40×120)</option>
                 <option value="parquet">Parke (1:6)</option>
               </select>
             </section>
@@ -2352,6 +2405,43 @@ export default function Home() {
                   </button>
                 </div>
               </div>
+              <div className="flex flex-col gap-2 border-b border-zinc-100 px-4 py-2.5 sm:flex-row sm:items-center">
+                <select
+                  value={librarySelectedFolder}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setLibrarySelectedFolder(v);
+                    setLibrarySearch("");
+                    void refreshUploadLibrary(v);
+                  }}
+                  className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-800 outline-none focus:border-zinc-400 sm:w-52"
+                  aria-label="Klasör"
+                >
+                  {(libraryFolders.some(
+                    (f) => f.path === librarySelectedFolder,
+                  )
+                    ? libraryFolders
+                    : [
+                        {
+                          name: librarySelectedFolder,
+                          path: librarySelectedFolder,
+                        },
+                        ...libraryFolders,
+                      ]
+                  ).map((f) => (
+                    <option key={f.path} value={f.path}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={librarySearch}
+                  onChange={(e) => setLibrarySearch(e.target.value)}
+                  placeholder="Görsel adı ara…"
+                  className="w-full flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-zinc-400"
+                  aria-label="Kütüphanede ara"
+                />
+              </div>
               {uploadLibraryError ? (
                 <div className="border-b border-red-100 bg-red-50 px-4 py-2 text-xs text-red-800">
                   {uploadLibraryError}
@@ -2364,12 +2454,16 @@ export default function Home() {
                   </div>
                 ) : uploadLibraryItems.length === 0 ? (
                   <div className="px-2 py-8 text-center text-sm text-zinc-500">
-                    Henüz yükleme yok. Önce bu slota &quot;Yükle&quot; ile görsel
-                    gönderin.
+                    Bu klasörde görsel yok. Başka klasör seçin ya da bu slota
+                    &quot;Yükle&quot; ile görsel gönderin.
+                  </div>
+                ) : libraryModalItems.length === 0 ? (
+                  <div className="px-2 py-8 text-center text-sm text-zinc-500">
+                    &quot;{librarySearch}&quot; ile eşleşen görsel yok.
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {uploadLibraryItems.map((item) => (
+                    {libraryModalItems.map((item) => (
                       <button
                         key={item.publicId}
                         type="button"
@@ -2750,6 +2844,90 @@ export default function Home() {
                                   );
                                 })}
                               </div>
+                            </div>
+                          </div>
+                        ) : selectedTemplate === 3 &&
+                          productImageAspect === "oneThree" ? (
+                          <div className="h-full w-full flex items-center justify-center overflow-hidden">
+                            <div className="w-full flex flex-col items-center justify-center gap-y-12 py-10">
+                              {[0, 1, 2].map((idx) => {
+                                const slot = slots[idx];
+                                const p =
+                                  slot?.productId != null
+                                    ? productsById.get(slot.productId)
+                                    : undefined;
+                                const hasImageError = Boolean(imageErrorBySlot[idx]);
+                                const stockPriceFontSize = Math.max(
+                                  14,
+                                  Math.round(globalFontSize * 0.9),
+                                );
+                                const aspectClass = aspectClassForProductImage(
+                                  productImageAspect,
+                                );
+
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="w-full flex flex-col items-center"
+                                    style={{ background: canvasBg }}
+                                  >
+                                    <div className="w-full max-w-[860px] overflow-hidden flex items-center justify-center">
+                                      <div
+                                        className={[
+                                          "w-full overflow-hidden",
+                                          aspectClass,
+                                        ].join(" ")}
+                                      >
+                                        {imageSrcForSlot(p, slot) && !hasImageError ? (
+                                          <img
+                                            src={imageSrcForSlot(p, slot)}
+                                            alt={displayNameForSlot(p, slot)}
+                                            crossOrigin="anonymous"
+                                            className="h-full w-full object-cover object-center"
+                                            onError={() =>
+                                              setImageErrorBySlot((prev) => ({
+                                                ...prev,
+                                                [idx]: true,
+                                              }))
+                                            }
+                                            onLoad={() =>
+                                              setImageErrorBySlot((prev) => {
+                                                if (!prev[idx]) return prev;
+                                                const next = { ...prev };
+                                                delete next[idx];
+                                                return next;
+                                              })
+                                            }
+                                          />
+                                        ) : (
+                                          <div className="h-full w-full" />
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div
+                                      className={[
+                                        "px-2 pt-3 pb-0 flex flex-col items-center gap-y-1",
+                                        productDetailsTextColorClass,
+                                      ].join(" ")}
+                                    >
+                                      <div
+                                        className="font-semibold leading-tight tracking-wide text-center uppercase"
+                                        style={{ fontSize: globalFontSize }}
+                                      >
+                                        {displayNameForSlot(p, slot)}
+                                      </div>
+                                      <SlotStockPriceDisplay
+                                        slot={slot}
+                                        unitName={unitName}
+                                        fontSize={stockPriceFontSize}
+                                        stockLineClassName={"font-bold leading-tight text-center"}
+                                        priceLineClassName={"font-bold leading-tight text-center"}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         ) : selectedTemplate === 3 && productImageAspect === "video" ? (
@@ -3384,7 +3562,8 @@ export default function Home() {
                             </div>
                           </div>
                         ) : selectedTemplate === 5 &&
-                          productImageAspect === "video" ? (
+                          (productImageAspect === "video" ||
+                            productImageAspect === "oneThree") ? (
                           <div className="h-full w-full flex items-start justify-center overflow-hidden">
                             <div className="w-full h-full flex flex-col overflow-hidden pt-4 pb-8">
                               <div
@@ -3657,7 +3836,8 @@ export default function Home() {
                             </div>
                           </div>
                         ) : selectedTemplate === 6 &&
-                          productImageAspect === "video" ? (
+                          (productImageAspect === "video" ||
+                            productImageAspect === "oneThree") ? (
                           <div
                             className="box-border h-full grid gap-x-6 gap-y-6 py-10"
                             style={{

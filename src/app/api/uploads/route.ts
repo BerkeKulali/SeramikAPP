@@ -93,11 +93,17 @@ async function listImageResourcesByPrefix(prefix: string): Promise<any[]> {
   return all;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     initCloudinary();
 
-    const resources = await listImageResourcesByPrefix(FOLDER);
+    const url = new URL(req.url);
+    const prefixParam = (url.searchParams.get("prefix") ?? "").trim();
+    // Güvenlik: sadece makul uzunlukta klasör yolu kabul et; yoksa varsayılan.
+    const prefix =
+      prefixParam && prefixParam.length <= 200 ? prefixParam : FOLDER;
+
+    const resources = await listImageResourcesByPrefix(prefix);
     const items = resources.map((r: any) => {
       const originalFilename = String(r.original_filename ?? "");
       const displayName = displayNameForResource({
@@ -116,7 +122,7 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ folder: FOLDER, items });
+    return NextResponse.json({ folder: prefix, items });
   } catch (e) {
     return NextResponse.json(
       { error: (e as Error)?.message ?? "Upload list failed" },
