@@ -21,6 +21,26 @@ type ProductImageAspect =
   | "parquet"
   | "oneThree";
 
+type DraftSummary = {
+  id: string;
+  title: string;
+  savedAt: string;
+  size: string;
+  manufacturer: string;
+  productNames: string[];
+};
+
+type SellRow = {
+  slotIndex: number;
+  selected: boolean;
+  productName: string;
+  brand: string;
+  size: string;
+  quantity: string;
+  unitPrice: string;
+  note: string;
+};
+
 type Product = {
   id: string;
   name: string;
@@ -519,6 +539,20 @@ export default function Home() {
   );
   const [isRecordingSale, setIsRecordingSale] = useState(false);
   const [saleRecordMsg, setSaleRecordMsg] = useState<string | null>(null);
+  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+  const [sellCustomer, setSellCustomer] = useState("");
+  const [sellDate, setSellDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [sellRows, setSellRows] = useState<SellRow[]>([]);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [isSavedOpen, setIsSavedOpen] = useState(false);
+  const [savedItems, setSavedItems] = useState<DraftSummary[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [savedError, setSavedError] = useState<string | null>(null);
+  const [savedSearch, setSavedSearch] = useState("");
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSaveMsg, setDraftSaveMsg] = useState<string | null>(null);
   const slotFileInputRef = useRef<HTMLInputElement>(null);
   const [pendingUploadSlotIndex, setPendingUploadSlotIndex] = useState<
     number | null
@@ -877,33 +911,60 @@ export default function Home() {
     }
   }
 
-  async function recordBannerAsSales() {
-    const records = slots
-      .map((slot) => {
-        const p =
-          slot.productId != null ? productsById.get(slot.productId) : undefined;
-        const name = displayNameForSlot(p, slot);
-        if (!name || name === "\u2014") return null;
-        const size =
-          p?.size && p.size !== "katalog" ? p.size : selectedTemplateSize;
-        return {
-          date: new Date().toISOString().slice(0, 10),
-          productName: name,
-          brand: (p?.brand || selectedManufacturer || "").trim(),
-          size: String(size || "").trim(),
-          quantity: parseTrNumber(slot.stock),
-          unitPrice: parseTrNumber(slot.price),
-          customer: "",
-          note: "Afişten kaydedildi",
-          source: "banner" as const,
-        };
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null);
-
-    if (records.length === 0) {
+  function openSellFromBannerModal() {
+    const rows: SellRow[] = [];
+    slots.forEach((slot, idx) => {
+      const p =
+        slot.productId != null ? productsById.get(slot.productId) : undefined;
+      const name = displayNameForSlot(p, slot);
+      if (!name || name === "\u2014") return;
+      const size =
+        p?.size && p.size !== "katalog" ? p.size : selectedTemplateSize;
+      rows.push({
+        slotIndex: idx,
+        selected: true,
+        productName: name,
+        brand: (p?.brand || selectedManufacturer || "").trim(),
+        size: String(size || "").trim(),
+        quantity: slot.stock || "",
+        unitPrice: slot.price || "",
+        note: "",
+      });
+    });
+    if (rows.length === 0) {
       setSaleRecordMsg("Afişte kayıtlı ürün yok.");
       return;
     }
+    setSellRows(rows);
+    setSellCustomer("");
+    setSellDate(new Date().toISOString().slice(0, 10));
+    setSaleRecordMsg(null);
+    setIsSellModalOpen(true);
+  }
+
+  function updateSellRow(slotIndex: number, patch: Partial<SellRow>) {
+    setSellRows((prev) =>
+      prev.map((r) => (r.slotIndex === slotIndex ? { ...r, ...patch } : r)),
+    );
+  }
+
+  async function saveSelectedSales() {
+    const chosen = sellRows.filter((r) => r.selected);
+    if (chosen.length === 0) {
+      setSaleRecordMsg("En az bir ürün seçin.");
+      return;
+    }
+    const records = chosen.map((r) => ({
+      date: sellDate || new Date().toISOString().slice(0, 10),
+      productName: r.productName,
+      brand: r.brand.trim(),
+      size: r.size.trim(),
+      quantity: parseTrNumber(r.quantity),
+      unitPrice: parseTrNumber(r.unitPrice),
+      customer: sellCustomer.trim(),
+      note: r.note.trim(),
+      source: "banner" as const,
+    }));
     try {
       setIsRecordingSale(true);
       setSaleRecordMsg(null);
@@ -921,6 +982,7 @@ export default function Home() {
         throw new Error(`Kaydedilemedi (${res.status})${detail}`);
       }
       const data = (await res.json()) as { added?: number };
+      setIsSellModalOpen(false);
       setSaleRecordMsg(`${data.added ?? records.length} satış kaydedildi \u2713`);
     } catch (e) {
       setSaleRecordMsg((e as Error)?.message ?? "Kaydedilemedi");
@@ -1025,10 +1087,12 @@ export default function Home() {
 
     try {
       setIsDownloading(true);
+      setExportError(null);
+      await ensureExportImagesLoaded(node);
       const dataUrl = await toJpeg(node, {
         quality: 0.98,
         pixelRatio: 2,
-        cacheBust: true,
+        cacheBust: false,
         backgroundColor: canvasBg,
       });
 
@@ -1041,8 +1105,67 @@ export default function Home() {
         : "katalog-ciktisi.jpg";
       a.href = dataUrl;
       a.click();
+    } catch (e) {
+      setExportError(
+        `JPG oluşturulamadı: ${(e as Error)?.message ?? "bilinmeyen hata"}. Görsellerin yüklendiğinden emin olup tekrar deneyin.`,
+      );
     } finally {
       setIsDownloading(false);
+    }
+  }
+
+  // Export öncesi tüm görsellerin yüklendiğinden emin ol (yarım yüklenen görsel export'u bozar).
+  async function ensureExportImagesLoaded(node: HTMLElement) {
+    const imgs = Array.from(node.querySelectorAll("img"));
+    await Promise.all(
+      imgs.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete && img.naturalWidth > 0) return resolve();
+            const done = () => resolve();
+            img.addEventListener("load", done, { once: true });
+            img.addEventListener("error", done, { once: true });
+            // güvenlik zaman aşımı
+            setTimeout(done, 4000);
+          }),
+      ),
+    );
+  }
+
+  async function downloadCurrentPdf() {
+    const node = exportCanvasRef.current;
+    if (!node) return;
+    try {
+      setIsBuildingPdf(true);
+      setExportError(null);
+      await ensureExportImagesLoaded(node);
+      const dataUrl = await toJpeg(node, {
+        quality: 0.98,
+        pixelRatio: 2,
+        cacheBust: false,
+        backgroundColor: canvasBg,
+      });
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "px",
+        format: [CANVAS_W, CANVAS_H],
+        compress: true,
+      });
+      doc.addImage(dataUrl, "JPEG", 0, 0, CANVAS_W, CANVAS_H);
+      const raw = fileName.trim();
+      const safe = sanitizeFileComponent(raw);
+      const sizePart = (selectedTemplateSize || "").trim();
+      doc.save(
+        safe
+          ? `${sizePart ? `${sizePart}_` : ""}${safe}.pdf`
+          : "katalog-ciktisi.pdf",
+      );
+    } catch (e) {
+      setExportError(
+        `PDF oluşturulamadı: ${(e as Error)?.message ?? "bilinmeyen hata"}. Görsellerin yüklendiğinden emin olup tekrar deneyin.`,
+      );
+    } finally {
+      setIsBuildingPdf(false);
     }
   }
 
@@ -1180,10 +1303,11 @@ export default function Home() {
         await new Promise<void>((r) => requestAnimationFrame(() => r()));
         await new Promise<void>((r) => requestAnimationFrame(() => r()));
 
+        await ensureExportImagesLoaded(node);
         const dataUrl = await toJpeg(node, {
           quality: 0.98,
           pixelRatio: 2,
-          cacheBust: true,
+          cacheBust: false,
           backgroundColor: normalizeHexColor(item.snapshot.canvasBgColor),
         });
 
@@ -1196,6 +1320,115 @@ export default function Home() {
       applySnapshot(original);
       setPdfEditingIndex(null);
       setIsBuildingPdf(false);
+    }
+  }
+
+  function currentProductNames(): string[] {
+    const names: string[] = [];
+    for (const slot of slots) {
+      const p =
+        slot.productId != null ? productsById.get(slot.productId) : undefined;
+      const name = displayNameForSlot(p, slot);
+      if (name && name !== "\u2014") names.push(name);
+    }
+    return names;
+  }
+
+  async function saveDraftToCloud() {
+    try {
+      setSavingDraft(true);
+      setDraftSaveMsg(null);
+      const draft = makeSnapshot();
+      const title =
+        fileName.trim() ||
+        `${selectedTemplateSize} ${selectedManufacturer}`.trim();
+      const res = await fetch("/api/drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          size: selectedTemplateSize,
+          manufacturer: selectedManufacturer,
+          productNames: currentProductNames(),
+          draft,
+        }),
+      });
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const body = (await res.json()) as { error?: string };
+          detail = body?.error ? ` \u2013 ${body.error}` : "";
+        } catch {}
+        throw new Error(`Kaydedilemedi (${res.status})${detail}`);
+      }
+      const data = (await res.json()) as { items?: DraftSummary[] };
+      if (Array.isArray(data?.items)) setSavedItems(data.items);
+      setDraftSaveMsg("Studio'ya kaydedildi \u2713");
+    } catch (e) {
+      setDraftSaveMsg((e as Error)?.message ?? "Kaydedilemedi");
+    } finally {
+      setSavingDraft(false);
+    }
+  }
+
+  async function refreshSavedDrafts() {
+    try {
+      setSavedLoading(true);
+      setSavedError(null);
+      const res = await fetch("/api/drafts", { cache: "no-store" });
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const body = (await res.json()) as { error?: string };
+          detail = body?.error ? ` \u2013 ${body.error}` : "";
+        } catch {}
+        throw new Error(`Liste alınamadı (${res.status})${detail}`);
+      }
+      const data = (await res.json()) as { items?: DraftSummary[] };
+      setSavedItems(Array.isArray(data?.items) ? data.items : []);
+    } catch (e) {
+      setSavedError((e as Error)?.message ?? "Liste alınamadı");
+    } finally {
+      setSavedLoading(false);
+    }
+  }
+
+  function openSavedModal() {
+    setSavedError(null);
+    setSavedSearch("");
+    setIsSavedOpen(true);
+    void refreshSavedDrafts();
+  }
+
+  async function openSavedDraft(id: string) {
+    try {
+      setSavedError(null);
+      const res = await fetch(`/api/drafts?id=${encodeURIComponent(id)}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`Afiş açılamadı (${res.status})`);
+      const data = (await res.json()) as { draft?: unknown };
+      const normalized = normalizeDraftLike(data?.draft);
+      if (!normalized) throw new Error("Afiş verisi geçersiz");
+      applySnapshot(normalized);
+      setIsSavedOpen(false);
+    } catch (e) {
+      setSavedError((e as Error)?.message ?? "Afiş açılamadı");
+    }
+  }
+
+  async function deleteSavedDraft(id: string) {
+    if (!confirm("Bu kayıtlı afiş silinsin mi?")) return;
+    try {
+      setSavedError(null);
+      const res = await fetch(`/api/drafts?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(`Silinemedi (${res.status})`);
+      const data = (await res.json()) as { items?: DraftSummary[] };
+      setSavedItems(Array.isArray(data?.items) ? data.items : []);
+    } catch (e) {
+      setSavedError((e as Error)?.message ?? "Silinemedi");
     }
   }
 
@@ -1518,12 +1751,27 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => void recordBannerAsSales()}
+                  onClick={() => void downloadCurrentPdf()}
+                  disabled={isDownloading || isBuildingPdf}
+                  className="inline-flex items-center gap-2 justify-center rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
+                  title="Bu afişi tek sayfalık PDF olarak indir"
+                >
+                  <Icon name="download" className="h-4 w-4" />
+                  {isBuildingPdf ? "Hazırlanıyor..." : "PDF İndir (bu afiş)"}
+                </button>
+                {exportError ? (
+                  <div className="max-w-[220px] text-right text-[11px] text-red-600">
+                    {exportError}
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={openSellFromBannerModal}
                   disabled={isRecordingSale || isDownloading || isBuildingPdf}
                   className="inline-flex items-center gap-2 justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
-                  title="Afişteki ürünleri satış olarak kaydet"
+                  title="Afişten satılan ürünleri seç ve kaydet"
                 >
-                  {isRecordingSale ? "Kaydediliyor…" : "Afişi satış olarak kaydet"}
+                  Afişten satış kaydet…
                 </button>
                 {saleRecordMsg ? (
                   <div className="max-w-[220px] text-right text-[11px] text-emerald-700">
@@ -1538,6 +1786,29 @@ export default function Home() {
                 >
                   {pdfEditingIndex != null ? "Sayfayı Güncelle" : "PDF Listesine Ekle"}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => void saveDraftToCloud()}
+                  disabled={savingDraft || isDownloading || isBuildingPdf}
+                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-100 disabled:opacity-60"
+                  title="Afişi studio'ya (Cloudinary) kaydet"
+                >
+                  {savingDraft ? "Kaydediliyor…" : "Studio'ya Kaydet"}
+                </button>
+                <button
+                  type="button"
+                  onClick={openSavedModal}
+                  disabled={isDownloading || isBuildingPdf}
+                  className="inline-flex items-center gap-2 justify-center rounded-lg border border-blue-300 bg-white px-3 py-2 text-xs font-semibold text-blue-800 hover:bg-blue-50 disabled:opacity-60"
+                  title="Kayıtlı afişleri aç / ürün ismiyle ara"
+                >
+                  Kayıtlı Afişler
+                </button>
+                {draftSaveMsg ? (
+                  <div className="max-w-[220px] text-right text-[11px] text-blue-700">
+                    {draftSaveMsg}
+                  </div>
+                ) : null}
                 <button
                   type="button"
                   onClick={exportDraftJson}
@@ -2588,6 +2859,304 @@ export default function Home() {
             </div>
           </div>
         ) : null}
+
+        {isSellModalOpen ? (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setIsSellModalOpen(false)}
+          >
+            <div
+              className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-zinc-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-4 py-3">
+                <div>
+                  <div className="text-sm font-semibold text-zinc-900">
+                    Afişten satış kaydet
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    Satılan ürünleri seçin, miktarı (m²) gerekirse düzeltin. Kısmi
+                    satışlarda miktarı azaltmanız yeterli.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSellModalOpen(false)}
+                  className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50"
+                >
+                  Kapat
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-end gap-3 border-b border-zinc-100 px-4 py-2.5">
+                <label className="text-xs font-semibold text-zinc-600">
+                  Tarih
+                  <input
+                    type="date"
+                    value={sellDate}
+                    onChange={(e) => setSellDate(e.target.value)}
+                    className="mt-1 block rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-zinc-400"
+                  />
+                </label>
+                <label className="flex-1 text-xs font-semibold text-zinc-600">
+                  Müşteri (opsiyonel)
+                  <input
+                    value={sellCustomer}
+                    onChange={(e) => setSellCustomer(e.target.value)}
+                    placeholder="örn. Ahmet Yılmaz"
+                    className="mt-1 block w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-zinc-400"
+                  />
+                </label>
+              </div>
+
+              <div className="min-h-[120px] flex-1 overflow-y-auto p-3">
+                <div className="flex flex-col gap-2">
+                  {sellRows.map((r) => {
+                    const lineTotal =
+                      parseTrNumber(r.quantity) * parseTrNumber(r.unitPrice);
+                    return (
+                      <div
+                        key={r.slotIndex}
+                        className={[
+                          "rounded-xl border p-2.5",
+                          r.selected
+                            ? "border-emerald-300 bg-emerald-50/40"
+                            : "border-zinc-200 bg-zinc-50",
+                        ].join(" ")}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <input
+                            type="checkbox"
+                            checked={r.selected}
+                            onChange={(e) =>
+                              updateSellRow(r.slotIndex, {
+                                selected: e.target.checked,
+                              })
+                            }
+                            className="mt-1 h-4 w-4"
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm font-semibold text-zinc-900">
+                              {r.productName}
+                            </div>
+                            <div className="text-[11px] text-zinc-500">
+                              {[r.brand, r.size].filter(Boolean).join(" • ")}
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-end gap-2">
+                              <label className="text-[11px] font-semibold text-zinc-600">
+                                Miktar (m²)
+                                <input
+                                  inputMode="decimal"
+                                  value={r.quantity}
+                                  onChange={(e) =>
+                                    updateSellRow(r.slotIndex, {
+                                      quantity: e.target.value,
+                                    })
+                                  }
+                                  className="mt-0.5 block w-24 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm outline-none focus:border-zinc-400"
+                                />
+                              </label>
+                              <label className="text-[11px] font-semibold text-zinc-600">
+                                Birim Fiyat (₺)
+                                <input
+                                  inputMode="decimal"
+                                  value={r.unitPrice}
+                                  onChange={(e) =>
+                                    updateSellRow(r.slotIndex, {
+                                      unitPrice: e.target.value,
+                                    })
+                                  }
+                                  className="mt-0.5 block w-24 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm outline-none focus:border-zinc-400"
+                                />
+                              </label>
+                              <div className="text-[11px] font-semibold text-zinc-600">
+                                Satır Toplam
+                                <div className="mt-0.5 rounded-lg bg-white px-2 py-1 text-sm font-bold text-zinc-900 ring-1 ring-zinc-200">
+                                  {lineTotal.toLocaleString("tr-TR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}{" "}
+                                  ₺
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t border-zinc-100 px-4 py-3">
+                <div className="text-xs text-zinc-600">
+                  Seçili:{" "}
+                  <span className="font-bold text-zinc-900">
+                    {sellRows.filter((r) => r.selected).length}
+                  </span>{" "}
+                  ürün • Toplam:{" "}
+                  <span className="font-bold text-emerald-700">
+                    {sellRows
+                      .filter((r) => r.selected)
+                      .reduce(
+                        (acc, r) =>
+                          acc +
+                          parseTrNumber(r.quantity) * parseTrNumber(r.unitPrice),
+                        0,
+                      )
+                      .toLocaleString("tr-TR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                    ₺
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void saveSelectedSales()}
+                  disabled={isRecordingSale}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {isRecordingSale ? "Kaydediliyor…" : "Seçilenleri kaydet"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {isSavedOpen ? (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setIsSavedOpen(false)}
+          >
+            <div
+              className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-zinc-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-4 py-3">
+                <div>
+                  <div className="text-sm font-semibold text-zinc-900">
+                    Kayıtlı Afişler
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    Ürün ismiyle arayın, açmak için tıklayın.
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void refreshSavedDrafts()}
+                    disabled={savedLoading}
+                    className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                  >
+                    Yenile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsSavedOpen(false)}
+                    className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50"
+                  >
+                    Kapat
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-b border-zinc-100 px-4 py-2.5">
+                <input
+                  value={savedSearch}
+                  onChange={(e) => setSavedSearch(e.target.value)}
+                  placeholder="Ürün adı, başlık, marka ara…"
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-zinc-400"
+                  aria-label="Kayıtlı afişlerde ara"
+                />
+              </div>
+
+              {savedError ? (
+                <div className="border-b border-red-100 bg-red-50 px-4 py-2 text-xs text-red-800">
+                  {savedError}
+                </div>
+              ) : null}
+
+              <div className="min-h-[160px] flex-1 overflow-y-auto p-3">
+                {(() => {
+                  const q = savedSearch.trim().toLowerCase();
+                  const list = q
+                    ? savedItems.filter((d) => {
+                        const hay = `${d.title} ${d.manufacturer} ${d.size} ${d.productNames.join(" ")}`.toLowerCase();
+                        return hay.includes(q);
+                      })
+                    : savedItems;
+                  if (savedLoading && savedItems.length === 0) {
+                    return (
+                      <div className="px-2 py-8 text-center text-sm text-zinc-500">
+                        Yükleniyor…
+                      </div>
+                    );
+                  }
+                  if (savedItems.length === 0) {
+                    return (
+                      <div className="px-2 py-8 text-center text-sm text-zinc-500">
+                        Henüz kayıtlı afiş yok. &quot;Studio&apos;ya Kaydet&quot;
+                        ile kaydedin.
+                      </div>
+                    );
+                  }
+                  if (list.length === 0) {
+                    return (
+                      <div className="px-2 py-8 text-center text-sm text-zinc-500">
+                        &quot;{savedSearch}&quot; ile eşleşen afiş yok.
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex flex-col gap-2">
+                      {list.map((d) => (
+                        <div
+                          key={d.id}
+                          className="flex items-start justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-3 hover:border-zinc-300"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => void openSavedDraft(d.id)}
+                            className="min-w-0 flex-1 text-left"
+                          >
+                            <div className="truncate text-sm font-semibold text-zinc-900">
+                              {d.title || "Afiş"}
+                            </div>
+                            <div className="mt-0.5 text-[11px] text-zinc-500">
+                              {[d.size, d.manufacturer]
+                                .filter(Boolean)
+                                .join(" • ")}
+                              {d.savedAt
+                                ? ` • ${new Date(d.savedAt).toLocaleString("tr-TR")}`
+                                : ""}
+                            </div>
+                            {d.productNames.length ? (
+                              <div className="mt-1 line-clamp-2 text-[11px] text-zinc-600">
+                                {d.productNames.join(", ")}
+                              </div>
+                            ) : null}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void deleteSavedDraft(d.id)}
+                            className="shrink-0 rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-500 hover:border-red-300 hover:text-red-600"
+                          >
+                            Sil
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </aside>
 
       <main className="flex-1 bg-zinc-100">
@@ -2641,7 +3210,6 @@ export default function Home() {
                                       src={selectedLogoSrc}
                                       alt="KULALILAR"
                                       className="block w-auto object-contain"
-                                      crossOrigin="anonymous"
                                       style={{
                                         height: `${BASE_LOGO_HEIGHT_PX}px`,
                                         transform: `scale(${FIXED_LOGO_SCALE})`,
