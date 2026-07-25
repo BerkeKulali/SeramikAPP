@@ -27,6 +27,7 @@ type DraftSummary = {
   savedAt: string;
   size: string;
   manufacturer: string;
+  pageCount: number;
   productNames: string[];
 };
 
@@ -85,14 +86,14 @@ export async function GET(req: Request) {
     const id = str(url.searchParams.get("id"));
 
     if (id) {
-      const draft = await readRawJson<Record<string, unknown> | null>(
+      const catalog = await readRawJson<Record<string, unknown> | null>(
         `${DRAFTS_DIR}/${id}.json`,
         null,
       );
-      if (!draft) {
+      if (!catalog) {
         return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
       }
-      return NextResponse.json({ draft });
+      return NextResponse.json({ catalog });
     }
 
     const index = await readRawJson<DraftSummary[]>(INDEX_ID, []);
@@ -104,7 +105,7 @@ export async function GET(req: Request) {
     );
   } catch (e) {
     return NextResponse.json(
-      { error: (e as Error)?.message ?? "Drafts read failed" },
+      { error: (e as Error)?.message ?? "Catalogs read failed" },
       { status: 500 },
     );
   }
@@ -118,40 +119,54 @@ export async function POST(req: Request) {
       title?: string;
       size?: string;
       manufacturer?: string;
+      pageCount?: number;
       productNames?: string[];
+      catalog?: unknown;
       draft?: unknown;
     };
 
-    if (!body || typeof body.draft !== "object" || body.draft === null) {
-      return NextResponse.json({ error: "draft gerekli" }, { status: 400 });
+    const catalog = body.catalog ?? body.draft;
+    if (!body || typeof catalog !== "object" || catalog === null) {
+      return NextResponse.json({ error: "catalog gerekli" }, { status: 400 });
     }
 
-    const id = str(body.id) || makeId();
+    const title = str(body.title) || "Katalog";
+    const index = await readRawJson<DraftSummary[]>(INDEX_ID, []);
+    const list = Array.isArray(index) ? index : [];
+
+    // id: gövdede varsa onu kullan; yoksa aynı BAŞLIKLA eşleşeni bul (üzerine yaz); yoksa yeni.
+    const explicitId = str(body.id);
+    const byTitle = list.find(
+      (x) => x.title.trim().toLowerCase() === title.toLowerCase(),
+    );
+    const id = explicitId || byTitle?.id || makeId();
+
     const summary: DraftSummary = {
       id,
-      title: str(body.title) || "Afiş",
+      title,
       savedAt: new Date().toISOString(),
       size: str(body.size),
       manufacturer: str(body.manufacturer),
+      pageCount:
+        typeof body.pageCount === "number" && body.pageCount > 0
+          ? Math.round(body.pageCount)
+          : 1,
       productNames: Array.isArray(body.productNames)
-        ? body.productNames.map(str).filter(Boolean)
+        ? Array.from(new Set(body.productNames.map(str).filter(Boolean)))
         : [],
     };
 
-    // Tam draft'ı yaz
-    await writeRawJson(`${DRAFTS_DIR}/${id}.json`, body.draft);
+    await writeRawJson(`${DRAFTS_DIR}/${id}.json`, catalog);
 
-    // Index'i güncelle (aynı id varsa değiştir)
-    const index = await readRawJson<DraftSummary[]>(INDEX_ID, []);
-    const list = (Array.isArray(index) ? index : []).filter((x) => x.id !== id);
-    list.push(summary);
-    await writeRawJson(INDEX_ID, list);
+    const nextList = list.filter((x) => x.id !== id);
+    nextList.push(summary);
+    await writeRawJson(INDEX_ID, nextList);
 
-    list.sort((a, b) => (b.savedAt > a.savedAt ? 1 : -1));
-    return NextResponse.json({ id, items: list });
+    nextList.sort((a, b) => (b.savedAt > a.savedAt ? 1 : -1));
+    return NextResponse.json({ id, overwritten: Boolean(byTitle || explicitId), items: nextList });
   } catch (e) {
     return NextResponse.json(
-      { error: (e as Error)?.message ?? "Draft save failed" },
+      { error: (e as Error)?.message ?? "Catalog save failed" },
       { status: 500 },
     );
   }
@@ -181,7 +196,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ items: list });
   } catch (e) {
     return NextResponse.json(
-      { error: (e as Error)?.message ?? "Draft delete failed" },
+      { error: (e as Error)?.message ?? "Catalog delete failed" },
       { status: 500 },
     );
   }

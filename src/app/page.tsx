@@ -27,7 +27,14 @@ type DraftSummary = {
   savedAt: string;
   size: string;
   manufacturer: string;
+  pageCount: number;
   productNames: string[];
+};
+
+type CatalogV1 = {
+  version: 1;
+  queue: PdfQueueItemV1[];
+  current: DraftV1;
 };
 
 type SellRow = {
@@ -982,8 +989,42 @@ export default function Home() {
         throw new Error(`Kaydedilemedi (${res.status})${detail}`);
       }
       const data = (await res.json()) as { added?: number };
+
+      // Satılan miktarı afiş stok alanından düş (canlı afiş).
+      const soldByIndex = new Map<number, number>();
+      for (const r of chosen) {
+        soldByIndex.set(r.slotIndex, parseTrNumber(r.quantity));
+      }
+      const dropStock = (stock: string, sold: number): string => {
+        const next = Math.max(0, Math.round((parseTrNumber(stock) - sold) * 100) / 100);
+        return String(next);
+      };
+      setSlots((prev) =>
+        prev.map((sl, idx) => {
+          const sold = soldByIndex.get(idx);
+          if (sold == null) return sl;
+          return { ...sl, stock: dropStock(sl.stock, sold) };
+        }),
+      );
+      // Düzenlenen sayfa kuyruktaysa onu da güncelle ki kaydedince kalıcı olsun.
+      if (pdfEditingIndex != null) {
+        setPdfQueue((prev) =>
+          prev.map((it, idx) => {
+            if (idx !== pdfEditingIndex) return it;
+            const nextSlots = it.snapshot.slots.map((sl, sIdx) => {
+              const sold = soldByIndex.get(sIdx);
+              if (sold == null) return sl;
+              return { ...sl, stock: dropStock(sl.stock, sold) };
+            });
+            return { ...it, snapshot: { ...it.snapshot, slots: nextSlots } };
+          }),
+        );
+      }
+
       setIsSellModalOpen(false);
-      setSaleRecordMsg(`${data.added ?? records.length} satış kaydedildi \u2713`);
+      setSaleRecordMsg(
+        `${data.added ?? records.length} satış kaydedildi, stok düştü \u2713 — kalıcı olması için \u201cKaydet\u201d`,
+      );
     } catch (e) {
       setSaleRecordMsg((e as Error)?.message ?? "Kaydedilemedi");
     } finally {
@@ -1287,9 +1328,9 @@ export default function Home() {
     }
   }
 
-  function currentProductNames(): string[] {
+  function productNamesFromSnapshot(snap: DraftV1): string[] {
     const names: string[] = [];
-    for (const slot of slots) {
+    for (const slot of Array.isArray(snap.slots) ? snap.slots : []) {
       const p =
         slot.productId != null ? productsById.get(slot.productId) : undefined;
       const name = displayNameForSlot(p, slot);
@@ -1298,11 +1339,31 @@ export default function Home() {
     return names;
   }
 
-  async function saveDraftToCloud() {
+  async function saveCatalogToCloud() {
     try {
       setSavingDraft(true);
       setDraftSaveMsg(null);
-      const draft = makeSnapshot();
+      const current = makeSnapshot();
+      // Kuyruk doluysa tüm sayfaları, boşsa mevcut afişi tek sayfa olarak kaydet.
+      const queue: PdfQueueItemV1[] =
+        pdfQueue.length > 0
+          ? pdfQueue
+          : [
+              {
+                id: "sayfa-0",
+                title: snapshotTitle(),
+                thumbnailDataUrl: null,
+                snapshot: current,
+              },
+            ];
+      const catalog: CatalogV1 = { version: 1, queue, current };
+
+      // Ürün adlarını TÜM sayfalardan topla (arama için).
+      const names = new Set<string>();
+      for (const it of queue) {
+        for (const n of productNamesFromSnapshot(it.snapshot)) names.add(n);
+      }
+
       const title =
         fileName.trim() ||
         `${selectedTemplateSize} ${selectedManufacturer}`.trim();
@@ -1313,8 +1374,9 @@ export default function Home() {
           title,
           size: selectedTemplateSize,
           manufacturer: selectedManufacturer,
-          productNames: currentProductNames(),
-          draft,
+          pageCount: queue.length,
+          productNames: Array.from(names),
+          catalog,
         }),
       });
       if (!res.ok) {
@@ -1325,9 +1387,16 @@ export default function Home() {
         } catch {}
         throw new Error(`Kaydedilemedi (${res.status})${detail}`);
       }
-      const data = (await res.json()) as { items?: DraftSummary[] };
+      const data = (await res.json()) as {
+        items?: DraftSummary[];
+        overwritten?: boolean;
+      };
       if (Array.isArray(data?.items)) setSavedItems(data.items);
-      setDraftSaveMsg("Studio'ya kaydedildi \u2713");
+      setDraftSaveMsg(
+        data?.overwritten
+          ? `\u201c${title}\u201d güncellendi (${queue.length} sayfa) \u2713`
+          : `\u201c${title}\u201d kaydedildi (${queue.length} sayfa) \u2713`,
+      );
     } catch (e) {
       setDraftSaveMsg((e as Error)?.message ?? "Kaydedilemedi");
     } finally {
@@ -1364,20 +1433,45 @@ export default function Home() {
     void refreshSavedDrafts();
   }
 
-  async function openSavedDraft(id: string) {
+  async function openSavedCatalog(id: string) {
     try {
       setSavedError(null);
       const res = await fetch(`/api/drafts?id=${encodeURIComponent(id)}`, {
         cache: "no-store",
       });
-      if (!res.ok) throw new Error(`Afiş açılamadı (${res.status})`);
-      const data = (await res.json()) as { draft?: unknown };
-      const normalized = normalizeDraftLike(data?.draft);
-      if (!normalized) throw new Error("Afiş verisi geçersiz");
-      applySnapshot(normalized);
+      if (!res.ok) throw new Error(`Katalog açılamadı (${res.status})`);
+      const data = (await res.json()) as { catalog?: unknown };
+      const cat = data?.catalog as Partial<CatalogV1> | undefined;
+
+      // Kuyruğu geri yükle (her sayfayı doğrula).
+      const rawQueue = Array.isArray(cat?.queue) ? cat!.queue : [];
+      const queue: PdfQueueItemV1[] = [];
+      rawQueue.forEach((it, qi) => {
+        const obj = it as Partial<PdfQueueItemV1> | undefined;
+        const snap = normalizeDraftLike(obj?.snapshot);
+        if (!snap) return;
+        queue.push({
+          id:
+            typeof obj?.id === "string" && obj.id ? obj.id : `sayfa-${qi}`,
+          title: typeof obj?.title === "string" ? obj.title : "Sayfa",
+          thumbnailDataUrl:
+            typeof obj?.thumbnailDataUrl === "string" ? obj.thumbnailDataUrl : null,
+          snapshot: snap,
+        });
+      });
+
+      const current =
+        normalizeDraftLike(cat?.current) ??
+        (queue.length > 0 ? queue[0]!.snapshot : null);
+      if (!current) throw new Error("Katalog verisi geçersiz");
+
+      setPdfQueue(queue);
+      applySnapshot(current);
+      // İlk sayfayı düzenleme moduna al ki satış/düzenleme o sayfayı güncellesin.
+      setPdfEditingIndex(queue.length > 0 ? 0 : null);
       setIsSavedOpen(false);
     } catch (e) {
-      setSavedError((e as Error)?.message ?? "Afiş açılamadı");
+      setSavedError((e as Error)?.message ?? "Katalog açılamadı");
     }
   }
 
@@ -1700,10 +1794,10 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => void saveDraftToCloud()}
+                    onClick={() => void saveCatalogToCloud()}
                     disabled={savingDraft || isDownloading || isBuildingPdf}
                     className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-                    title="Afişi studio'ya (Cloudinary) kaydet"
+                    title="Tüm katalogu (PDF kuyruğundaki tüm sayfalar) studio'ya kaydet — aynı isim üzerine yazar"
                   >
                     {savingDraft ? "Kaydediliyor…" : "Kaydet"}
                   </button>
@@ -3032,7 +3126,7 @@ export default function Home() {
                     Kayıtlı Afişler
                   </div>
                   <div className="text-xs text-zinc-500">
-                    Ürün ismiyle arayın, açmak için tıklayın.
+                    Kayıtlı kataloglar (tüm sayfalar). Ürün ismiyle arayın, açmak için tıklayın.
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -3110,16 +3204,17 @@ export default function Home() {
                         >
                           <button
                             type="button"
-                            onClick={() => void openSavedDraft(d.id)}
+                            onClick={() => void openSavedCatalog(d.id)}
                             className="min-w-0 flex-1 text-left"
                           >
                             <div className="truncate text-sm font-semibold text-zinc-900">
                               {d.title || "Afiş"}
                             </div>
                             <div className="mt-0.5 text-[11px] text-zinc-500">
-                              {[d.size, d.manufacturer]
-                                .filter(Boolean)
-                                .join(" • ")}
+                              {`${d.pageCount ?? 1} sayfa`}
+                              {[d.size, d.manufacturer].filter(Boolean).length
+                                ? ` • ${[d.size, d.manufacturer].filter(Boolean).join(" • ")}`
+                                : ""}
                               {d.savedAt
                                 ? ` • ${new Date(d.savedAt).toLocaleString("tr-TR")}`
                                 : ""}
