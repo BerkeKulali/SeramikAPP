@@ -1440,8 +1440,10 @@ export default function Home() {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`Katalog açılamadı (${res.status})`);
-      const data = (await res.json()) as { catalog?: unknown };
-      const cat = data?.catalog as Partial<CatalogV1> | undefined;
+      const data = (await res.json()) as { catalog?: unknown; draft?: unknown };
+      const cat = (data?.catalog ?? data?.draft) as
+        | Partial<CatalogV1>
+        | undefined;
 
       // Kuyruğu geri yükle (her sayfayı doğrula).
       const rawQueue = Array.isArray(cat?.queue) ? cat!.queue : [];
@@ -1460,9 +1462,24 @@ export default function Home() {
         });
       });
 
-      const current =
+      let current =
         normalizeDraftLike(cat?.current) ??
         (queue.length > 0 ? queue[0]!.snapshot : null);
+
+      // Geriye dönük uyum: eski tek-sayfa formatı (kayıt doğrudan bir DraftV1).
+      if (!current && queue.length === 0) {
+        const legacy = normalizeDraftLike(cat);
+        if (legacy) {
+          current = legacy;
+          queue.push({
+            id: "sayfa-0",
+            title: legacy.fileName || "Sayfa",
+            thumbnailDataUrl: null,
+            snapshot: legacy,
+          });
+        }
+      }
+
       if (!current) throw new Error("Katalog verisi geçersiz");
 
       setPdfQueue(queue);
