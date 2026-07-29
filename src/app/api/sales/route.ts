@@ -170,6 +170,51 @@ export async function POST(req: Request) {
   }
 }
 
+export async function PATCH(req: Request) {
+  try {
+    initCloudinary();
+    const body = (await req.json()) as Partial<SaleRecord> & { id?: string };
+    const id = str(body.id);
+    if (!id) {
+      return NextResponse.json({ error: "id gerekli" }, { status: 400 });
+    }
+
+    const current = await readSalesLog();
+    const idx = current.findIndex((s) => s.id === id);
+    if (idx === -1) {
+      return NextResponse.json({ error: "Kayıt bulunamadı" }, { status: 404 });
+    }
+
+    const existing = current[idx];
+    const quantity =
+      body.quantity != null ? num(body.quantity) : existing.quantity;
+    const unitPrice =
+      body.unitPrice != null ? num(body.unitPrice) : existing.unitPrice;
+    const customer =
+      body.customer != null ? str(body.customer) : existing.customer;
+    const total = Math.round(quantity * unitPrice * 100) / 100;
+
+    const updated: SaleRecord = {
+      ...existing,
+      quantity,
+      unitPrice,
+      total,
+      customer,
+    };
+
+    const next = [...current];
+    next[idx] = updated;
+    await writeSalesLog(next);
+
+    return NextResponse.json({ item: updated, items: next });
+  } catch (e) {
+    return NextResponse.json(
+      { error: (e as Error)?.message ?? "Sales update failed" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function DELETE(req: Request) {
   try {
     initCloudinary();

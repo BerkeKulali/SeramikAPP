@@ -106,6 +106,13 @@ export default function SalesPage() {
   const [saving, setSaving] = useState(false);
   const [busyExport, setBusyExport] = useState<"" | "xlsx" | "pdf">("");
 
+  // Satır düzenleme
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [eQty, setEQty] = useState("");
+  const [ePrice, setEPrice] = useState("");
+  const [eCustomer, setECustomer] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
   // Form
   const [fProduct, setFProduct] = useState("");
   const [fBrand, setFBrand] = useState("");
@@ -259,6 +266,53 @@ export default function SalesPage() {
       setSales(Array.isArray(data?.items) ? data.items : []);
     } catch (e) {
       setError((e as Error)?.message ?? "Silinemedi");
+    }
+  }
+
+  function startEdit(s: SaleRecord) {
+    setEditingId(s.id);
+    setEQty(String(s.quantity ?? ""));
+    setEPrice(String(s.unitPrice ?? ""));
+    setECustomer(s.customer ?? "");
+    setError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEQty("");
+    setEPrice("");
+    setECustomer("");
+  }
+
+  async function saveEdit(id: string) {
+    try {
+      setEditSaving(true);
+      setError(null);
+      const res = await fetch("/api/sales", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          quantity: parseNum(eQty),
+          unitPrice: parseNum(ePrice),
+          customer: eCustomer.trim(),
+        }),
+      });
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const body = (await res.json()) as { error?: string };
+          detail = body?.error ? ` – ${body.error}` : "";
+        } catch {}
+        throw new Error(`Güncellenemedi (${res.status})${detail}`);
+      }
+      const data = (await res.json()) as { items?: SaleRecord[] };
+      setSales(Array.isArray(data?.items) ? data.items : []);
+      cancelEdit();
+    } catch (e) {
+      setError((e as Error)?.message ?? "Güncellenemedi");
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -716,39 +770,111 @@ export default function SalesPage() {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((s) => (
-                      <tr
-                        key={s.id}
-                        className="border-b border-zinc-100 align-top"
-                      >
-                        <td className="py-2 pr-2 whitespace-nowrap">{s.date}</td>
-                        <td className="py-2 pr-2 font-semibold">
-                          {s.productName || "—"}
-                          {s.note ? (
-                            <span className="block text-xs font-normal text-zinc-400">
-                              {s.note}
-                            </span>
-                          ) : null}
-                        </td>
-                        <td className="py-2 pr-2">{s.brand}</td>
-                        <td className="py-2 pr-2 whitespace-nowrap">{s.size}</td>
-                        <td className="py-2 pr-2 text-right">{fmtNum(s.quantity)}</td>
-                        <td className="py-2 pr-2 text-right">{fmtMoney(s.unitPrice)}</td>
-                        <td className="py-2 pr-2 text-right font-bold">
-                          {fmtMoney(s.total)}
-                        </td>
-                        <td className="py-2 pr-2">{s.customer}</td>
-                        <td className="py-2 pr-2 text-right">
-                          <button
-                            type="button"
-                            onClick={() => void deleteSale(s.id)}
-                            className="rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-500 hover:border-red-300 hover:text-red-600"
-                          >
-                            Sil
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    filtered.map((s) =>
+                      editingId === s.id ? (
+                        <tr
+                          key={s.id}
+                          className="border-b border-zinc-100 align-top bg-amber-50/60"
+                        >
+                          <td className="py-2 pr-2 whitespace-nowrap">{s.date}</td>
+                          <td className="py-2 pr-2 font-semibold">
+                            {s.productName || "—"}
+                            {s.note ? (
+                              <span className="block text-xs font-normal text-zinc-400">
+                                {s.note}
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="py-2 pr-2">{s.brand}</td>
+                          <td className="py-2 pr-2 whitespace-nowrap">{s.size}</td>
+                          <td className="py-2 pr-2 text-right">
+                            <input
+                              inputMode="decimal"
+                              value={eQty}
+                              onChange={(e) => setEQty(e.target.value)}
+                              className="w-20 rounded-md border border-zinc-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-zinc-500"
+                            />
+                          </td>
+                          <td className="py-2 pr-2 text-right">
+                            <input
+                              inputMode="decimal"
+                              value={ePrice}
+                              onChange={(e) => setEPrice(e.target.value)}
+                              className="w-20 rounded-md border border-zinc-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-zinc-500"
+                            />
+                          </td>
+                          <td className="py-2 pr-2 text-right font-bold">
+                            {fmtMoney(
+                              Math.round(parseNum(eQty) * parseNum(ePrice) * 100) / 100,
+                            )}
+                          </td>
+                          <td className="py-2 pr-2">
+                            <input
+                              value={eCustomer}
+                              onChange={(e) => setECustomer(e.target.value)}
+                              className="w-28 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm outline-none focus:border-zinc-500"
+                            />
+                          </td>
+                          <td className="py-2 pr-2 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => void saveEdit(s.id)}
+                              disabled={editSaving}
+                              className="mr-1 rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                            >
+                              {editSaving ? "Kaydediliyor…" : "Kaydet"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelEdit}
+                              disabled={editSaving}
+                              className="rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-500 hover:border-zinc-300 disabled:opacity-50"
+                            >
+                              İptal
+                            </button>
+                          </td>
+                        </tr>
+                      ) : (
+                        <tr
+                          key={s.id}
+                          className="border-b border-zinc-100 align-top"
+                        >
+                          <td className="py-2 pr-2 whitespace-nowrap">{s.date}</td>
+                          <td className="py-2 pr-2 font-semibold">
+                            {s.productName || "—"}
+                            {s.note ? (
+                              <span className="block text-xs font-normal text-zinc-400">
+                                {s.note}
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="py-2 pr-2">{s.brand}</td>
+                          <td className="py-2 pr-2 whitespace-nowrap">{s.size}</td>
+                          <td className="py-2 pr-2 text-right">{fmtNum(s.quantity)}</td>
+                          <td className="py-2 pr-2 text-right">{fmtMoney(s.unitPrice)}</td>
+                          <td className="py-2 pr-2 text-right font-bold">
+                            {fmtMoney(s.total)}
+                          </td>
+                          <td className="py-2 pr-2">{s.customer}</td>
+                          <td className="py-2 pr-2 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => startEdit(s)}
+                              className="mr-1 rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-500 hover:border-zinc-400 hover:text-zinc-800"
+                            >
+                              Düzenle
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void deleteSale(s.id)}
+                              className="rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-500 hover:border-red-300 hover:text-red-600"
+                            >
+                              Sil
+                            </button>
+                          </td>
+                        </tr>
+                      ),
+                    )
                   )}
                 </tbody>
               </table>
