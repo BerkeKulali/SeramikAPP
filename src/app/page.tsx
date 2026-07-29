@@ -1766,7 +1766,6 @@ export default function Home() {
                 </div>
                 <Link
                   href="/sales"
-                  prefetch={false}
                   className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50"
                 >
                   Satışlar →
@@ -3534,78 +3533,89 @@ export default function Home() {
                         {!isParquetMode && (
                           <>
                         {selectedTemplate === 3 && productImageAspect === "square" ? (
-                          <div className="h-full w-full flex items-center justify-center overflow-hidden">
-                            <div className="w-full h-full flex flex-col overflow-hidden">
-                              <div className="grid grid-rows-3 h-full overflow-hidden gap-y-10 py-10">
-                                {[0, 1, 2].map((idx) => {
-                                  const slot = slots[idx];
-                                  const p =
-                                    slot?.productId != null
-                                      ? productsById.get(slot.productId)
-                                      : undefined;
-                                  const hasImageError = Boolean(imageErrorBySlot[idx]);
+                          (() => {
+                            const renderThreeSquareTile = (idx: number) => {
+                              const slot = slots[idx];
+                              const p =
+                                slot?.productId != null
+                                  ? productsById.get(slot.productId)
+                                  : undefined;
+                              const hasImageError = Boolean(imageErrorBySlot[idx]);
 
-                                  return (
-                                    <div
-                                      key={idx}
-                                      className="flex flex-col items-center justify-center min-h-0 pb-1 overflow-hidden"
-                                      style={{ background: canvasBg }}
-                                    >
-                                      <div className="w-full overflow-hidden flex items-center justify-center">
-                                        <div className="h-[38vh] max-h-[560px] aspect-square mx-auto overflow-hidden">
-                                          {imageSrcForSlot(p, slot) && !hasImageError ? (
-                                            <img
-                                              src={imageSrcForSlot(p, slot)}
-                                              alt={displayNameForSlot(p, slot)}
-                                              crossOrigin="anonymous"
-                                              className="h-full w-full object-cover"
-                                              onError={() =>
-                                                setImageErrorBySlot((prev) => ({
-                                                  ...prev,
-                                                  [idx]: true,
-                                                }))
-                                              }
-                                              onLoad={() =>
-                                                setImageErrorBySlot((prev) => {
-                                                  if (!prev[idx]) return prev;
-                                                  const next = { ...prev };
-                                                  delete next[idx];
-                                                  return next;
-                                                })
-                                              }
-                                            />
-                                          ) : (
-                                            <div className="h-full w-full" />
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      <div
-                                        className={[
-                                          "px-2 pt-1 pb-0 flex flex-col items-center gap-y-1",
-                                          productDetailsTextColorClass,
-                                        ].join(" ")}
-                                      >
-                                        <div
-                                          className="font-semibold leading-tight tracking-wide text-center uppercase"
-                                          style={{ fontSize: globalFontSize }}
-                                        >
-                                          {displayNameForSlot(p, slot)}
-                                        </div>
-                                        <SlotStockPriceDisplay
-                                          slot={slot}
-                                          unitName={unitName}
-                                          fontSize={globalFontSize}
-                                          stockLineClassName={"font-bold leading-tight text-center"}
-                                          priceLineClassName={"font-bold leading-tight text-center"}
+                              return (
+                                <div
+                                  key={idx}
+                                  className="flex flex-col items-center justify-center min-h-0 pb-1 overflow-hidden"
+                                  style={{ background: canvasBg }}
+                                >
+                                  <div className="w-full overflow-hidden flex items-center justify-center">
+                                    <div className="h-[38vh] max-h-[560px] aspect-square mx-auto overflow-hidden">
+                                      {imageSrcForSlot(p, slot) && !hasImageError ? (
+                                        <img
+                                          src={imageSrcForSlot(p, slot)}
+                                          alt={displayNameForSlot(p, slot)}
+                                          crossOrigin="anonymous"
+                                          className="h-full w-full object-cover"
+                                          onError={() =>
+                                            setImageErrorBySlot((prev) => ({
+                                              ...prev,
+                                              [idx]: true,
+                                            }))
+                                          }
+                                          onLoad={() =>
+                                            setImageErrorBySlot((prev) => {
+                                              if (!prev[idx]) return prev;
+                                              const next = { ...prev };
+                                              delete next[idx];
+                                              return next;
+                                            })
+                                          }
                                         />
-                                      </div>
+                                      ) : (
+                                        <div className="h-full w-full" />
+                                      )}
                                     </div>
-                                  );
-                                })}
+                                  </div>
+
+                                  <div
+                                    className={[
+                                      "px-2 pt-1 pb-0 flex flex-col items-center gap-y-1",
+                                      productDetailsTextColorClass,
+                                    ].join(" ")}
+                                  >
+                                    <div
+                                      className="font-semibold leading-tight tracking-wide text-center uppercase"
+                                      style={{ fontSize: globalFontSize }}
+                                    >
+                                      {displayNameForSlot(p, slot)}
+                                    </div>
+                                    <SlotStockPriceDisplay
+                                      slot={slot}
+                                      unitName={unitName}
+                                      fontSize={globalFontSize}
+                                      stockLineClassName={"font-bold leading-tight text-center"}
+                                      priceLineClassName={"font-bold leading-tight text-center"}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            };
+
+                            // Kare + Üçlü: üstte 2 ürün yan yana, altta 1 ürün ortalanmış.
+                            return (
+                              <div className="h-full w-full flex items-center justify-center overflow-hidden">
+                                <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden gap-y-10 py-10">
+                                  <div className="w-full flex items-center justify-center gap-x-10 overflow-hidden">
+                                    {renderThreeSquareTile(0)}
+                                    {renderThreeSquareTile(1)}
+                                  </div>
+                                  <div className="w-full flex items-center justify-center overflow-hidden">
+                                    {renderThreeSquareTile(2)}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
+                            );
+                          })()
                         ) : selectedTemplate === 3 &&
                           productImageAspect === "oneThree" ? (
                           <div className="h-full w-full flex items-center justify-center overflow-hidden">
