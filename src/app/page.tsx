@@ -1766,6 +1766,7 @@ export default function Home() {
                 </div>
                 <Link
                   href="/sales"
+                  prefetch={false}
                   className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50"
                 >
                   Satışlar →
