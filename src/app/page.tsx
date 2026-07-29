@@ -493,6 +493,157 @@ function Icon({
   );
 }
 
+function PdfQueueRow({
+  item,
+  idx,
+  pdfQueue,
+  expanded,
+  isBuildingPdf,
+  productsById,
+  onMoveUp,
+  onMoveDown,
+  onToggleExpand,
+  onEdit,
+  onDelete,
+  onMoveSlot,
+}: {
+  item: PdfQueueItemV1;
+  idx: number;
+  pdfQueue: PdfQueueItemV1[];
+  expanded: boolean;
+  isBuildingPdf: boolean;
+  productsById: Map<string, Product>;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onToggleExpand: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onMoveSlot: (slotIdx: number, targetIdx: number) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 px-3 py-2">
+        <div className="flex shrink-0 flex-col gap-0.5">
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={idx === 0 || isBuildingPdf}
+            className="flex h-4 w-5 items-center justify-center rounded border border-zinc-200 bg-white text-[10px] leading-none text-zinc-600 hover:bg-zinc-50 disabled:opacity-30"
+            title="Yukarı taşı"
+          >
+            ▲
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={idx === pdfQueue.length - 1 || isBuildingPdf}
+            className="flex h-4 w-5 items-center justify-center rounded border border-zinc-200 bg-white text-[10px] leading-none text-zinc-600 hover:bg-zinc-50 disabled:opacity-30"
+            title="Aşağı taşı"
+          >
+            ▼
+          </button>
+        </div>
+        <div className="h-10 w-10 shrink-0 rounded border border-zinc-200 bg-zinc-50 overflow-hidden">
+          {item.thumbnailDataUrl ? (
+            <img
+              src={item.thumbnailDataUrl}
+              alt={item.title}
+              className="h-full w-full object-cover"
+            />
+          ) : null}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-xs font-semibold text-zinc-900">
+            {idx + 1}. {item.title}
+          </div>
+          <div className="text-[11px] text-zinc-500">
+            Şablon {item.snapshot.selectedTemplate} •{" "}
+            {item.snapshot.isDarkBg ? "Koyu" : "Açık"}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          disabled={isBuildingPdf}
+          className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+          title="Ürünleri göster / ürün taşı"
+        >
+          {expanded ? "Ürünler ▲" : "Ürünler ▾"}
+        </button>
+        <button
+          type="button"
+          onClick={onEdit}
+          disabled={isBuildingPdf}
+          className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+          title="Düzenle"
+        >
+          Düzenle
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={isBuildingPdf}
+          className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+          title="Sil"
+        >
+          Sil
+        </button>
+      </div>
+
+      {expanded ? (
+        <div className="space-y-1.5 px-3 pb-3 pl-[76px]">
+          {item.snapshot.slots.map((slot, slotIdx) => {
+            const filled = slotHasAssignableMedia(slot);
+            const p =
+              slot.productId != null ? productsById.get(slot.productId) : undefined;
+            const eligibleTargets = pdfQueue
+              .map((it, tIdx) => ({ it, tIdx }))
+              .filter(
+                ({ it, tIdx }) =>
+                  tIdx !== idx &&
+                  it.snapshot.slots.some((s) => !slotHasAssignableMedia(s)),
+              );
+
+            return (
+              <div key={slotIdx} className="flex items-center gap-2 text-[11px]">
+                <span
+                  className={[
+                    "min-w-0 flex-1 truncate",
+                    filled ? "text-zinc-700" : "text-zinc-400 italic",
+                  ].join(" ")}
+                >
+                  {filled ? displayNameForSlot(p, slot) : "Boş slot"}
+                </span>
+                {filled && eligibleTargets.length > 0 ? (
+                  <div className="flex flex-wrap items-center justify-end gap-1">
+                    <span className="text-zinc-400">Taşı:</span>
+                    {eligibleTargets.map(({ it, tIdx }) => (
+                      <button
+                        key={it.id}
+                        type="button"
+                        onClick={() => onMoveSlot(slotIdx, tIdx)}
+                        disabled={isBuildingPdf}
+                        className="rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                        title={`${tIdx + 1}. sayfaya taşı`}
+                      >
+                        {tIdx + 1}
+                      </button>
+                    ))}
+                  </div>
+                ) : filled ? (
+                  <span className="shrink-0 text-[10px] text-zinc-400">
+                    Boş slotlu sayfa yok
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
@@ -523,6 +674,9 @@ export default function Home() {
   >({});
   const [pdfQueue, setPdfQueue] = useState<PdfQueueItemV1[]>([]);
   const [pdfEditingIndex, setPdfEditingIndex] = useState<number | null>(null);
+  const [expandedQueueIds, setExpandedQueueIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [isBuildingPdf, setIsBuildingPdf] = useState(false);
   const [isUploadLibraryOpen, setIsUploadLibraryOpen] = useState(false);
   const [uploadLibraryItems, setUploadLibraryItems] = useState<UploadLibraryItem[]>([]);
@@ -1277,10 +1431,118 @@ export default function Home() {
       return;
     }
 
+    // Not: id üretimi sadece bu buton tıklamasıyla (event handler içinde) çalışır,
+    // render sırasında değil — react-hooks/purity kuralı burada yanlış pozitif üretiyor.
+    // eslint-disable-next-line react-hooks/purity
     const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     setPdfQueue((prev) => [
       ...prev,
       { id, title, thumbnailDataUrl: thumb, snapshot: snap },
+    ]);
+  }
+
+  function movePdfQueueItem(idx: number, direction: -1 | 1) {
+    const target = idx + direction;
+    if (target < 0 || target >= pdfQueue.length) return;
+    setPdfQueue((prev) => {
+      const next = [...prev];
+      const tmp = next[idx]!;
+      next[idx] = next[target]!;
+      next[target] = tmp;
+      return next;
+    });
+    setPdfEditingIndex((cur) => {
+      if (cur == null) return cur;
+      if (cur === idx) return target;
+      if (cur === target) return idx;
+      return cur;
+    });
+  }
+
+  function toggleQueueItemExpanded(id: string) {
+    setExpandedQueueIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  // Sayfalar arasında ekranda görünen küçük önizlemeleri tazeler
+  // (gerçek PDF çıktısı zaten her zaman güncel snapshot'tan üretilir).
+  async function refreshQueueThumbnails(
+    items: { index: number; item: PdfQueueItemV1 }[],
+  ) {
+    const original = makeSnapshot();
+    for (const { index, item } of items) {
+      applySnapshot(item.snapshot);
+      await sleep(0);
+      await new Promise<void>((r) => requestAnimationFrame(() => r()));
+      await new Promise<void>((r) => requestAnimationFrame(() => r()));
+      const node = exportCanvasRef.current;
+      if (node) await ensureExportImagesLoaded(node);
+      const thumb = await captureThumbnail();
+      if (thumb) {
+        setPdfQueue((prev) =>
+          prev.map((it, i) =>
+            i === index ? { ...it, thumbnailDataUrl: thumb } : it,
+          ),
+        );
+      }
+    }
+    applySnapshot(original);
+  }
+
+  // Bir sayfadaki tek bir ürünü, başka bir sayfanın boş bir slotuna taşır.
+  function movePdfSlotToPage(sourceIdx: number, slotIdx: number, targetIdx: number) {
+    if (sourceIdx === targetIdx) return;
+    const source = pdfQueue[sourceIdx];
+    const target = pdfQueue[targetIdx];
+    if (!source || !target) return;
+    const movingSlot = source.snapshot.slots[slotIdx];
+    if (!movingSlot || !slotHasAssignableMedia(movingSlot)) return;
+    const emptyIdxInTarget = target.snapshot.slots.findIndex(
+      (s) => !slotHasAssignableMedia(s),
+    );
+    if (emptyIdxInTarget === -1) return;
+
+    const updatedSource: PdfQueueItemV1 = {
+      ...source,
+      snapshot: {
+        ...source.snapshot,
+        slots: source.snapshot.slots.map((s, i) =>
+          i === slotIdx ? emptySlot() : s,
+        ),
+      },
+    };
+    const updatedTarget: PdfQueueItemV1 = {
+      ...target,
+      snapshot: {
+        ...target.snapshot,
+        slots: target.snapshot.slots.map((s, i) =>
+          i === emptyIdxInTarget ? movingSlot : s,
+        ),
+      },
+    };
+
+    setPdfQueue((prev) =>
+      prev.map((it, i) => {
+        if (i === sourceIdx) return updatedSource;
+        if (i === targetIdx) return updatedTarget;
+        return it;
+      }),
+    );
+
+    // Şu an düzenlenmekte olan sayfa etkilendiyse ekrandaki canlı hâli de senkron tut.
+    if (pdfEditingIndex === sourceIdx) {
+      setSlots(updatedSource.snapshot.slots);
+    } else if (pdfEditingIndex === targetIdx) {
+      setSlots(updatedTarget.snapshot.slots);
+    }
+
+    void refreshQueueThumbnails([
+      { index: sourceIdx, item: updatedSource },
+      { index: targetIdx, item: updatedTarget },
     ]);
   }
 
@@ -1964,55 +2226,40 @@ export default function Home() {
                 ) : (
                   <div className="divide-y divide-zinc-200">
                     {pdfQueue.map((item, idx) => (
-                      <div key={item.id} className="flex items-center gap-3 px-3 py-2">
-                        <div className="h-10 w-10 shrink-0 rounded border border-zinc-200 bg-zinc-50 overflow-hidden">
-                          {item.thumbnailDataUrl ? (
-                            <img
-                              src={item.thumbnailDataUrl}
-                              alt={item.title}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : null}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-xs font-semibold text-zinc-900">
-                            {idx + 1}. {item.title}
-                          </div>
-                          <div className="text-[11px] text-zinc-500">
-                            Şablon {item.snapshot.selectedTemplate} •{" "}
-                            {item.snapshot.isDarkBg ? "Koyu" : "Açık"}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            applySnapshot(item.snapshot);
-                            setPdfEditingIndex(idx);
-                          }}
-                          disabled={isBuildingPdf}
-                          className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
-                          title="Düzenle"
-                        >
-                          Düzenle
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPdfQueue((prev) => prev.filter((x) => x.id !== item.id));
-                            setPdfEditingIndex((cur) => {
-                              if (cur == null) return null;
-                              if (cur === idx) return null;
-                              if (cur > idx) return cur - 1;
-                              return cur;
-                            });
-                          }}
-                          disabled={isBuildingPdf}
-                          className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
-                          title="Sil"
-                        >
-                          Sil
-                        </button>
-                      </div>
+                      <PdfQueueRow
+                        key={item.id}
+                        item={item}
+                        idx={idx}
+                        pdfQueue={pdfQueue}
+                        expanded={expandedQueueIds.has(item.id)}
+                        isBuildingPdf={isBuildingPdf}
+                        productsById={productsById}
+                        onMoveUp={() => movePdfQueueItem(idx, -1)}
+                        onMoveDown={() => movePdfQueueItem(idx, 1)}
+                        onToggleExpand={() => toggleQueueItemExpanded(item.id)}
+                        onEdit={() => {
+                          applySnapshot(item.snapshot);
+                          setPdfEditingIndex(idx);
+                        }}
+                        onDelete={() => {
+                          setPdfQueue((prev) => prev.filter((x) => x.id !== item.id));
+                          setPdfEditingIndex((cur) => {
+                            if (cur == null) return null;
+                            if (cur === idx) return null;
+                            if (cur > idx) return cur - 1;
+                            return cur;
+                          });
+                          setExpandedQueueIds((prev) => {
+                            if (!prev.has(item.id)) return prev;
+                            const next = new Set(prev);
+                            next.delete(item.id);
+                            return next;
+                          });
+                        }}
+                        onMoveSlot={(slotIdx, targetIdx) =>
+                          movePdfSlotToPage(idx, slotIdx, targetIdx)
+                        }
+                      />
                     ))}
                   </div>
                 )}
