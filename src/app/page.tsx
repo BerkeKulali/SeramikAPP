@@ -3534,6 +3534,10 @@ export default function Home() {
                           <>
                         {selectedTemplate === 3 && productImageAspect === "square" ? (
                           (() => {
+                            const stockPriceFontSize = Math.max(
+                              14,
+                              Math.round(globalFontSize * 0.9),
+                            );
                             const renderThreeSquareTile = (idx: number) => {
                               const slot = slots[idx];
                               const p =
@@ -3544,42 +3548,39 @@ export default function Home() {
 
                               return (
                                 <div
-                                  key={idx}
-                                  className="flex flex-col items-center justify-center min-h-0 pb-1 overflow-hidden"
+                                  className="flex flex-col items-stretch overflow-hidden"
                                   style={{ background: canvasBg }}
                                 >
-                                  <div className="w-full overflow-hidden flex items-center justify-center">
-                                    <div className="h-[38vh] max-h-[560px] aspect-square mx-auto overflow-hidden">
-                                      {imageSrcForSlot(p, slot) && !hasImageError ? (
-                                        <img
-                                          src={imageSrcForSlot(p, slot)}
-                                          alt={displayNameForSlot(p, slot)}
-                                          crossOrigin="anonymous"
-                                          className="h-full w-full object-cover"
-                                          onError={() =>
-                                            setImageErrorBySlot((prev) => ({
-                                              ...prev,
-                                              [idx]: true,
-                                            }))
-                                          }
-                                          onLoad={() =>
-                                            setImageErrorBySlot((prev) => {
-                                              if (!prev[idx]) return prev;
-                                              const next = { ...prev };
-                                              delete next[idx];
-                                              return next;
-                                            })
-                                          }
-                                        />
-                                      ) : (
-                                        <div className="h-full w-full" />
-                                      )}
-                                    </div>
+                                  <div className="w-full overflow-hidden aspect-square">
+                                    {imageSrcForSlot(p, slot) && !hasImageError ? (
+                                      <img
+                                        src={imageSrcForSlot(p, slot)}
+                                        alt={displayNameForSlot(p, slot)}
+                                        crossOrigin="anonymous"
+                                        className="h-full w-full object-cover object-center"
+                                        onError={() =>
+                                          setImageErrorBySlot((prev) => ({
+                                            ...prev,
+                                            [idx]: true,
+                                          }))
+                                        }
+                                        onLoad={() =>
+                                          setImageErrorBySlot((prev) => {
+                                            if (!prev[idx]) return prev;
+                                            const next = { ...prev };
+                                            delete next[idx];
+                                            return next;
+                                          })
+                                        }
+                                      />
+                                    ) : (
+                                      <div className="h-full w-full" />
+                                    )}
                                   </div>
 
                                   <div
                                     className={[
-                                      "px-2 pt-1 pb-0 flex flex-col items-center gap-y-1",
+                                      "mt-2 px-3 pt-3 pb-2 flex flex-col items-center justify-start",
                                       productDetailsTextColorClass,
                                     ].join(" ")}
                                   >
@@ -3592,25 +3593,27 @@ export default function Home() {
                                     <SlotStockPriceDisplay
                                       slot={slot}
                                       unitName={unitName}
-                                      fontSize={globalFontSize}
-                                      stockLineClassName={"font-bold leading-tight text-center"}
-                                      priceLineClassName={"font-bold leading-tight text-center"}
+                                      fontSize={stockPriceFontSize}
+                                      stockLineClassName={"mt-2 font-bold leading-snug text-center"}
+                                      priceLineClassName={"mt-1 font-bold leading-snug text-center"}
                                     />
                                   </div>
                                 </div>
                               );
                             };
 
-                            // Kare + Üçlü: üstte 2 ürün yan yana, altta 1 ürün ortalanmış.
+                            // Kare + Üçlü: 4'lü şablondaki gibi büyük görsel; üstte 2, altta 1 ürün ortalanmış.
                             return (
-                              <div className="h-full w-full flex items-center justify-center overflow-hidden">
-                                <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden gap-y-10 py-10">
-                                  <div className="w-full flex items-center justify-center gap-x-10 overflow-hidden">
-                                    {renderThreeSquareTile(0)}
-                                    {renderThreeSquareTile(1)}
+                              <div className="h-full flex items-center justify-center">
+                                <div className="w-full max-w-[980px]">
+                                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                                    <div key={0}>{renderThreeSquareTile(0)}</div>
+                                    <div key={1}>{renderThreeSquareTile(1)}</div>
                                   </div>
-                                  <div className="w-full flex items-center justify-center overflow-hidden">
-                                    {renderThreeSquareTile(2)}
+                                  <div className="mt-3 flex justify-center">
+                                    <div className="w-[calc(50%-12px)]">
+                                      {renderThreeSquareTile(2)}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
