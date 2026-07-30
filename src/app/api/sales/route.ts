@@ -26,6 +26,8 @@ export type SaleRecord = {
   productName: string;
   brand: string;
   size: string;
+  surface: string; // FLP / SEMİ LAPP. / MAT
+  grade: string; // 1. / END.
   quantity: number; // m2
   unitPrice: number;
   total: number;
@@ -139,6 +141,8 @@ export async function POST(req: Request) {
           productName: str(raw.productName),
           brand: str(raw.brand),
           size: str(raw.size),
+          surface: str(raw.surface),
+          grade: str(raw.grade),
           quantity,
           unitPrice,
           total,
@@ -192,6 +196,11 @@ export async function PATCH(req: Request) {
       body.unitPrice != null ? num(body.unitPrice) : existing.unitPrice;
     const customer =
       body.customer != null ? str(body.customer) : existing.customer;
+    const brand = body.brand != null ? str(body.brand) : existing.brand;
+    const size = body.size != null ? str(body.size) : existing.size;
+    const surface =
+      body.surface != null ? str(body.surface) : (existing.surface ?? "");
+    const grade = body.grade != null ? str(body.grade) : (existing.grade ?? "");
     const total = Math.round(quantity * unitPrice * 100) / 100;
 
     const updated: SaleRecord = {
@@ -200,6 +209,10 @@ export async function PATCH(req: Request) {
       unitPrice,
       total,
       customer,
+      brand,
+      size,
+      surface,
+      grade,
     };
 
     const next = [...current];

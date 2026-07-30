@@ -12,6 +12,8 @@ type SaleRecord = {
   productName: string;
   brand: string;
   size: string;
+  surface: string;
+  grade: string;
   quantity: number;
   unitPrice: number;
   total: number;
@@ -108,6 +110,10 @@ export default function SalesPage() {
 
   // Satır düzenleme
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [eBrand, setEBrand] = useState("");
+  const [eSize, setESize] = useState("");
+  const [eSurface, setESurface] = useState("");
+  const [eGrade, setEGrade] = useState("");
   const [eQty, setEQty] = useState("");
   const [ePrice, setEPrice] = useState("");
   const [eCustomer, setECustomer] = useState("");
@@ -117,6 +123,8 @@ export default function SalesPage() {
   const [fProduct, setFProduct] = useState("");
   const [fBrand, setFBrand] = useState("");
   const [fSize, setFSize] = useState("");
+  const [fSurface, setFSurface] = useState("");
+  const [fGrade, setFGrade] = useState("");
   const [fQty, setFQty] = useState("");
   const [fPrice, setFPrice] = useState("");
   const [fDate, setFDate] = useState(todayStr());
@@ -211,6 +219,8 @@ export default function SalesPage() {
       productName: fProduct.trim(),
       brand: fBrand.trim(),
       size: fSize.trim(),
+      surface: fSurface,
+      grade: fGrade,
       quantity: parseNum(fQty),
       unitPrice: parseNum(fPrice),
       customer: fCustomer.trim(),
@@ -243,6 +253,8 @@ export default function SalesPage() {
       setFProduct("");
       setFBrand("");
       setFSize("");
+      setFSurface("");
+      setFGrade("");
       setFQty("");
       setFPrice("");
       setFCustomer("");
@@ -271,6 +283,10 @@ export default function SalesPage() {
 
   function startEdit(s: SaleRecord) {
     setEditingId(s.id);
+    setEBrand(s.brand ?? "");
+    setESize(s.size ?? "");
+    setESurface(s.surface ?? "");
+    setEGrade(s.grade ?? "");
     setEQty(String(s.quantity ?? ""));
     setEPrice(String(s.unitPrice ?? ""));
     setECustomer(s.customer ?? "");
@@ -279,6 +295,10 @@ export default function SalesPage() {
 
   function cancelEdit() {
     setEditingId(null);
+    setEBrand("");
+    setESize("");
+    setESurface("");
+    setEGrade("");
     setEQty("");
     setEPrice("");
     setECustomer("");
@@ -293,6 +313,10 @@ export default function SalesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id,
+          brand: eBrand.trim(),
+          size: eSize.trim(),
+          surface: eSurface,
+          grade: eGrade,
           quantity: parseNum(eQty),
           unitPrice: parseNum(ePrice),
           customer: eCustomer.trim(),
@@ -337,6 +361,8 @@ export default function SalesPage() {
         "Ürün",
         "Marka",
         "Boyut",
+        "Yüzey",
+        "Sınıf",
         "Miktar (m²)",
         "Birim Fiyat",
         "Toplam",
@@ -350,6 +376,8 @@ export default function SalesPage() {
           s.productName,
           s.brand,
           s.size,
+          s.surface,
+          s.grade,
           s.quantity,
           s.unitPrice,
           s.total,
@@ -358,7 +386,7 @@ export default function SalesPage() {
         ]);
       }
       rows.push([]);
-      rows.push(["", "", "", "TOPLAM", totals.qty, "", totals.rev, "", ""]);
+      rows.push(["", "", "", "", "", "TOPLAM", totals.qty, "", totals.rev, "", ""]);
       const ws = XLSX.utils.aoa_to_sheet(rows);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Satışlar");
@@ -386,6 +414,8 @@ export default function SalesPage() {
         )}</td>
         <td style="padding:6px 8px;border-bottom:1px solid #eee;">${escapeHtml(s.brand)}</td>
         <td style="padding:6px 8px;border-bottom:1px solid #eee;">${escapeHtml(s.size)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;">${escapeHtml(s.surface)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;">${escapeHtml(s.grade)}</td>
         <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;">${fmtNum(
           s.quantity,
         )}</td>
@@ -404,7 +434,7 @@ export default function SalesPage() {
     const totalsRow = withTotals
       ? `
       <tr>
-        <td colspan="4" style="padding:10px 8px;text-align:right;font-weight:700;border-top:2px solid #111;">TOPLAM</td>
+        <td colspan="6" style="padding:10px 8px;text-align:right;font-weight:700;border-top:2px solid #111;">TOPLAM</td>
         <td style="padding:10px 8px;text-align:right;font-weight:700;border-top:2px solid #111;">${fmtNum(
           totals.qty,
         )} m²</td>
@@ -444,6 +474,8 @@ export default function SalesPage() {
             <th style="padding:8px;text-align:left;">Ürün</th>
             <th style="padding:8px;text-align:left;">Marka</th>
             <th style="padding:8px;text-align:left;">Boyut</th>
+            <th style="padding:8px;text-align:left;">Yüzey</th>
+            <th style="padding:8px;text-align:left;">Sınıf</th>
             <th style="padding:8px;text-align:right;">Miktar</th>
             <th style="padding:8px;text-align:right;">Birim ₺</th>
             <th style="padding:8px;text-align:right;">Toplam ₺</th>
@@ -575,6 +607,34 @@ export default function SalesPage() {
                     onChange={(e) => setFSize(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400"
                   />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs font-semibold text-zinc-600">
+                  Yüzey
+                  <select
+                    value={fSurface}
+                    onChange={(e) => setFSurface(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400"
+                  >
+                    <option value="">Boş</option>
+                    <option value="FLP">FLP</option>
+                    <option value="SEMİ LAPP.">SEMİ LAPP.</option>
+                    <option value="MAT">MAT</option>
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-zinc-600">
+                  Sınıf
+                  <select
+                    value={fGrade}
+                    onChange={(e) => setFGrade(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400"
+                  >
+                    <option value="">Boş</option>
+                    <option value="1.">1.</option>
+                    <option value="END.">END.</option>
+                  </select>
                 </label>
               </div>
 
@@ -752,6 +812,8 @@ export default function SalesPage() {
                     <th className="py-2 pr-2 font-semibold">Ürün</th>
                     <th className="py-2 pr-2 font-semibold">Marka</th>
                     <th className="py-2 pr-2 font-semibold">Boyut</th>
+                    <th className="py-2 pr-2 font-semibold">Yüzey</th>
+                    <th className="py-2 pr-2 font-semibold">Sınıf</th>
                     <th className="py-2 pr-2 text-right font-semibold">m²</th>
                     <th className="py-2 pr-2 text-right font-semibold">Birim ₺</th>
                     <th className="py-2 pr-2 text-right font-semibold">Toplam ₺</th>
@@ -763,7 +825,7 @@ export default function SalesPage() {
                   {filtered.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={9}
+                        colSpan={11}
                         className="py-8 text-center text-sm text-zinc-500"
                       >
                         {loading ? "Yükleniyor…" : "Kayıt yok."}
@@ -785,8 +847,43 @@ export default function SalesPage() {
                               </span>
                             ) : null}
                           </td>
-                          <td className="py-2 pr-2">{s.brand}</td>
-                          <td className="py-2 pr-2 whitespace-nowrap">{s.size}</td>
+                          <td className="py-2 pr-2">
+                            <input
+                              value={eBrand}
+                              onChange={(e) => setEBrand(e.target.value)}
+                              className="w-24 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm outline-none focus:border-zinc-500"
+                            />
+                          </td>
+                          <td className="py-2 pr-2 whitespace-nowrap">
+                            <input
+                              value={eSize}
+                              onChange={(e) => setESize(e.target.value)}
+                              className="w-20 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm outline-none focus:border-zinc-500"
+                            />
+                          </td>
+                          <td className="py-2 pr-2">
+                            <select
+                              value={eSurface}
+                              onChange={(e) => setESurface(e.target.value)}
+                              className="rounded-md border border-zinc-300 bg-white px-1.5 py-1 text-sm outline-none focus:border-zinc-500"
+                            >
+                              <option value="">Boş</option>
+                              <option value="FLP">FLP</option>
+                              <option value="SEMİ LAPP.">SEMİ LAPP.</option>
+                              <option value="MAT">MAT</option>
+                            </select>
+                          </td>
+                          <td className="py-2 pr-2">
+                            <select
+                              value={eGrade}
+                              onChange={(e) => setEGrade(e.target.value)}
+                              className="rounded-md border border-zinc-300 bg-white px-1.5 py-1 text-sm outline-none focus:border-zinc-500"
+                            >
+                              <option value="">Boş</option>
+                              <option value="1.">1.</option>
+                              <option value="END.">END.</option>
+                            </select>
+                          </td>
                           <td className="py-2 pr-2 text-right">
                             <input
                               inputMode="decimal"
@@ -850,6 +947,8 @@ export default function SalesPage() {
                           </td>
                           <td className="py-2 pr-2">{s.brand}</td>
                           <td className="py-2 pr-2 whitespace-nowrap">{s.size}</td>
+                          <td className="py-2 pr-2 whitespace-nowrap">{s.surface}</td>
+                          <td className="py-2 pr-2 whitespace-nowrap">{s.grade}</td>
                           <td className="py-2 pr-2 text-right">{fmtNum(s.quantity)}</td>
                           <td className="py-2 pr-2 text-right">{fmtMoney(s.unitPrice)}</td>
                           <td className="py-2 pr-2 text-right font-bold">
