@@ -86,6 +86,10 @@ type SlotState = {
   endStockLabel: string;
   endStock: string;
   endStockPrice: string;
+  dualPrice: boolean;
+  priceLabel: string;
+  secondPriceLabel: string;
+  secondPrice: string;
   darkText: boolean;
   customName: string;
   imageUrlOverride: string | null;
@@ -165,6 +169,10 @@ function emptySlot(): SlotState {
     endStockLabel: "END.Stok",
     endStock: "",
     endStockPrice: "",
+    dualPrice: false,
+    priceLabel: "Vadeli",
+    secondPriceLabel: "Kart",
+    secondPrice: "",
     darkText: false,
     customName: "",
     imageUrlOverride: null,
@@ -192,6 +200,16 @@ function normalizeSlotFromPartial(s: Partial<SlotState> | undefined): SlotState 
         : "END.Stok",
     endStock: typeof s.endStock === "string" ? s.endStock : "",
     endStockPrice: typeof s.endStockPrice === "string" ? s.endStockPrice : "",
+    dualPrice: typeof s.dualPrice === "boolean" ? s.dualPrice : false,
+    priceLabel:
+      typeof s.priceLabel === "string" && s.priceLabel.trim()
+        ? s.priceLabel
+        : "Vadeli",
+    secondPriceLabel:
+      typeof s.secondPriceLabel === "string" && s.secondPriceLabel.trim()
+        ? s.secondPriceLabel
+        : "Kart",
+    secondPrice: typeof s.secondPrice === "string" ? s.secondPrice : "",
     darkText: typeof s.darkText === "boolean" ? s.darkText : false,
     customName: typeof s.customName === "string" ? s.customName : "",
     imageUrlOverride:
@@ -232,6 +250,17 @@ function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
       endStock: typeof existing.endStock === "string" ? existing.endStock : "",
       endStockPrice:
         typeof existing.endStockPrice === "string" ? existing.endStockPrice : "",
+      dualPrice: typeof existing.dualPrice === "boolean" ? existing.dualPrice : false,
+      priceLabel:
+        typeof existing.priceLabel === "string" && existing.priceLabel.trim()
+          ? existing.priceLabel
+          : "Vadeli",
+      secondPriceLabel:
+        typeof existing.secondPriceLabel === "string" && existing.secondPriceLabel.trim()
+          ? existing.secondPriceLabel
+          : "Kart",
+      secondPrice:
+        typeof existing.secondPrice === "string" ? existing.secondPrice : "",
       customName: typeof existing.customName === "string" ? existing.customName : "",
       imageUrlOverride:
         typeof existing.imageUrlOverride === "string" || existing.imageUrlOverride === null
@@ -342,12 +371,31 @@ function SlotStockPriceDisplay({
         </span>{" "}
         <span className="font-extrabold">{unit}</span>
       </div>
-      <div className={priceClass} style={{ fontSize }}>
-        <span className="tabular-nums font-extrabold">
-          {priceValue(slot?.price)}
-        </span>{" "}
-        <span className="font-extrabold">+ KDV</span>
-      </div>
+      {slot?.dualPrice ? (
+        <div className="grid w-full grid-cols-2 gap-x-2">
+          <div className={priceClass} style={{ fontSize }}>
+            {(slot.priceLabel?.trim() || "Vadeli")}:{" "}
+            <span className="tabular-nums font-extrabold">
+              {priceValue(slot.price)}
+            </span>{" "}
+            <span className="font-extrabold">+ KDV</span>
+          </div>
+          <div className={priceClass} style={{ fontSize }}>
+            {(slot.secondPriceLabel?.trim() || "Kart")}:{" "}
+            <span className="tabular-nums font-extrabold">
+              {priceValue(slot.secondPrice)}
+            </span>{" "}
+            <span className="font-extrabold">+ KDV</span>
+          </div>
+        </div>
+      ) : (
+        <div className={priceClass} style={{ fontSize }}>
+          <span className="tabular-nums font-extrabold">
+            {priceValue(slot?.price)}
+          </span>{" "}
+          <span className="font-extrabold">+ KDV</span>
+        </div>
+      )}
     </>
   );
 }
@@ -2914,42 +2962,117 @@ export default function Home() {
                           </label>
 
                           {!s.dualStock ? (
-                            <div className="grid grid-cols-2 gap-2">
-                              <label className="space-y-1">
-                                <div className="text-xs font-semibold text-zinc-600">
-                                  Stok
-                                </div>
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <label className="space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    Stok
+                                  </div>
+                                  <input
+                                    value={s.stock}
+                                    onChange={(e) =>
+                                      updateSlot(idx, { stock: e.target.value })
+                                    }
+                                    placeholder="örn. 51.2"
+                                    inputMode="numeric"
+                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                    disabled={!mediaOk}
+                                  />
+                                </label>
+
+                                <label className="space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    {s.dualPrice
+                                      ? `${s.priceLabel?.trim() || "Vadeli"} fiyatı`
+                                      : "Fiyat"}
+                                  </div>
+                                  <input
+                                    value={s.price}
+                                    onChange={(e) =>
+                                      updateSlot(idx, {
+                                        price: formatThousandsWithDot(
+                                          digitsOnly(e.target.value),
+                                        ),
+                                      })
+                                    }
+                                    placeholder="örn. 1.250"
+                                    inputMode="numeric"
+                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                    disabled={!mediaOk}
+                                  />
+                                </label>
+                              </div>
+
+                              <label className="flex items-center gap-2 text-xs text-zinc-700">
                                 <input
-                                  value={s.stock}
+                                  type="checkbox"
+                                  checked={Boolean(s.dualPrice)}
                                   onChange={(e) =>
-                                    updateSlot(idx, { stock: e.target.value })
+                                    updateSlot(idx, { dualPrice: e.target.checked })
                                   }
-                                  placeholder="örn. 51.2"
-                                  inputMode="numeric"
-                                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                                   disabled={!mediaOk}
+                                  className="h-4 w-4 accent-zinc-900"
                                 />
+                                <span className="font-semibold">
+                                  Çift fiyat (Vadeli + Kart)
+                                </span>
                               </label>
 
-                              <label className="space-y-1">
-                                <div className="text-xs font-semibold text-zinc-600">
-                                  Fiyat
+                              {s.dualPrice ? (
+                                <div className="grid grid-cols-2 gap-2">
+                                  <label className="space-y-1">
+                                    <div className="text-xs font-semibold text-zinc-600">
+                                      1. fiyat etiketi
+                                    </div>
+                                    <input
+                                      value={s.priceLabel}
+                                      onChange={(e) =>
+                                        updateSlot(idx, {
+                                          priceLabel: e.target.value,
+                                        })
+                                      }
+                                      placeholder="Vadeli"
+                                      className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                      disabled={!mediaOk}
+                                    />
+                                  </label>
+                                  <label className="space-y-1">
+                                    <div className="text-xs font-semibold text-zinc-600">
+                                      2. fiyat etiketi
+                                    </div>
+                                    <input
+                                      value={s.secondPriceLabel}
+                                      onChange={(e) =>
+                                        updateSlot(idx, {
+                                          secondPriceLabel: e.target.value,
+                                        })
+                                      }
+                                      placeholder="Kart"
+                                      className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                      disabled={!mediaOk}
+                                    />
+                                  </label>
+                                  <label className="col-span-2 space-y-1">
+                                    <div className="text-xs font-semibold text-zinc-600">
+                                      {s.secondPriceLabel?.trim() || "Kart"} fiyatı
+                                    </div>
+                                    <input
+                                      value={s.secondPrice}
+                                      onChange={(e) =>
+                                        updateSlot(idx, {
+                                          secondPrice: formatThousandsWithDot(
+                                            digitsOnly(e.target.value),
+                                          ),
+                                        })
+                                      }
+                                      placeholder="örn. 220"
+                                      inputMode="numeric"
+                                      className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                      disabled={!mediaOk}
+                                    />
+                                  </label>
                                 </div>
-                                <input
-                                  value={s.price}
-                                  onChange={(e) =>
-                                    updateSlot(idx, {
-                                      price: formatThousandsWithDot(
-                                        digitsOnly(e.target.value),
-                                      ),
-                                    })
-                                  }
-                                  placeholder="örn. 1.250"
-                                  inputMode="numeric"
-                                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                                  disabled={!mediaOk}
-                                />
-                              </label>
+                              ) : null}
                             </div>
                           ) : (
                             <div className="space-y-2">
