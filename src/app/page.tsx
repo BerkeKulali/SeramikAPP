@@ -38,7 +38,10 @@ type CatalogV1 = {
 };
 
 type SellRow = {
+  rowKey: string;
   slotIndex: number;
+  /** Çift stoklu slotlarda hangi stoktan düşüleceğini belirler. */
+  part: "primary" | "end";
   selected: boolean;
   productName: string;
   brand: string;
@@ -1129,12 +1132,57 @@ export default function Home() {
       if (!name || name === "\u2014") return;
       const size =
         p?.size && p.size !== "katalog" ? p.size : selectedTemplateSize;
+      const brand = (p?.brand || selectedManufacturer || "").trim();
+      const sizeText = String(size || "").trim();
+
+      if (slot.dualStock) {
+        // Çift stoklu slot: 1. ve END için ayrı birer satır üret.
+        const parts: Array<{
+          part: "primary" | "end";
+          label: string;
+          quantity: string;
+          unitPrice: string;
+        }> = [
+          {
+            part: "primary",
+            label: slot.primaryStockLabel?.trim() || "1.Stok",
+            quantity: slot.stock || "",
+            unitPrice: slot.price || "",
+          },
+          {
+            part: "end",
+            label: slot.endStockLabel?.trim() || "END.Stok",
+            quantity: slot.endStock || "",
+            unitPrice: slot.endStockPrice || "",
+          },
+        ];
+        parts.forEach((part) => {
+          // Hiç veri girilmemiş tarafı listeye ekleme.
+          if (!part.quantity.trim() && !part.unitPrice.trim()) return;
+          rows.push({
+            rowKey: `${idx}:${part.part}`,
+            slotIndex: idx,
+            part: part.part,
+            selected: true,
+            productName: `${name} ${part.label}`.trim(),
+            brand,
+            size: sizeText,
+            quantity: part.quantity,
+            unitPrice: part.unitPrice,
+            note: "",
+          });
+        });
+        return;
+      }
+
       rows.push({
+        rowKey: `${idx}:primary`,
         slotIndex: idx,
+        part: "primary",
         selected: true,
         productName: name,
-        brand: (p?.brand || selectedManufacturer || "").trim(),
-        size: String(size || "").trim(),
+        brand,
+        size: sizeText,
         quantity: slot.stock || "",
         unitPrice: slot.price || "",
         note: "",
@@ -1151,9 +1199,9 @@ export default function Home() {
     setIsSellModalOpen(true);
   }
 
-  function updateSellRow(slotIndex: number, patch: Partial<SellRow>) {
+  function updateSellRow(rowKey: string, patch: Partial<SellRow>) {
     setSellRows((prev) =>
-      prev.map((r) => (r.slotIndex === slotIndex ? { ...r, ...patch } : r)),
+      prev.map((r) => (r.rowKey === rowKey ? { ...r, ...patch } : r)),
     );
   }
 
@@ -1193,31 +1241,39 @@ export default function Home() {
       const data = (await res.json()) as { added?: number };
 
       // Satılan miktarı afiş stok alanından düş (canlı afiş).
-      const soldByIndex = new Map<number, number>();
+      // Çift stoklu slotlarda 1. ve END ayrı ayrı düşülür.
+      const soldPrimary = new Map<number, number>();
+      const soldEnd = new Map<number, number>();
       for (const r of chosen) {
-        soldByIndex.set(r.slotIndex, parseTrNumber(r.quantity));
+        const target = r.part === "end" ? soldEnd : soldPrimary;
+        target.set(
+          r.slotIndex,
+          (target.get(r.slotIndex) ?? 0) + parseTrNumber(r.quantity),
+        );
       }
       const dropStock = (stock: string, sold: number): string => {
         const next = Math.max(0, Math.round((parseTrNumber(stock) - sold) * 100) / 100);
         return String(next);
       };
-      setSlots((prev) =>
-        prev.map((sl, idx) => {
-          const sold = soldByIndex.get(idx);
-          if (sold == null) return sl;
-          return { ...sl, stock: dropStock(sl.stock, sold) };
-        }),
-      );
+      const applySold = (sl: SlotState, idx: number): SlotState => {
+        const p = soldPrimary.get(idx);
+        const e = soldEnd.get(idx);
+        if (p == null && e == null) return sl;
+        return {
+          ...sl,
+          stock: p == null ? sl.stock : dropStock(sl.stock, p),
+          endStock: e == null ? sl.endStock : dropStock(sl.endStock, e),
+        };
+      };
+      setSlots((prev) => prev.map((sl, idx) => applySold(sl, idx)));
       // Düzenlenen sayfa kuyruktaysa onu da güncelle ki kaydedince kalıcı olsun.
       if (pdfEditingIndex != null) {
         setPdfQueue((prev) =>
           prev.map((it, idx) => {
             if (idx !== pdfEditingIndex) return it;
-            const nextSlots = it.snapshot.slots.map((sl, sIdx) => {
-              const sold = soldByIndex.get(sIdx);
-              if (sold == null) return sl;
-              return { ...sl, stock: dropStock(sl.stock, sold) };
-            });
+            const nextSlots = it.snapshot.slots.map((sl, sIdx) =>
+              applySold(sl, sIdx),
+            );
             return { ...it, snapshot: { ...it.snapshot, slots: nextSlots } };
           }),
         );
@@ -3388,7 +3444,7 @@ export default function Home() {
                       parseTrNumber(r.quantity) * parseTrNumber(r.unitPrice);
                     return (
                       <div
-                        key={r.slotIndex}
+                        key={r.rowKey}
                         className={[
                           "rounded-xl border p-2.5",
                           r.selected
@@ -3401,7 +3457,7 @@ export default function Home() {
                             type="checkbox"
                             checked={r.selected}
                             onChange={(e) =>
-                              updateSellRow(r.slotIndex, {
+                              updateSellRow(r.rowKey, {
                                 selected: e.target.checked,
                               })
                             }
@@ -3421,7 +3477,7 @@ export default function Home() {
                                   inputMode="decimal"
                                   value={r.quantity}
                                   onChange={(e) =>
-                                    updateSellRow(r.slotIndex, {
+                                    updateSellRow(r.rowKey, {
                                       quantity: e.target.value,
                                     })
                                   }
@@ -3434,7 +3490,7 @@ export default function Home() {
                                   inputMode="decimal"
                                   value={r.unitPrice}
                                   onChange={(e) =>
-                                    updateSellRow(r.slotIndex, {
+                                    updateSellRow(r.rowKey, {
                                       unitPrice: e.target.value,
                                     })
                                   }
