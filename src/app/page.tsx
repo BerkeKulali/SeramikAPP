@@ -1463,6 +1463,22 @@ export default function Home() {
     });
   }
 
+  /**
+   * Bir slottaki görsel genişliğini tüm dolu slotlara uygular.
+   * Boş bırakılmış (otomatik) değer de kopyalanabilsin diye trim edilmiş
+   * hâli olduğu gibi yazılır.
+   */
+  function applyImageScaleToAll(sourceIndex: number) {
+    setSlots((prev) => {
+      const imageScale = (prev[sourceIndex]?.imageScale ?? "").trim();
+      return prev.map((s, idx) => {
+        if (idx === sourceIndex) return s;
+        if (!slotHasAssignableMedia(s)) return s;
+        return { ...s, imageScale };
+      });
+    });
+  }
+
   useEffect(() => {
     const ac = new AbortController();
 
@@ -3142,9 +3158,20 @@ export default function Home() {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="space-y-1 block">
-                            <div className="text-xs font-semibold text-zinc-600">
-                              Görsel genişliği (%)
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-xs font-semibold text-zinc-600">
+                                Görsel genişliği (%)
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => applyImageScaleToAll(idx)}
+                                disabled={!mediaOk}
+                                title="Bu genişliği tüm dolu slotlara uygula"
+                                className="rounded-md border border-zinc-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-zinc-700 hover:bg-zinc-50 disabled:bg-zinc-50 disabled:text-zinc-300"
+                              >
+                                Tümüne uygula
+                              </button>
                             </div>
                             <input
                               value={s.imageScale}
@@ -3164,7 +3191,7 @@ export default function Home() {
                               className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                               disabled={!mediaOk}
                             />
-                          </label>
+                          </div>
 
                           <label className="flex items-center gap-2 text-xs text-zinc-700">
                             <input
