@@ -2184,8 +2184,7 @@ export default function Home() {
         parsed.productImageAspect === "video" ||
         parsed.productImageAspect === "parquet" ||
         parsed.productImageAspect === "oneThree" ||
-        parsed.productImageAspect === "oneFour" ||
-      parsed.productImageAspect === "oneFour"
+        parsed.productImageAspect === "oneFour"
           ? parsed.productImageAspect
           : productImageAspect;
 
@@ -4777,7 +4776,8 @@ export default function Home() {
                           </div>
                         ) : selectedTemplate === 5 &&
                           (productImageAspect === "video" ||
-                            productImageAspect === "oneThree") ? (
+                            productImageAspect === "oneThree" ||
+                            productImageAspect === "oneFour") ? (
                           <div className="h-full w-full flex items-start justify-center overflow-hidden">
                             <div className="w-full h-full flex flex-col overflow-hidden pt-4 pb-8">
                               <div
@@ -5006,12 +5006,17 @@ export default function Home() {
                           </div>
                         ) : selectedTemplate === 6 &&
                           (productImageAspect === "video" ||
-                            productImageAspect === "oneThree") ? (
+                            productImageAspect === "oneThree" ||
+                            productImageAspect === "oneFour") ? (
                           <div
-                            className="box-border h-full grid gap-x-6 gap-y-6 py-10"
+                            className="box-border h-full grid gap-x-6 gap-y-10 py-10"
                             style={{
                               gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                              gridTemplateRows: "repeat(3, minmax(0, 1fr))",
+                              // Satırlar içeriğe göre sarılır ve blok dikeyde
+                              // ortalanır; aksi hâlde 1fr satırlar tuvale
+                              // yayılıp üstten başlıyor ve aralar açılıyordu.
+                              gridTemplateRows: "repeat(3, min-content)",
+                              alignContent: "center",
                             }}
                           >
                             {Array.from({ length: 6 }, (_, idx) => {
@@ -5032,7 +5037,7 @@ export default function Home() {
                               return (
                                 <div
                                   key={idx}
-                                  className="flex h-full min-h-0 flex-col justify-center overflow-hidden"
+                                  className="flex min-h-0 flex-col justify-center overflow-hidden"
                                   style={{ background: canvasBg }}
                                 >
                                   <div
