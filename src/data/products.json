@@ -6207,5 +6207,19 @@
     "brand": "qua-seramik",
     "size": "60x60",
     "image": "/urunler/qua-seramik/60x60/terrazzı-a.gri.png"
+  },
+  {
+    "id": "karo-seramik-7.5x15-artisan-ocean-glossy",
+    "name": "artisan ocean glossy",
+    "brand": "karo-seramik",
+    "size": "7.5x15",
+    "image": "/urunler/karo-seramik/7.5x15/artisan ocean glossy.png"
+  },
+  {
+    "id": "karo-seramik-7.5x15-dark-grey-flat-glossy",
+    "name": "dark grey flat glossy",
+    "brand": "karo-seramik",
+    "size": "7.5x15",
+    "image": "/urunler/karo-seramik/7.5x15/dark grey flat glossy.png"
   }
 ]

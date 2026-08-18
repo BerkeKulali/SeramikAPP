@@ -29,7 +29,7 @@ function walk(dir, rel = "") {
 walk(root);
 
 // Ondalıklı ebatlar da geçerli: 7.5x15, 5x30 ...
-const sizePattern = /^\d+(?:[.,]\d+)?x\d+(?:[.,]\d+)?$/i;
+const sizePattern = /^\d+(?:[.,]\d+)?[x*-]\d+(?:[.,]\d+)?$/i;
 const missing = [];
 
 function slug(s) {
@@ -51,7 +51,7 @@ for (const rel of files) {
   if (parts.length >= 3 && sizePattern.test(parts[1])) {
     brand = parts[0];
     // Klasör adı büyük/küçük harf veya virgüllü olabilir: 30X60, 7,5x15 ...
-    size = parts[1].toLowerCase().replace(",", ".");
+    size = parts[1].toLowerCase().replace(",", ".").replace(/[*-]/, "x");
     base = parts.slice(2).join("/");
   } else if (parts.length === 2) {
     brand = parts[0];

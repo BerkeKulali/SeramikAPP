@@ -19,7 +19,8 @@ type ProductImageAspect =
   | "threeTwo"
   | "video"
   | "parquet"
-  | "oneThree";
+  | "oneThree"
+  | "oneFour";
 
 type DraftSummary = {
   id: string;
@@ -93,11 +94,8 @@ type SlotState = {
   priceLabel: string;
   secondPriceLabel: string;
   secondPrice: string;
-  /** Küçük ebatlarda karoyu tekrarlayarak döşeme görünümü verir. */
-  tiled: boolean;
-  /** Boş = ebattan otomatik hesapla. */
-  tileColumns: string;
-  tileStaggered: boolean;
+  /** Görselin çerçeve içindeki genişliği (%). Boş = ebattan otomatik. */
+  imageScale: string;
   darkText: boolean;
   customName: string;
   imageUrlOverride: string | null;
@@ -192,9 +190,7 @@ function emptySlot(): SlotState {
     priceLabel: "Vadeli",
     secondPriceLabel: "Kart",
     secondPrice: "",
-    tiled: false,
-    tileColumns: "",
-    tileStaggered: true,
+    imageScale: "",
     darkText: false,
     customName: "",
     imageUrlOverride: null,
@@ -232,9 +228,7 @@ function normalizeSlotFromPartial(s: Partial<SlotState> | undefined): SlotState 
         ? s.secondPriceLabel
         : "Kart",
     secondPrice: typeof s.secondPrice === "string" ? s.secondPrice : "",
-    tiled: typeof s.tiled === "boolean" ? s.tiled : false,
-    tileColumns: typeof s.tileColumns === "string" ? s.tileColumns : "",
-    tileStaggered: typeof s.tileStaggered === "boolean" ? s.tileStaggered : true,
+    imageScale: typeof s.imageScale === "string" ? s.imageScale : "",
     darkText: typeof s.darkText === "boolean" ? s.darkText : false,
     customName: typeof s.customName === "string" ? s.customName : "",
     imageUrlOverride:
@@ -286,11 +280,8 @@ function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
           : "Kart",
       secondPrice:
         typeof existing.secondPrice === "string" ? existing.secondPrice : "",
-      tiled: typeof existing.tiled === "boolean" ? existing.tiled : false,
-      tileColumns:
-        typeof existing.tileColumns === "string" ? existing.tileColumns : "",
-      tileStaggered:
-        typeof existing.tileStaggered === "boolean" ? existing.tileStaggered : true,
+      imageScale:
+        typeof existing.imageScale === "string" ? existing.imageScale : "",
       customName: typeof existing.customName === "string" ? existing.customName : "",
       imageUrlOverride:
         typeof existing.imageUrlOverride === "string" || existing.imageUrlOverride === null
@@ -430,102 +421,12 @@ function SlotStockPriceDisplay({
   );
 }
 
-const TILE_GROUT_COLOR = "#2A2724";
-const TILE_GAP_PX = 2;
-/** Döşeme deseninin çizildiği kare tuvalin kenar uzunluğu (px). */
-const TILE_CANVAS_PX = 1080;
-
 /**
- * Döşeme desenini bir kez canvas'a çizip tek bir data URL döndürür.
+ * Slot görseli.
  *
- * Neden canvas: html-to-image dışa aktarımda her görsel referansını base64
- * olarak gömüyor. Hücre/satır başına ayrı eleman kullanılsaydı aynı 3 MB'lık
- * karo onlarca kez gömülür ve PDF çıktısı şişerdi. Tek tuval hem bunu önler
- * hem de karoyu gereken çözünürlüğe indirir.
- *
- * Tuval kare çizilir; çerçeve oranı ne olursa olsun `object-cover` ile
- * ortadan kırpılır, böylece karo ölçeği yatayda doğru kalır.
- */
-function useTiledPattern({
-  src,
-  enabled,
-  columns,
-  tileRatio,
-  staggered,
-}: {
-  src: string;
-  enabled: boolean;
-  columns: number;
-  tileRatio: number;
-  staggered: boolean;
-}) {
-  // Desen, üretildiği ayarların imzasıyla saklanır; ayar değişince
-  // eski desen gösterilmez. setState yalnızca async onload/onerror içinde
-  // çağrılır (effect gövdesinde senkron setState React uyarısı üretiyor).
-  const signature = `${src}|${columns}|${tileRatio}|${staggered ? 1 : 0}`;
-  const [pattern, setPattern] = useState<{ key: string; url: string } | null>(
-    null,
-  );
-
-  useEffect(() => {
-    if (!enabled || !src) return;
-    let cancelled = false;
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      if (cancelled) return;
-      try {
-        const size = TILE_CANVAS_PX;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) throw new Error("2d context yok");
-
-        const cellW = size / columns;
-        const cellH = cellW / Math.max(0.05, tileRatio);
-        const gap = TILE_GAP_PX;
-
-        ctx.fillStyle = TILE_GROUT_COLOR;
-        ctx.fillRect(0, 0, size, size);
-
-        const rows = Math.ceil(size / cellH) + 1;
-        const startY = (size - rows * cellH) / 2;
-
-        for (let r = 0; r < rows; r += 1) {
-          const y = startY + r * cellH;
-          const offset = staggered && r % 2 === 1 ? -cellW / 2 : 0;
-          for (let x = offset - cellW; x < size + cellW; x += cellW) {
-            ctx.drawImage(
-              img,
-              x + gap / 2,
-              y + gap / 2,
-              Math.max(1, cellW - gap),
-              Math.max(1, cellH - gap),
-            );
-          }
-        }
-        setPattern({ key: signature, url: canvas.toDataURL("image/jpeg", 0.92) });
-      } catch {
-        // CORS kaynaklı tuval kirlenmesi vb. — CSS tabanlı yedeğe düşülür.
-        setPattern(null);
-      }
-    };
-    img.onerror = () => {
-      if (!cancelled) setPattern(null);
-    };
-    img.src = src;
-    return () => {
-      cancelled = true;
-    };
-  }, [signature, src, enabled, columns, tileRatio, staggered]);
-
-  return enabled && pattern?.key === signature ? pattern.url : null;
-}
-
-/**
- * Slot görseli. Döşeme kapalıyken tek karo çerçeveyi doldurur (eski davranış).
- * Açıkken karo, gerçek oranında ve şaşırtmalı olarak tekrarlanır.
+ * `imageScale` ile karo, çerçevenin içinde gerçek ölçüsüne göre küçültülüp
+ * ortalanır; böylece 7,5x30 gibi küçük ebatlar 60x120 gibi büyük formatların
+ * yanında gözle görülür şekilde küçük durur.
  */
 function SlotImage({
   src,
@@ -544,101 +445,27 @@ function SlotImage({
   onError: () => void;
   onLoad: () => void;
 }) {
-  const tiled = Boolean(slot?.tiled);
-
-  const manual = parseInt((slot?.tileColumns ?? "").trim(), 10);
-  const columns =
-    Number.isFinite(manual) && manual >= 1
-      ? Math.min(TILE_MAX_COLUMNS, manual)
-      : autoTileColumns(sizeText);
-
-  const dims = parseSizeCm(sizeText);
-  // Karonun uzun kenarı yatay durur; satır yüksekliği bu orandan gelir.
-  const tileRatio = dims ? dims.long / dims.short : 1;
-  const staggered = slot?.tileStaggered !== false;
-
-  const pattern = useTiledPattern({
-    src,
-    enabled: tiled && !hasError,
-    columns,
-    tileRatio,
-    staggered,
-  });
-
   if (!src || hasError) return <div className="h-full w-full" />;
 
-  if (!tiled) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt={alt}
-        crossOrigin="anonymous"
-        className="h-full w-full object-cover object-center"
-        onError={onError}
-        onLoad={onLoad}
-      />
-    );
-  }
+  const scale = resolveImageScale(sizeText, slot?.imageScale);
 
-  if (pattern) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={pattern}
-        alt={alt}
-        className="h-full w-full object-cover object-center"
-        onLoad={onLoad}
-      />
-    );
-  }
+  const image = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      crossOrigin="anonymous"
+      className="h-full w-full object-cover object-center"
+      onError={onError}
+      onLoad={onLoad}
+    />
+  );
 
-  // Yedek yol: tuval kullanılamadıysa satır başına background-image ile döşe.
-  const rowAspect = columns * tileRatio;
-  const rowCount = Math.min(40, Math.max(1, Math.ceil(rowAspect) + 2));
-  const cellWidthPct = 100 / columns;
-  const halfCellPct = cellWidthPct / 2;
+  if (scale >= 100) return image;
 
   return (
-    <div
-      className="relative h-full w-full overflow-hidden"
-      style={{ background: TILE_GROUT_COLOR }}
-      role="img"
-      aria-label={alt}
-    >
-      <div
-        className="absolute inset-0 flex flex-col justify-center"
-        style={{ gap: `${TILE_GAP_PX}px` }}
-      >
-        {Array.from({ length: rowCount }, (_, row) => {
-          const offset = staggered && row % 2 === 1 ? -halfCellPct : 0;
-          const offsetCss = `${offset}%`;
-          return (
-            <div
-              key={row}
-              className="w-full shrink-0"
-              style={{
-                aspectRatio: `${rowAspect}`,
-                backgroundImage: `linear-gradient(to right, ${TILE_GROUT_COLOR} 0 ${TILE_GAP_PX}px, rgba(0,0,0,0) ${TILE_GAP_PX}px), url("${src}")`,
-                backgroundSize: `${cellWidthPct}% 100%, ${cellWidthPct}% 100%`,
-                backgroundRepeat: "repeat-x, repeat-x",
-                backgroundPosition: `${offsetCss} 0, ${offsetCss} 0`,
-              }}
-            />
-          );
-        })}
-      </div>
-      {/* Yükleme/hata takibi için gizli ölçüm etiketi. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt=""
-        crossOrigin="anonymous"
-        aria-hidden="true"
-        className="pointer-events-none absolute h-px w-px opacity-0"
-        onError={onError}
-        onLoad={onLoad}
-      />
+    <div className="flex h-full w-full items-center justify-center">
+      <div style={{ width: `${scale}%`, height: `${scale}%` }}>{image}</div>
     </div>
   );
 }
@@ -708,18 +535,30 @@ function parseSizeCm(sizeText: string): { short: number; long: number } | null {
 }
 
 /**
- * Döşeme görünümünde çerçeveye kaç karo sığacağını hesaplar.
- * Referans: çerçevenin genişliği ~60 cm kabul edilir, yani 60x60 tek karo olur.
+ * Küçük ebatların çerçeve içinde ne kadar yer kaplayacağını belirler.
+ *
+ * Referans 60 cm = %100. Yalnızca uzun kenarı SMALL_FORMAT_MAX_CM ve altındaki
+ * ebatlar küçültülür; 60x60, 60x120 gibi mevcut ebatlar %100 kalır, yani
+ * eski afişlerin çıktısı değişmez.
  */
-const TILE_REFERENCE_CM = 60;
-const TILE_MAX_COLUMNS = 12;
+const IMAGE_SCALE_REFERENCE_CM = 60;
+const SMALL_FORMAT_MAX_CM = 30;
+const IMAGE_SCALE_MIN_PCT = 30;
 
-function autoTileColumns(sizeText: string): number {
+function autoImageScale(sizeText: string): number {
   const dims = parseSizeCm(sizeText);
-  if (!dims) return 4;
-  const cols = Math.round(TILE_REFERENCE_CM / dims.long);
-  return Math.min(TILE_MAX_COLUMNS, Math.max(1, cols));
+  if (!dims || dims.long > SMALL_FORMAT_MAX_CM) return 100;
+  const pct = Math.round((dims.long / IMAGE_SCALE_REFERENCE_CM) * 100);
+  return Math.min(100, Math.max(IMAGE_SCALE_MIN_PCT, pct));
 }
+
+/** Elle girilen değer varsa onu, yoksa ebattan hesaplananı döndürür. */
+function resolveImageScale(sizeText: string, manual?: string): number {
+  const n = parseInt((manual ?? "").trim(), 10);
+  if (Number.isFinite(n) && n > 0) return Math.min(100, Math.max(5, n));
+  return autoImageScale(sizeText);
+}
+
 
 function aspectClassForSize(sizeText: string) {
   // Portrait canvas içinde bile tüm ürün görselleri yatay kalmalı.
@@ -748,6 +587,7 @@ function aspectClassForProductImage(aspect: ProductImageAspect) {
   if (aspect === "threeTwo") return "aspect-[3/2]";
   if (aspect === "parquet") return "aspect-[6/1]";
   if (aspect === "oneThree") return "aspect-[3/1]";
+  if (aspect === "oneFour") return "aspect-[4/1]";
   // "video" seçeneği: 60x120 (1:2) yatay görsel oranı
   return "aspect-[2/1]";
 }
@@ -1762,7 +1602,8 @@ export default function Home() {
       d.productImageAspect === "threeTwo" ||
       d.productImageAspect === "video" ||
       d.productImageAspect === "parquet" ||
-      d.productImageAspect === "oneThree"
+      d.productImageAspect === "oneThree" ||
+      d.productImageAspect === "oneFour"
         ? d.productImageAspect
         : "square";
 
@@ -2245,7 +2086,8 @@ export default function Home() {
       parsed.productImageAspect === "threeTwo" ||
       parsed.productImageAspect === "video" ||
       parsed.productImageAspect === "parquet" ||
-      parsed.productImageAspect === "oneThree"
+      parsed.productImageAspect === "oneThree" ||
+      parsed.productImageAspect === "oneFour"
         ? parsed.productImageAspect
         : "square";
 
@@ -2341,7 +2183,9 @@ export default function Home() {
         parsed.productImageAspect === "threeTwo" ||
         parsed.productImageAspect === "video" ||
         parsed.productImageAspect === "parquet" ||
-        parsed.productImageAspect === "oneThree"
+        parsed.productImageAspect === "oneThree" ||
+        parsed.productImageAspect === "oneFour" ||
+      parsed.productImageAspect === "oneFour"
           ? parsed.productImageAspect
           : productImageAspect;
 
@@ -2847,6 +2691,7 @@ export default function Home() {
                 <option value="threeTwo">Yatay (3:2)</option>
                 <option value="video">60×120 (1:2)</option>
                 <option value="oneThree">Dikey 1:3 (30×90 / 40×120)</option>
+                <option value="oneFour">Dikey 1:4 (7,5×30 / 5×20)</option>
                 <option value="parquet">Parke (1:6)</option>
               </select>
             </section>
@@ -3298,67 +3143,29 @@ export default function Home() {
                         </div>
 
                         <div className="space-y-2">
-                          <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/60 p-2">
-                            <label className="flex items-center gap-2 text-xs text-zinc-700">
-                              <input
-                                type="checkbox"
-                                checked={Boolean(s.tiled)}
-                                onChange={(e) =>
-                                  updateSlot(idx, { tiled: e.target.checked })
-                                }
-                                disabled={!mediaOk}
-                                className="h-4 w-4 accent-zinc-900"
-                              />
-                              <span className="font-semibold">
-                                Döşeme görünümü (küçük ebat)
-                              </span>
-                            </label>
-
-                            {s.tiled ? (
-                              <div className="grid grid-cols-2 gap-2">
-                                <label className="space-y-1">
-                                  <div className="text-xs font-semibold text-zinc-600">
-                                    Sütun sayısı
-                                  </div>
-                                  <input
-                                    value={s.tileColumns}
-                                    onChange={(e) =>
-                                      updateSlot(idx, {
-                                        tileColumns: digitsOnly(e.target.value).slice(
-                                          0,
-                                          2,
-                                        ),
-                                      })
-                                    }
-                                    placeholder={`otomatik (${autoTileColumns(
-                                      sizeTextForSlot(
-                                        s.productId != null
-                                          ? productsById.get(s.productId)
-                                          : undefined,
-                                      ),
-                                    )})`}
-                                    inputMode="numeric"
-                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                                    disabled={!mediaOk}
-                                  />
-                                </label>
-                                <label className="flex items-end gap-2 pb-2 text-xs text-zinc-700">
-                                  <input
-                                    type="checkbox"
-                                    checked={s.tileStaggered !== false}
-                                    onChange={(e) =>
-                                      updateSlot(idx, {
-                                        tileStaggered: e.target.checked,
-                                      })
-                                    }
-                                    disabled={!mediaOk}
-                                    className="h-4 w-4 accent-zinc-900"
-                                  />
-                                  <span className="font-semibold">Şaşırtmalı</span>
-                                </label>
-                              </div>
-                            ) : null}
-                          </div>
+                          <label className="space-y-1 block">
+                            <div className="text-xs font-semibold text-zinc-600">
+                              Görsel genişliği (%)
+                            </div>
+                            <input
+                              value={s.imageScale}
+                              onChange={(e) =>
+                                updateSlot(idx, {
+                                  imageScale: digitsOnly(e.target.value).slice(0, 3),
+                                })
+                              }
+                              placeholder={`otomatik (${autoImageScale(
+                                sizeTextForSlot(
+                                  s.productId != null
+                                    ? productsById.get(s.productId)
+                                    : undefined,
+                                ),
+                              )})`}
+                              inputMode="numeric"
+                              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                              disabled={!mediaOk}
+                            />
+                          </label>
 
                           <label className="flex items-center gap-2 text-xs text-zinc-700">
                             <input
