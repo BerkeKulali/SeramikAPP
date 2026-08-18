@@ -14,13 +14,6 @@
     "image": "/urunler/bien-seramik/45x45/astoria-crema.png"
   },
   {
-    "id": "bien-seramik-45x45-enzo-antrasit",
-    "name": "enzo-antrasit",
-    "brand": "bien-seramik",
-    "size": "45x45",
-    "image": "/urunler/bien-seramik/45x45/enzo-antrasit.png"
-  },
-  {
     "id": "bien-seramik-45x45-enzo-beyaz",
     "name": "enzo-beyaz",
     "brand": "bien-seramik",
@@ -215,20 +208,6 @@
     "brand": "bien-seramik",
     "size": "60x120",
     "image": "/urunler/bien-seramik/60x120/bona-dea-dark-grey.png"
-  },
-  {
-    "id": "bien-seramik-60x120-carbon-antrasit",
-    "name": "carbon-antrasit",
-    "brand": "bien-seramik",
-    "size": "60x120",
-    "image": "/urunler/bien-seramik/60x120/carbon-antrasit.png"
-  },
-  {
-    "id": "bien-seramik-60x120-carbon-grey",
-    "name": "carbon-grey",
-    "brand": "bien-seramik",
-    "size": "60x120",
-    "image": "/urunler/bien-seramik/60x120/carbon-grey.png"
   },
   {
     "id": "bien-seramik-60x120-cemento-grey",
@@ -502,13 +481,6 @@
     "brand": "bien-seramik",
     "size": "60x120",
     "image": "/urunler/bien-seramik/60x120/pamfilya-a.gri.png"
-  },
-  {
-    "id": "bien-seramik-60x120-quark-bone",
-    "name": "quark-bone",
-    "brand": "bien-seramik",
-    "size": "60x120",
-    "image": "/urunler/bien-seramik/60x120/quark-bone.png"
   },
   {
     "id": "bien-seramik-60x120-quark-gri",
@@ -1335,13 +1307,6 @@
     "brand": "qua-seramik",
     "size": "60x120",
     "image": "/urunler/qua-seramik/60x120/gaios.png"
-  },
-  {
-    "id": "qua-seramik-60x120-gluck-stone",
-    "name": "gluck-stone",
-    "brand": "qua-seramik",
-    "size": "60x120",
-    "image": "/urunler/qua-seramik/60x120/gluck-stone.png"
   },
   {
     "id": "qua-seramik-60x120-gracia-clay",
@@ -2303,13 +2268,6 @@
     "image": "/urunler/bien-seramik/30x60/beton-antrasit.png"
   },
   {
-    "id": "bien-seramik-30x60-beton-bianco",
-    "name": "beton-bianco",
-    "brand": "bien-seramik",
-    "size": "30x60",
-    "image": "/urunler/bien-seramik/30x60/beton-bianco.png"
-  },
-  {
     "id": "bien-seramik-30x60-beton-gri",
     "name": "beton-gri",
     "brand": "bien-seramik",
@@ -2758,20 +2716,6 @@
     "image": "/urunler/bien-seramik/30x90/vigo-beyaz-decofon.png"
   },
   {
-    "id": "bien-seramik-30x90-wavy-bone",
-    "name": "wavy-bone",
-    "brand": "bien-seramik",
-    "size": "30x90",
-    "image": "/urunler/bien-seramik/30x90/wavy-bone.png"
-  },
-  {
-    "id": "bien-seramik-30x90-wavy-grey",
-    "name": "wavy-grey",
-    "brand": "bien-seramik",
-    "size": "30x90",
-    "image": "/urunler/bien-seramik/30x90/wavy-grey.png"
-  },
-  {
     "id": "bien-seramik-50x50-chester-kahve",
     "name": "chester-kahve",
     "brand": "bien-seramik",
@@ -2875,13 +2819,6 @@
     "brand": "bien-seramik",
     "size": "60x120",
     "image": "/urunler/bien-seramik/60x120/CAMOUFLAGE.png"
-  },
-  {
-    "id": "bien-seramik-60x120-carney-anthracite-3d-plus",
-    "name": "carney-anthracite-3d-plus",
-    "brand": "bien-seramik",
-    "size": "60x120",
-    "image": "/urunler/bien-seramik/60x120/carney-anthracite-3d-plus.png"
   },
   {
     "id": "bien-seramik-60x120-cleopatra",
@@ -3556,13 +3493,6 @@
     "image": "/urunler/gural-seramik/60x60/abella.png"
   },
   {
-    "id": "gural-seramik-60x60-alacati-blue",
-    "name": "alaçatı-blue",
-    "brand": "gural-seramik",
-    "size": "60x60",
-    "image": "/urunler/gural-seramik/60x60/alaçatı-blue.png"
-  },
-  {
     "id": "gural-seramik-60x60-alba-madera",
     "name": "alba-madera",
     "brand": "gural-seramik",
@@ -3701,5 +3631,2581 @@
     "brand": "qua-seramik",
     "size": "60x120",
     "image": "/urunler/qua-seramik/60x120/zenith.png"
+  },
+  {
+    "id": "bien-seramik-100x100-sun-onyx",
+    "name": "sun onyx",
+    "brand": "bien-seramik",
+    "size": "100x100",
+    "image": "/urunler/bien-seramik/100x100/sun onyx.png"
+  },
+  {
+    "id": "bien-seramik-120x180-brunella-white",
+    "name": "brunella white",
+    "brand": "bien-seramik",
+    "size": "120x180",
+    "image": "/urunler/bien-seramik/120x180/brunella white.png"
+  },
+  {
+    "id": "bien-seramik-120x180-luxe",
+    "name": "luxe",
+    "brand": "bien-seramik",
+    "size": "120x180",
+    "image": "/urunler/bien-seramik/120x180/luxe.png"
+  },
+  {
+    "id": "bien-seramik-120x180-rustic-art",
+    "name": "rustic art",
+    "brand": "bien-seramik",
+    "size": "120x180",
+    "image": "/urunler/bien-seramik/120x180/rustic art.png"
+  },
+  {
+    "id": "bien-seramik-120x180-super-white-120-180",
+    "name": "super white 120*180",
+    "brand": "bien-seramik",
+    "size": "120x180",
+    "image": "/urunler/bien-seramik/120x180/super white 120*180.png"
+  },
+  {
+    "id": "bien-seramik-120x280-kelvin-3d-plus",
+    "name": "kelvin 3d plus",
+    "brand": "bien-seramik",
+    "size": "120x280",
+    "image": "/urunler/bien-seramik/120x280/kelvin 3d plus.png"
+  },
+  {
+    "id": "bien-seramik-20x120-bosco",
+    "name": "bosco",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/bosco.png"
+  },
+  {
+    "id": "bien-seramik-20x120-eleganza-maple",
+    "name": "eleganza-maple",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/eleganza-maple.png"
+  },
+  {
+    "id": "bien-seramik-20x120-logs-golden-oak",
+    "name": "logs-golden-oak",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/logs-golden-oak.png"
+  },
+  {
+    "id": "bien-seramik-20x120-logs-hazelnut",
+    "name": "logs-hazelnut",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/logs-hazelnut.png"
+  },
+  {
+    "id": "bien-seramik-20x120-logs-light-beige",
+    "name": "logs-light-beige",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/logs-light-beige.png"
+  },
+  {
+    "id": "bien-seramik-20x120-logs-special-walnut",
+    "name": "logs-special-walnut",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/logs-special-walnut.png"
+  },
+  {
+    "id": "bien-seramik-20x120-natura-wood-birch",
+    "name": "natura-wood-birch",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/natura-wood-birch.png"
+  },
+  {
+    "id": "bien-seramik-20x120-natura-wood-eboni",
+    "name": "natura-wood-eboni",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/natura-wood-eboni.png"
+  },
+  {
+    "id": "bien-seramik-20x120-natura-wood-oak",
+    "name": "natura-wood-oak",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/natura-wood-oak.png"
+  },
+  {
+    "id": "bien-seramik-20x120-natura-wood-pine",
+    "name": "natura-wood-pine",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/natura-wood-pine.png"
+  },
+  {
+    "id": "bien-seramik-20x120-norden-teak",
+    "name": "norden teak",
+    "brand": "bien-seramik",
+    "size": "20x120",
+    "image": "/urunler/bien-seramik/20x120/norden teak.png"
+  },
+  {
+    "id": "bien-seramik-30x60-aras-beyaz",
+    "name": "aras beyaz",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/aras beyaz.png"
+  },
+  {
+    "id": "bien-seramik-30x60-aura-blue-decofon",
+    "name": "aura blue decofon",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/aura blue decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x60-aura-blue",
+    "name": "aura blue",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/aura blue.png"
+  },
+  {
+    "id": "bien-seramik-30x60-beton-bianco-3",
+    "name": "beton bianco 3",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/beton bianco 3.png"
+  },
+  {
+    "id": "bien-seramik-30x60-beton-gri-3-6",
+    "name": "beton gri 3.6",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/beton gri 3.6.png"
+  },
+  {
+    "id": "bien-seramik-30x60-cemento-grey",
+    "name": "cemento-grey",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/cemento-grey.png"
+  },
+  {
+    "id": "bien-seramik-30x60-concept-black",
+    "name": "concept-black",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/concept-black.png"
+  },
+  {
+    "id": "bien-seramik-30x60-imperial-grey",
+    "name": "imperial grey",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/imperial grey.png"
+  },
+  {
+    "id": "bien-seramik-30x60-inca-gri",
+    "name": "inca-gri",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/inca-gri.png"
+  },
+  {
+    "id": "bien-seramik-30x60-inca-vizon-2",
+    "name": "inca-vizon-2",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/inca-vizon-2.png"
+  },
+  {
+    "id": "bien-seramik-30x60-inca-vizon-decofon",
+    "name": "inca-vizon-decofon",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/inca-vizon-decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x60-magellan-bone",
+    "name": "magellan bone",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/magellan bone.png"
+  },
+  {
+    "id": "bien-seramik-30x60-magellan-grey",
+    "name": "magellan grey",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/magellan grey.png"
+  },
+  {
+    "id": "bien-seramik-30x60-maxi-beyaz",
+    "name": "maxi-beyaz",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/maxi-beyaz.png"
+  },
+  {
+    "id": "bien-seramik-30x60-olivia-siyah",
+    "name": "olivia-siyah",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/olivia-siyah.png"
+  },
+  {
+    "id": "bien-seramik-30x60-void-grey",
+    "name": "void grey",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/void grey.png"
+  },
+  {
+    "id": "bien-seramik-30x60-void-bone",
+    "name": "void-bone",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/void-bone.png"
+  },
+  {
+    "id": "bien-seramik-30x60-walter-anthracite",
+    "name": "walter anthracite",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/walter anthracite.png"
+  },
+  {
+    "id": "bien-seramik-30x60-walter-decofon",
+    "name": "walter decofon",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/walter decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x60-walter-grey",
+    "name": "walter grey",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/walter grey.png"
+  },
+  {
+    "id": "bien-seramik-30x60-walter-light-grey",
+    "name": "walter light grey",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/walter light grey.png"
+  },
+  {
+    "id": "bien-seramik-30x60-wavy-bone-decofon",
+    "name": "wavy bone decofon",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/wavy bone decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x60-wavy-bone",
+    "name": "wavy bone",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/wavy bone.png"
+  },
+  {
+    "id": "bien-seramik-30x60-wavy-grey-decofon",
+    "name": "wavy grey decofon",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/wavy grey decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x60-wavy-grey",
+    "name": "wavy grey",
+    "brand": "bien-seramik",
+    "size": "30x60",
+    "image": "/urunler/bien-seramik/30x60/wavy grey.png"
+  },
+  {
+    "id": "bien-seramik-30x90-cappadocia-grey",
+    "name": "cappadocia-grey",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/cappadocia-grey.png"
+  },
+  {
+    "id": "bien-seramik-30x90-casta-beige-decofon",
+    "name": "casta beige decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/casta beige decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-casta-beige",
+    "name": "casta beige",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/casta beige.png"
+  },
+  {
+    "id": "bien-seramik-30x90-casta-grey-decofon",
+    "name": "casta grey decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/casta grey decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-casta-grey",
+    "name": "casta grey",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/casta grey.png"
+  },
+  {
+    "id": "bien-seramik-30x90-cora-beige",
+    "name": "cora beige",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/cora beige.png"
+  },
+  {
+    "id": "bien-seramik-30x90-cora-grey",
+    "name": "cora grey",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/cora grey.png"
+  },
+  {
+    "id": "bien-seramik-30x90-enzo-antrasit",
+    "name": "enzo antrasit",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/enzo antrasit.png"
+  },
+  {
+    "id": "bien-seramik-30x90-enzo-gri-3-9",
+    "name": "enzo gri 3.9",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/enzo gri 3.9.png"
+  },
+  {
+    "id": "bien-seramik-30x90-enzo-mix-decofon",
+    "name": "enzo mix decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/enzo mix decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-helios-decofon",
+    "name": "helios-decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/helios-decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-holmes-beyaz",
+    "name": "holmes beyaz",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/holmes beyaz.png"
+  },
+  {
+    "id": "bien-seramik-30x90-holmes-decofon",
+    "name": "holmes decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/holmes decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-juno-diamond-decofon",
+    "name": "juno-diamond-decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/juno-diamond-decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-juno-ruby-decofon",
+    "name": "juno-ruby-decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/juno-ruby-decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-juno-ruby",
+    "name": "juno-ruby",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/juno-ruby.png"
+  },
+  {
+    "id": "bien-seramik-30x90-la-vita-white",
+    "name": "la-vita-white",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/la-vita-white.png"
+  },
+  {
+    "id": "bien-seramik-30x90-marlen-decofon",
+    "name": "marlen decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/marlen decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-marlen-statuario-wave-decofon",
+    "name": "marlen statuario wave decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/marlen statuario wave decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-marlen-statuario",
+    "name": "marlen statuario",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/marlen statuario.png"
+  },
+  {
+    "id": "bien-seramik-30x90-marvy-mat-decofon",
+    "name": "marvy-mat-decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/marvy-mat-decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-mirko-decofon",
+    "name": "mirko decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/mirko decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-mood-faberoak",
+    "name": "mood-faberoak",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/mood-faberoak.png"
+  },
+  {
+    "id": "bien-seramik-30x90-star-line-3-9",
+    "name": "star line 3.9",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/star line 3.9.png"
+  },
+  {
+    "id": "bien-seramik-30x90-star-line-decofon",
+    "name": "star line decofon",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/star line decofon.png"
+  },
+  {
+    "id": "bien-seramik-30x90-wavy-bone-decofon-3-9",
+    "name": "wavy bone decofon 3.9",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/wavy bone decofon 3.9.png"
+  },
+  {
+    "id": "bien-seramik-30x90-wavy-grey-decofon-3-9",
+    "name": "wavy grey decofon 3.9",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/wavy grey decofon 3.9.png"
+  },
+  {
+    "id": "bien-seramik-30x90-wavy-bone-3-9",
+    "name": "wavy-bone 3.9",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/wavy-bone 3.9.png"
+  },
+  {
+    "id": "bien-seramik-30x90-wavy-grey-3-9",
+    "name": "wavy-grey 3.9",
+    "brand": "bien-seramik",
+    "size": "30x90",
+    "image": "/urunler/bien-seramik/30x90/wavy-grey 3.9.png"
+  },
+  {
+    "id": "bien-seramik-40x120-agatha-beyaz-decofon",
+    "name": "agatha-beyaz-decofon",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/agatha-beyaz-decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x120-bianco-lasa-snow-decofon",
+    "name": "bianco lasa snow decofon",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/bianco lasa snow decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x120-brillo-glassy",
+    "name": "brillo glassy",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/brillo glassy.png"
+  },
+  {
+    "id": "bien-seramik-40x120-casper-decofon",
+    "name": "casper decofon",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/casper decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x120-casper",
+    "name": "casper",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/casper.png"
+  },
+  {
+    "id": "bien-seramik-40x120-famous-grey-decofon",
+    "name": "famous-grey-decofon",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/famous-grey-decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x120-mayora-emerald",
+    "name": "mayora-emerald",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/mayora-emerald.png"
+  },
+  {
+    "id": "bien-seramik-40x120-orfe-beige-bouquet-decofon",
+    "name": "orfe beige bouquet decofon",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/orfe beige bouquet decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x120-orfe-beige-decofon",
+    "name": "orfe beige decofon",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/orfe beige decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x120-orfe-beige",
+    "name": "orfe beige",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/orfe beige.png"
+  },
+  {
+    "id": "bien-seramik-40x120-orfe-bone-decofon",
+    "name": "orfe bone decofon",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/orfe bone decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x120-orfe-bone",
+    "name": "orfe bone",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/orfe bone.png"
+  },
+  {
+    "id": "bien-seramik-40x120-parisian-white-decofon",
+    "name": "parisian white decofon",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/parisian white decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x120-parisian-white-decor",
+    "name": "parisian white decor",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/parisian white decor.png"
+  },
+  {
+    "id": "bien-seramik-40x120-parisian-white-geo-decor",
+    "name": "parisian white geo decor",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/parisian white geo decor.png"
+  },
+  {
+    "id": "bien-seramik-40x120-parisian-white",
+    "name": "parisian white",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/parisian white.png"
+  },
+  {
+    "id": "bien-seramik-40x120-petra",
+    "name": "petra",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/petra.png"
+  },
+  {
+    "id": "bien-seramik-40x120-tiana-antrasit",
+    "name": "tiana antrasit",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/tiana antrasit.png"
+  },
+  {
+    "id": "bien-seramik-40x120-tiana-white-40x120",
+    "name": "tiana white 40x120",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/tiana white 40x120.png"
+  },
+  {
+    "id": "bien-seramik-40x120-tiana-white-decofon",
+    "name": "tiana white decofon",
+    "brand": "bien-seramik",
+    "size": "40x120",
+    "image": "/urunler/bien-seramik/40x120/tiana white decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x80-barnet-decofon",
+    "name": "barnet decofon",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/barnet decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x80-barnet-grey",
+    "name": "barnet grey",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/barnet grey.png"
+  },
+  {
+    "id": "bien-seramik-40x80-barnet-mocha",
+    "name": "barnet mocha",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/barnet mocha.png"
+  },
+  {
+    "id": "bien-seramik-40x80-bruto-ac-k-gri",
+    "name": "bruto açık gri",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/bruto açık gri.png"
+  },
+  {
+    "id": "bien-seramik-40x80-bruto-antrasit",
+    "name": "bruto antrasit",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/bruto antrasit.png"
+  },
+  {
+    "id": "bien-seramik-40x80-bruto-brown",
+    "name": "bruto brown",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/bruto brown.png"
+  },
+  {
+    "id": "bien-seramik-40x80-bruto-decofon",
+    "name": "bruto decofon",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/bruto decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x80-fontano-antrasit",
+    "name": "fontano antrasit",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/fontano antrasit.png"
+  },
+  {
+    "id": "bien-seramik-40x80-fontano-bone",
+    "name": "fontano bone",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/fontano bone.png"
+  },
+  {
+    "id": "bien-seramik-40x80-fontano-decofon",
+    "name": "fontano decofon",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/fontano decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x80-fontano-grey",
+    "name": "fontano grey",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/fontano grey.png"
+  },
+  {
+    "id": "bien-seramik-40x80-fontano-mokka",
+    "name": "fontano mokka",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/fontano mokka.png"
+  },
+  {
+    "id": "bien-seramik-40x80-marvel-bitter",
+    "name": "marvel bitter",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/marvel bitter.png"
+  },
+  {
+    "id": "bien-seramik-40x80-marvel-caramel",
+    "name": "marvel caramel",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/marvel caramel.png"
+  },
+  {
+    "id": "bien-seramik-40x80-marvel-latte",
+    "name": "marvel latte",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/marvel latte.png"
+  },
+  {
+    "id": "bien-seramik-40x80-statuario-decofon",
+    "name": "statuario decofon",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/statuario decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x80-statuario",
+    "name": "statuario",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/statuario.png"
+  },
+  {
+    "id": "bien-seramik-40x80-vetro-antrasit",
+    "name": "vetro antrasit",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/vetro antrasit.png"
+  },
+  {
+    "id": "bien-seramik-40x80-vetro-beyaz",
+    "name": "vetro beyaz",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/vetro beyaz.png"
+  },
+  {
+    "id": "bien-seramik-40x80-vetro-decofon",
+    "name": "vetro decofon",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/vetro decofon.png"
+  },
+  {
+    "id": "bien-seramik-40x80-vitus",
+    "name": "vitus",
+    "brand": "bien-seramik",
+    "size": "40x80",
+    "image": "/urunler/bien-seramik/40x80/vitus.png"
+  },
+  {
+    "id": "bien-seramik-45x45-casta-beige-45",
+    "name": "casta beige 45",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/casta beige 45.png"
+  },
+  {
+    "id": "bien-seramik-45x45-casta-grey-45",
+    "name": "casta grey 45",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/casta grey 45.png"
+  },
+  {
+    "id": "bien-seramik-45x45-enzo-antrasit-45",
+    "name": "enzo-antrasit 45",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/enzo-antrasit 45.png"
+  },
+  {
+    "id": "bien-seramik-45x45-marlen-statuario-45",
+    "name": "marlen statuario 45",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/marlen statuario 45.png"
+  },
+  {
+    "id": "bien-seramik-45x45-mood-white-45",
+    "name": "mood white 45",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/mood white 45.png"
+  },
+  {
+    "id": "bien-seramik-45x45-pera-grey-45",
+    "name": "pera grey 45",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/pera grey 45.png"
+  },
+  {
+    "id": "bien-seramik-45x45-pera-light-grey-45",
+    "name": "pera light grey 45",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/pera light grey 45.png"
+  },
+  {
+    "id": "bien-seramik-45x45-pera-white-45",
+    "name": "pera white 45",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/pera white 45.png"
+  },
+  {
+    "id": "bien-seramik-45x45-star-line-45",
+    "name": "star line 45",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/star line 45.png"
+  },
+  {
+    "id": "bien-seramik-45x45-wavy-bone-45",
+    "name": "wavy bone 45",
+    "brand": "bien-seramik",
+    "size": "45x45",
+    "image": "/urunler/bien-seramik/45x45/wavy bone 45.png"
+  },
+  {
+    "id": "bien-seramik-50x50-bona-dea-light-grey-50",
+    "name": "bona dea light grey 50",
+    "brand": "bien-seramik",
+    "size": "50x50",
+    "image": "/urunler/bien-seramik/50x50/bona dea light grey 50.png"
+  },
+  {
+    "id": "bien-seramik-50x50-fraxinus-homey",
+    "name": "fraxinus homey",
+    "brand": "bien-seramik",
+    "size": "50x50",
+    "image": "/urunler/bien-seramik/50x50/fraxinus homey.png"
+  },
+  {
+    "id": "bien-seramik-50x50-greta-grey",
+    "name": "greta grey",
+    "brand": "bien-seramik",
+    "size": "50x50",
+    "image": "/urunler/bien-seramik/50x50/greta grey.png"
+  },
+  {
+    "id": "bien-seramik-50x50-inca-grey-50",
+    "name": "inca grey 50",
+    "brand": "bien-seramik",
+    "size": "50x50",
+    "image": "/urunler/bien-seramik/50x50/inca grey 50.png"
+  },
+  {
+    "id": "bien-seramik-50x50-inca-white-50",
+    "name": "inca white 50",
+    "brand": "bien-seramik",
+    "size": "50x50",
+    "image": "/urunler/bien-seramik/50x50/inca white 50.png"
+  },
+  {
+    "id": "bien-seramik-50x50-madero",
+    "name": "madero",
+    "brand": "bien-seramik",
+    "size": "50x50",
+    "image": "/urunler/bien-seramik/50x50/madero.png"
+  },
+  {
+    "id": "bien-seramik-50x50-paros-white-50",
+    "name": "paros white 50",
+    "brand": "bien-seramik",
+    "size": "50x50",
+    "image": "/urunler/bien-seramik/50x50/paros white 50.png"
+  },
+  {
+    "id": "bien-seramik-60x120-aristo-mink",
+    "name": "aristo mink",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/aristo mink.png"
+  },
+  {
+    "id": "bien-seramik-60x120-aristo-gri",
+    "name": "aristo-gri",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/aristo-gri.png"
+  },
+  {
+    "id": "bien-seramik-60x120-artemoderna",
+    "name": "artemoderna",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/artemoderna.png"
+  },
+  {
+    "id": "bien-seramik-60x120-assos-silver-60x120",
+    "name": "assos silver 60x120",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/assos silver 60x120.png"
+  },
+  {
+    "id": "bien-seramik-60x120-beton-gri-6-12",
+    "name": "beton gri 6*12",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/beton gri 6*12.png"
+  },
+  {
+    "id": "bien-seramik-60x120-beton-bianco",
+    "name": "beton-bianco",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/beton-bianco.png"
+  },
+  {
+    "id": "bien-seramik-60x120-black-onyx",
+    "name": "black-onyx",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/black-onyx.png"
+  },
+  {
+    "id": "bien-seramik-60x120-carbon-antrasit-1",
+    "name": "carbon antrasit",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/carbon antrasit.png"
+  },
+  {
+    "id": "bien-seramik-60x120-carbon-grey-1",
+    "name": "carbon grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/carbon grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-carney-anthracite",
+    "name": "carney anthracite",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/carney anthracite.png"
+  },
+  {
+    "id": "bien-seramik-60x120-carney-grey",
+    "name": "carney grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/carney grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-carney-white",
+    "name": "carney white",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/carney white.png"
+  },
+  {
+    "id": "bien-seramik-60x120-cemento-urban-antrasit",
+    "name": "cemento urban antrasit",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/cemento urban antrasit.png"
+  },
+  {
+    "id": "bien-seramik-60x120-cemento-urban-grey",
+    "name": "cemento urban grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/cemento urban grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-cemento-urban-light-grey",
+    "name": "cemento urban light grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/cemento urban light grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-cemento-urban-sand",
+    "name": "cemento urban sand",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/cemento urban sand.png"
+  },
+  {
+    "id": "bien-seramik-60x120-clap-3d-decofon",
+    "name": "clap 3d decofon",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/clap 3d decofon.png"
+  },
+  {
+    "id": "bien-seramik-60x120-clap-3d",
+    "name": "clap 3d",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/clap 3d.png"
+  },
+  {
+    "id": "bien-seramik-60x120-coffee-travertino",
+    "name": "coffee travertino",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/coffee travertino.png"
+  },
+  {
+    "id": "bien-seramik-60x120-coper-sky",
+    "name": "coper sky",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/coper sky.png"
+  },
+  {
+    "id": "bien-seramik-60x120-cordella-3d",
+    "name": "cordella 3d",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/cordella 3d.png"
+  },
+  {
+    "id": "bien-seramik-60x120-corten-3d",
+    "name": "corten 3d",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/corten 3d.png"
+  },
+  {
+    "id": "bien-seramik-60x120-crag-white-1",
+    "name": "crag white",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/crag white.png"
+  },
+  {
+    "id": "bien-seramik-60x120-earthy-lime",
+    "name": "earthy lime",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/earthy lime.png"
+  },
+  {
+    "id": "bien-seramik-60x120-earthy-matcha",
+    "name": "earthy matcha",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/earthy matcha.png"
+  },
+  {
+    "id": "bien-seramik-60x120-earthy-sky",
+    "name": "earthy sky",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/earthy sky.png"
+  },
+  {
+    "id": "bien-seramik-60x120-elan-bone",
+    "name": "elan bone",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/elan bone.png"
+  },
+  {
+    "id": "bien-seramik-60x120-elan-brown",
+    "name": "elan brown",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/elan brown.png"
+  },
+  {
+    "id": "bien-seramik-60x120-elan-grey",
+    "name": "elan grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/elan grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-elora",
+    "name": "elora",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/elora.png"
+  },
+  {
+    "id": "bien-seramik-60x120-hampton-antrasit-60x120",
+    "name": "hampton antrasit 60x120",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/hampton antrasit 60x120.png"
+  },
+  {
+    "id": "bien-seramik-60x120-hormigon-molde",
+    "name": "hormigon molde",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/hormigon molde.png"
+  },
+  {
+    "id": "bien-seramik-60x120-kelvin",
+    "name": "kelvin",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/kelvin.png"
+  },
+  {
+    "id": "bien-seramik-60x120-limra-beige",
+    "name": "limra beige",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/limra beige.png"
+  },
+  {
+    "id": "bien-seramik-60x120-limra-grey-1",
+    "name": "limra grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/limra grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-lotus",
+    "name": "lotus",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/lotus.png"
+  },
+  {
+    "id": "bien-seramik-60x120-madran-mink-1",
+    "name": "madran mink",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/madran mink.png"
+  },
+  {
+    "id": "bien-seramik-60x120-madran-vanillia-1",
+    "name": "madran vanillia",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/madran vanillia.png"
+  },
+  {
+    "id": "bien-seramik-60x120-maryo-beige",
+    "name": "maryo beige",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/maryo beige.png"
+  },
+  {
+    "id": "bien-seramik-60x120-maryo-grey",
+    "name": "maryo grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/maryo grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-nomerles-antrasit",
+    "name": "nomerles-antrasit",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/nomerles-antrasit.png"
+  },
+  {
+    "id": "bien-seramik-60x120-nomerles-vizon",
+    "name": "nomerles-vizon",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/nomerles-vizon.png"
+  },
+  {
+    "id": "bien-seramik-60x120-norm-cherry",
+    "name": "norm cherry",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/norm cherry.png"
+  },
+  {
+    "id": "bien-seramik-60x120-norm-pine",
+    "name": "norm pine",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/norm pine.png"
+  },
+  {
+    "id": "bien-seramik-60x120-onelia",
+    "name": "onelia",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/onelia.png"
+  },
+  {
+    "id": "bien-seramik-60x120-optima",
+    "name": "optima",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/optima.png"
+  },
+  {
+    "id": "bien-seramik-60x120-palazzo-grey-1",
+    "name": "palazzo grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/palazzo grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-palazzo-ivory",
+    "name": "palazzo ivory",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/palazzo ivory.png"
+  },
+  {
+    "id": "bien-seramik-60x120-quark-antrasit",
+    "name": "quark antrasit",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/quark antrasit.png"
+  },
+  {
+    "id": "bien-seramik-60x120-quark-bone-1",
+    "name": "quark bone",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/quark bone.png"
+  },
+  {
+    "id": "bien-seramik-60x120-quark-grey-60x120",
+    "name": "quark grey 60x120",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/quark grey 60x120.png"
+  },
+  {
+    "id": "bien-seramik-60x120-quark-grey",
+    "name": "quark grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/quark grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-quark-moka",
+    "name": "quark moka",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/quark moka.png"
+  },
+  {
+    "id": "bien-seramik-60x120-regnum-grey",
+    "name": "regnum grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/regnum grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-rigel",
+    "name": "rigel",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/rigel.png"
+  },
+  {
+    "id": "bien-seramik-60x120-root-ash",
+    "name": "root-ash",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/root-ash.png"
+  },
+  {
+    "id": "bien-seramik-60x120-root-crema",
+    "name": "root-crema",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/root-crema.png"
+  },
+  {
+    "id": "bien-seramik-60x120-rubi-antrasit",
+    "name": "rubi antrasit",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/rubi antrasit.png"
+  },
+  {
+    "id": "bien-seramik-60x120-rubi-bone",
+    "name": "rubi bone",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/rubi bone.png"
+  },
+  {
+    "id": "bien-seramik-60x120-rubi-brown",
+    "name": "rubi brown",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/rubi brown.png"
+  },
+  {
+    "id": "bien-seramik-60x120-rubi-grey-1",
+    "name": "rubi grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/rubi grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-rubi-anthracite",
+    "name": "rubi-anthracite",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/rubi-anthracite.png"
+  },
+  {
+    "id": "bien-seramik-60x120-rubi-bone-1",
+    "name": "rubi-bone",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/rubi-bone.png"
+  },
+  {
+    "id": "bien-seramik-60x120-rubi-brown-1",
+    "name": "rubi-brown",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/rubi-brown.png"
+  },
+  {
+    "id": "bien-seramik-60x120-salt-cave-taupe",
+    "name": "salt-cave-taupe",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/salt-cave-taupe.png"
+  },
+  {
+    "id": "bien-seramik-60x120-sara-blue",
+    "name": "sara blue",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/sara blue.png"
+  },
+  {
+    "id": "bien-seramik-60x120-sara-bone-1",
+    "name": "sara bone",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/sara bone.png"
+  },
+  {
+    "id": "bien-seramik-60x120-sara-brown-1",
+    "name": "sara brown",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/sara brown.png"
+  },
+  {
+    "id": "bien-seramik-60x120-sara-green",
+    "name": "sara green",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/sara green.png"
+  },
+  {
+    "id": "bien-seramik-60x120-selena",
+    "name": "selena",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/selena.png"
+  },
+  {
+    "id": "bien-seramik-60x120-serpegiante-3d",
+    "name": "serpegiante 3d",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/serpegiante 3d.png"
+  },
+  {
+    "id": "bien-seramik-60x120-side-brown",
+    "name": "side brown",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/side brown.png"
+  },
+  {
+    "id": "bien-seramik-60x120-sun-onyx-6-12",
+    "name": "sun onyx 6.12",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/sun onyx 6.12.png"
+  },
+  {
+    "id": "bien-seramik-60x120-tempo-3d",
+    "name": "tempo 3d",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/tempo 3d.png"
+  },
+  {
+    "id": "bien-seramik-60x120-timber-mese-3d",
+    "name": "timber meşe 3d",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/timber meşe 3d.png"
+  },
+  {
+    "id": "bien-seramik-60x120-vanya",
+    "name": "vanya",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/vanya.png"
+  },
+  {
+    "id": "bien-seramik-60x120-venus-grey-1",
+    "name": "venus grey",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/venus grey.png"
+  },
+  {
+    "id": "bien-seramik-60x120-venus-vizon",
+    "name": "venus vizon",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/venus vizon.png"
+  },
+  {
+    "id": "bien-seramik-60x120-venus-white-1",
+    "name": "venus white",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/venus white.png"
+  },
+  {
+    "id": "bien-seramik-60x120-void-bone-60x120",
+    "name": "void bone 60x120",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/void bone 60x120.png"
+  },
+  {
+    "id": "bien-seramik-60x120-void-grey-60x120",
+    "name": "void grey 60x120",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/void grey 60x120.png"
+  },
+  {
+    "id": "bien-seramik-60x120-white-star-60x120",
+    "name": "white star 60x120",
+    "brand": "bien-seramik",
+    "size": "60x120",
+    "image": "/urunler/bien-seramik/60x120/white star 60x120.png"
+  },
+  {
+    "id": "bien-seramik-60x60-alyssa",
+    "name": "alyssa",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/alyssa.png"
+  },
+  {
+    "id": "bien-seramik-60x60-anemos-ivory",
+    "name": "anemos ivory",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/anemos ivory.png"
+  },
+  {
+    "id": "bien-seramik-60x60-assos",
+    "name": "assos",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/assos.png"
+  },
+  {
+    "id": "bien-seramik-60x60-beton-bianco-6",
+    "name": "beton bianco 6",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/beton bianco 6.png"
+  },
+  {
+    "id": "bien-seramik-60x60-beton-gri",
+    "name": "beton gri",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/beton gri.png"
+  },
+  {
+    "id": "bien-seramik-60x60-cappadocia-sand",
+    "name": "cappadocia-sand",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/cappadocia-sand.png"
+  },
+  {
+    "id": "bien-seramik-60x60-concept-black-60",
+    "name": "concept black 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/concept black 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-concept-grey-60",
+    "name": "concept grey 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/concept grey 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-cora-beige-60",
+    "name": "cora beige 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/cora beige 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-cosmic-bone-60",
+    "name": "cosmic bone 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/cosmic bone 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-enzo-gri-6-6",
+    "name": "enzo gri 6.6",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/enzo gri 6.6.png"
+  },
+  {
+    "id": "bien-seramik-60x60-grassland-blue-60",
+    "name": "grassland blue 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/grassland blue 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-grassland-green-60",
+    "name": "grassland green 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/grassland green 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-hampton-grigio",
+    "name": "hampton grigio",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/hampton grigio.png"
+  },
+  {
+    "id": "bien-seramik-60x60-hampton-latte-60",
+    "name": "hampton latte 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/hampton latte 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-hormigon-molde",
+    "name": "hormigon molde",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/hormigon molde.png"
+  },
+  {
+    "id": "bien-seramik-60x60-intrvo-tapa-beige",
+    "name": "intrvo-tapa beige",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/intrvo-tapa beige.png"
+  },
+  {
+    "id": "bien-seramik-60x60-intrvo-tapa-grey",
+    "name": "intrvo-tapa grey",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/intrvo-tapa grey.png"
+  },
+  {
+    "id": "bien-seramik-60x60-juno-diamond",
+    "name": "juno-diamond.",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/juno-diamond..png"
+  },
+  {
+    "id": "bien-seramik-60x60-limra-beige-60",
+    "name": "limra beige 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/limra beige 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-limra-grey-60",
+    "name": "limra grey 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/limra grey 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-lolite-60",
+    "name": "lolite 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/lolite 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-loreto-light",
+    "name": "loreto light",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/loreto light.png"
+  },
+  {
+    "id": "bien-seramik-60x60-marmol-shadow-60",
+    "name": "marmol shadow 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/marmol shadow 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-napoli-gri",
+    "name": "napoli-gri",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/napoli-gri.png"
+  },
+  {
+    "id": "bien-seramik-60x60-napoli-ivory",
+    "name": "napoli-ivory.",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/napoli-ivory..png"
+  },
+  {
+    "id": "bien-seramik-60x60-new-pietra-sand",
+    "name": "new pietra sand",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/new pietra sand.png"
+  },
+  {
+    "id": "bien-seramik-60x60-oasis-murdum",
+    "name": "oasis-mürdüm",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/oasis-mürdüm.png"
+  },
+  {
+    "id": "bien-seramik-60x60-orfe-bone-60",
+    "name": "orfe bone 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/orfe bone 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-parisian-white-60",
+    "name": "parisian white 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/parisian white 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-paros-white-60",
+    "name": "paros white 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/paros white 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-sempre-junior-bianca-1",
+    "name": "sempre junior bianca",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/sempre junior bianca.png"
+  },
+  {
+    "id": "bien-seramik-60x60-sempre-junior-grigio-1",
+    "name": "sempre junior grigio",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/sempre junior grigio.png"
+  },
+  {
+    "id": "bien-seramik-60x60-sempre-junior-nero-1",
+    "name": "sempre junior nero",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/sempre junior nero.png"
+  },
+  {
+    "id": "bien-seramik-60x60-sempre-junior-rosa-1",
+    "name": "sempre junior rosa",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/sempre junior rosa.png"
+  },
+  {
+    "id": "bien-seramik-60x60-sense",
+    "name": "sense",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/sense.png"
+  },
+  {
+    "id": "bien-seramik-60x60-silvana-antrasit",
+    "name": "silvana antrasit",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/silvana antrasit.png"
+  },
+  {
+    "id": "bien-seramik-60x60-silvana-grey",
+    "name": "silvana grey",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/silvana grey.png"
+  },
+  {
+    "id": "bien-seramik-60x60-silvana",
+    "name": "silvana",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/silvana.png"
+  },
+  {
+    "id": "bien-seramik-60x60-simirna-brown",
+    "name": "simirna brown",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/simirna brown.png"
+  },
+  {
+    "id": "bien-seramik-60x60-simirna-grey",
+    "name": "simirna grey",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/simirna grey.png"
+  },
+  {
+    "id": "bien-seramik-60x60-sun-onyx-6-6",
+    "name": "sun onyx 6.6",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/sun onyx 6.6.png"
+  },
+  {
+    "id": "bien-seramik-60x60-tiana-white-60",
+    "name": "tiana white 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/tiana white 60.png"
+  },
+  {
+    "id": "bien-seramik-60x60-vegha-pearl",
+    "name": "vegha-pearl",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/vegha-pearl.png"
+  },
+  {
+    "id": "bien-seramik-60x60-violeta-cafe",
+    "name": "violeta cafe",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/violeta cafe.png"
+  },
+  {
+    "id": "bien-seramik-60x60-violeta-gris",
+    "name": "violeta gris",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/violeta gris.png"
+  },
+  {
+    "id": "bien-seramik-60x60-wavy-grey-60",
+    "name": "wavy grey 60",
+    "brand": "bien-seramik",
+    "size": "60x60",
+    "image": "/urunler/bien-seramik/60x60/wavy grey 60.png"
+  },
+  {
+    "id": "bien-seramik-61x61-casper-61",
+    "name": "casper 61",
+    "brand": "bien-seramik",
+    "size": "61x61",
+    "image": "/urunler/bien-seramik/61x61/casper 61.png"
+  },
+  {
+    "id": "bien-seramik-61x61-destiny-white",
+    "name": "destiny white",
+    "brand": "bien-seramik",
+    "size": "61x61",
+    "image": "/urunler/bien-seramik/61x61/destiny white.png"
+  },
+  {
+    "id": "bien-seramik-61x61-hampton-light-grey",
+    "name": "hampton light grey",
+    "brand": "bien-seramik",
+    "size": "61x61",
+    "image": "/urunler/bien-seramik/61x61/hampton light grey.png"
+  },
+  {
+    "id": "bien-seramik-61x61-inca-61",
+    "name": "inca 61",
+    "brand": "bien-seramik",
+    "size": "61x61",
+    "image": "/urunler/bien-seramik/61x61/inca 61.png"
+  },
+  {
+    "id": "bien-seramik-61x61-odin",
+    "name": "odin",
+    "brand": "bien-seramik",
+    "size": "61x61",
+    "image": "/urunler/bien-seramik/61x61/odin.png"
+  },
+  {
+    "id": "bien-seramik-61x61-sempre-junior-grigio-61",
+    "name": "sempre junior grigio 61",
+    "brand": "bien-seramik",
+    "size": "61x61",
+    "image": "/urunler/bien-seramik/61x61/sempre junior grigio 61.png"
+  },
+  {
+    "id": "bien-seramik-61x61-void-bone-61",
+    "name": "void bone 61",
+    "brand": "bien-seramik",
+    "size": "61x61",
+    "image": "/urunler/bien-seramik/61x61/void bone 61.png"
+  },
+  {
+    "id": "bien-seramik-61x61-void-grey-61",
+    "name": "void grey 61",
+    "brand": "bien-seramik",
+    "size": "61x61",
+    "image": "/urunler/bien-seramik/61x61/void grey 61.png"
+  },
+  {
+    "id": "bien-seramik-61x61-wavy-grey-61",
+    "name": "wavy grey 61",
+    "brand": "bien-seramik",
+    "size": "61x61",
+    "image": "/urunler/bien-seramik/61x61/wavy grey 61.png"
+  },
+  {
+    "id": "bien-seramik-80x80-aristo-light-grey",
+    "name": "aristo light grey",
+    "brand": "bien-seramik",
+    "size": "80x80",
+    "image": "/urunler/bien-seramik/80x80/aristo light grey.png"
+  },
+  {
+    "id": "bien-seramik-80x80-core-silver",
+    "name": "core silver",
+    "brand": "bien-seramik",
+    "size": "80x80",
+    "image": "/urunler/bien-seramik/80x80/core silver.png"
+  },
+  {
+    "id": "bien-seramik-80x80-core-white",
+    "name": "core white",
+    "brand": "bien-seramik",
+    "size": "80x80",
+    "image": "/urunler/bien-seramik/80x80/core white.png"
+  },
+  {
+    "id": "gural-seramik-20x120-west-wood-teak",
+    "name": "west-wood-teak",
+    "brand": "gural-seramik",
+    "size": "20x120",
+    "image": "/urunler/gural-seramik/20x120/west-wood-teak.png"
+  },
+  {
+    "id": "gural-seramik-30x90-black-sea",
+    "name": "black-sea",
+    "brand": "gural-seramik",
+    "size": "30x90",
+    "image": "/urunler/gural-seramik/30x90/black-sea.png"
+  },
+  {
+    "id": "gural-seramik-30x90-essential-dark-grey",
+    "name": "essential-dark-grey",
+    "brand": "gural-seramik",
+    "size": "30x90",
+    "image": "/urunler/gural-seramik/30x90/essential-dark-grey.png"
+  },
+  {
+    "id": "gural-seramik-30x90-essential-light-grey",
+    "name": "essential-light-grey",
+    "brand": "gural-seramik",
+    "size": "30x90",
+    "image": "/urunler/gural-seramik/30x90/essential-light-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-andromeda-dark",
+    "name": "andromeda-dark",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/andromeda-dark.png"
+  },
+  {
+    "id": "gural-seramik-60x120-aqua",
+    "name": "aqua",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/aqua.png"
+  },
+  {
+    "id": "gural-seramik-60x120-arya-grey",
+    "name": "arya-grey",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/arya-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-bianco-white",
+    "name": "bianco-white",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/bianco-white.png"
+  },
+  {
+    "id": "gural-seramik-60x120-black-sea",
+    "name": "black-sea",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/black-sea.png"
+  },
+  {
+    "id": "gural-seramik-60x120-black-silver",
+    "name": "black-silver",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/black-silver.png"
+  },
+  {
+    "id": "gural-seramik-60x120-calacatta-blue-veins",
+    "name": "calacatta-blue-veins",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/calacatta-blue-veins.png"
+  },
+  {
+    "id": "gural-seramik-60x120-carmen-brown",
+    "name": "carmen-brown",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/carmen-brown.png"
+  },
+  {
+    "id": "gural-seramik-60x120-carmen-verde",
+    "name": "carmen-verde",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/carmen-verde.png"
+  },
+  {
+    "id": "gural-seramik-60x120-cruz-white",
+    "name": "cruz-white",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/cruz-white.png"
+  },
+  {
+    "id": "gural-seramik-60x120-elisa-latte",
+    "name": "elisa-latte",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/elisa-latte.png"
+  },
+  {
+    "id": "gural-seramik-60x120-everet-anthracite",
+    "name": "everet-anthracite",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/everet-anthracite.png"
+  },
+  {
+    "id": "gural-seramik-60x120-everet-blue",
+    "name": "everet-blue",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/everet-blue.png"
+  },
+  {
+    "id": "gural-seramik-60x120-grenelle-pink",
+    "name": "grenelle-pink",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/grenelle-pink.png"
+  },
+  {
+    "id": "gural-seramik-60x120-imola",
+    "name": "imola",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/imola.png"
+  },
+  {
+    "id": "gural-seramik-60x120-io-blue",
+    "name": "IO-BLUE",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/IO-BLUE.png"
+  },
+  {
+    "id": "gural-seramik-60x120-kastilya-white",
+    "name": "kastilya-white",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/kastilya-white.jpeg"
+  },
+  {
+    "id": "gural-seramik-60x120-line-white",
+    "name": "line-white",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/line-white.png"
+  },
+  {
+    "id": "gural-seramik-60x120-merit-grey",
+    "name": "merit-grey",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/merit-grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-mirage-pink",
+    "name": "mirage-pink",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/mirage-pink.png"
+  },
+  {
+    "id": "gural-seramik-60x120-nice-ivory",
+    "name": "nice-ivory",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/nice-ivory.png"
+  },
+  {
+    "id": "gural-seramik-60x120-olvido-silver",
+    "name": "olvido-silver",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/olvido-silver.png"
+  },
+  {
+    "id": "gural-seramik-60x120-pegasus",
+    "name": "pegasus",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/pegasus.jpeg"
+  },
+  {
+    "id": "gural-seramik-60x120-suprame-silver",
+    "name": "suprame-silver",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/suprame-silver.jpeg"
+  },
+  {
+    "id": "gural-seramik-60x120-tellurio-d-grey",
+    "name": "tellurio-d.grey",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/tellurio-d.grey.png"
+  },
+  {
+    "id": "gural-seramik-60x120-venus",
+    "name": "venus",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/venus.png"
+  },
+  {
+    "id": "gural-seramik-60x120-vivienne",
+    "name": "vivienne",
+    "brand": "gural-seramik",
+    "size": "60x120",
+    "image": "/urunler/gural-seramik/60x120/vivienne.png"
+  },
+  {
+    "id": "gural-seramik-60x60-alacati-blue-1",
+    "name": "alacati-blue",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/alacati-blue.png"
+  },
+  {
+    "id": "gural-seramik-60x60-alacati-blue1",
+    "name": "alacati-blue1",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/alacati-blue1.png"
+  },
+  {
+    "id": "gural-seramik-60x60-beton-antrasit",
+    "name": "beton-antrasit",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/beton-antrasit.jpg"
+  },
+  {
+    "id": "gural-seramik-60x60-nice-grey-decaphone",
+    "name": "nice-grey-decaphone",
+    "brand": "gural-seramik",
+    "size": "60x60",
+    "image": "/urunler/gural-seramik/60x60/nice-grey-decaphone.png"
+  },
+  {
+    "id": "qua-seramik-120x120-marfil-rosso",
+    "name": "marfil-rosso",
+    "brand": "qua-seramik",
+    "size": "120x120",
+    "image": "/urunler/qua-seramik/120x120/marfil-rosso.png"
+  },
+  {
+    "id": "qua-seramik-20x120-forest-cherry",
+    "name": "forest-cherry",
+    "brand": "qua-seramik",
+    "size": "20x120",
+    "image": "/urunler/qua-seramik/20x120/forest-cherry.png"
+  },
+  {
+    "id": "qua-seramik-20x120-forest-silver",
+    "name": "forest-silver",
+    "brand": "qua-seramik",
+    "size": "20x120",
+    "image": "/urunler/qua-seramik/20x120/forest-silver.png"
+  },
+  {
+    "id": "qua-seramik-20x120-novilon-miele",
+    "name": "novilon-miele",
+    "brand": "qua-seramik",
+    "size": "20x120",
+    "image": "/urunler/qua-seramik/20x120/novilon-miele.png"
+  },
+  {
+    "id": "qua-seramik-20x120-prestige-carmel",
+    "name": "prestige-carmel",
+    "brand": "qua-seramik",
+    "size": "20x120",
+    "image": "/urunler/qua-seramik/20x120/prestige-carmel.png"
+  },
+  {
+    "id": "qua-seramik-20x120-trend-wood-greige",
+    "name": "trend-wood-greige",
+    "brand": "qua-seramik",
+    "size": "20x120",
+    "image": "/urunler/qua-seramik/20x120/trend-wood-greige.png"
+  },
+  {
+    "id": "qua-seramik-20x120-western-honey",
+    "name": "western-honey",
+    "brand": "qua-seramik",
+    "size": "20x120",
+    "image": "/urunler/qua-seramik/20x120/western-honey.png"
+  },
+  {
+    "id": "qua-seramik-30x60-aida-antrasit",
+    "name": "aida-antrasit",
+    "brand": "qua-seramik",
+    "size": "30x60",
+    "image": "/urunler/qua-seramik/30X60/aida-antrasit.png"
+  },
+  {
+    "id": "qua-seramik-30x60-beton-wave-white",
+    "name": "beton-wave-white",
+    "brand": "qua-seramik",
+    "size": "30x60",
+    "image": "/urunler/qua-seramik/30X60/beton-wave-white.png"
+  },
+  {
+    "id": "qua-seramik-30x60-mercan",
+    "name": "mercan",
+    "brand": "qua-seramik",
+    "size": "30x60",
+    "image": "/urunler/qua-seramik/30X60/mercan.png"
+  },
+  {
+    "id": "qua-seramik-30x60-ocean-blue-q",
+    "name": "ocean blue q",
+    "brand": "qua-seramik",
+    "size": "30x60",
+    "image": "/urunler/qua-seramik/30X60/ocean blue q.png"
+  },
+  {
+    "id": "qua-seramik-30x60-tresor-bali",
+    "name": "tresor-bali",
+    "brand": "qua-seramik",
+    "size": "30x60",
+    "image": "/urunler/qua-seramik/30X60/tresor-bali.png"
+  },
+  {
+    "id": "qua-seramik-30x90-holmes-beyaz-decofon",
+    "name": "holmes-beyaz-decofon",
+    "brand": "qua-seramik",
+    "size": "30x90",
+    "image": "/urunler/qua-seramik/30X90/holmes-beyaz-decofon.png"
+  },
+  {
+    "id": "qua-seramik-30x90-holmes-beyaz",
+    "name": "holmes-beyaz",
+    "brand": "qua-seramik",
+    "size": "30x90",
+    "image": "/urunler/qua-seramik/30X90/holmes-beyaz.png"
+  },
+  {
+    "id": "qua-seramik-30x90-lexus-light-grey",
+    "name": "lexus-light-grey",
+    "brand": "qua-seramik",
+    "size": "30x90",
+    "image": "/urunler/qua-seramik/30X90/lexus-light-grey.png"
+  },
+  {
+    "id": "qua-seramik-30x90-lio-grey-decofon",
+    "name": "lio-grey-decofon",
+    "brand": "qua-seramik",
+    "size": "30x90",
+    "image": "/urunler/qua-seramik/30X90/lio-grey-decofon.png"
+  },
+  {
+    "id": "qua-seramik-30x90-lio-grey",
+    "name": "lio-grey",
+    "brand": "qua-seramik",
+    "size": "30x90",
+    "image": "/urunler/qua-seramik/30X90/lio-grey.png"
+  },
+  {
+    "id": "qua-seramik-30x90-sahara-noir",
+    "name": "sahara noir",
+    "brand": "qua-seramik",
+    "size": "30x90",
+    "image": "/urunler/qua-seramik/30X90/sahara noir.png"
+  },
+  {
+    "id": "qua-seramik-30x90-sound-grey",
+    "name": "sound-grey",
+    "brand": "qua-seramik",
+    "size": "30x90",
+    "image": "/urunler/qua-seramik/30X90/sound-grey.png"
+  },
+  {
+    "id": "qua-seramik-30x90-vega-l-grey",
+    "name": "vega-l.grey",
+    "brand": "qua-seramik",
+    "size": "30x90",
+    "image": "/urunler/qua-seramik/30X90/vega-l.grey.png"
+  },
+  {
+    "id": "qua-seramik-30x90-vega-taupe",
+    "name": "vega-taupe",
+    "brand": "qua-seramik",
+    "size": "30x90",
+    "image": "/urunler/qua-seramik/30X90/vega-taupe.png"
+  },
+  {
+    "id": "qua-seramik-40x120-atlas",
+    "name": "Atlas",
+    "brand": "qua-seramik",
+    "size": "40x120",
+    "image": "/urunler/qua-seramik/40X120/Atlas.png"
+  },
+  {
+    "id": "qua-seramik-40x120-vivaldi-beyaz",
+    "name": "vivaldi-beyaz",
+    "brand": "qua-seramik",
+    "size": "40x120",
+    "image": "/urunler/qua-seramik/40X120/vivaldi-beyaz.png"
+  },
+  {
+    "id": "qua-seramik-60x120-blue-cotton",
+    "name": "blue-cotton",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/blue-cotton.png"
+  },
+  {
+    "id": "qua-seramik-60x120-blue-jeans",
+    "name": "blue-jeans",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/blue-jeans.png"
+  },
+  {
+    "id": "qua-seramik-60x120-cippolino-grigio",
+    "name": "cippolino-grigio",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/cippolino-grigio.png"
+  },
+  {
+    "id": "qua-seramik-60x120-crown-decofon",
+    "name": "crown-decofon",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/crown-decofon.png"
+  },
+  {
+    "id": "qua-seramik-60x120-dreamy-grey",
+    "name": "dreamy grey",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/dreamy grey.png"
+  },
+  {
+    "id": "qua-seramik-60x120-dreamy-sand",
+    "name": "dreamy sand",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/dreamy sand.png"
+  },
+  {
+    "id": "qua-seramik-60x120-ginza-mint",
+    "name": "ginza mint",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/ginza mint.jpg"
+  },
+  {
+    "id": "qua-seramik-60x120-ginza-white",
+    "name": "ginza white",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/ginza white.jpg"
+  },
+  {
+    "id": "qua-seramik-60x120-ginza-ivory",
+    "name": "ginza-ivory",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/ginza-ivory.jpg"
+  },
+  {
+    "id": "qua-seramik-60x120-gluck-stone-antrasit",
+    "name": "gluck-stone-antrasit",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/gluck-stone-antrasit.png"
+  },
+  {
+    "id": "qua-seramik-60x120-gluck-stone-grey",
+    "name": "gluck-stone-grey",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/gluck-stone-grey.png"
+  },
+  {
+    "id": "qua-seramik-60x120-gluck-stone-ivory",
+    "name": "gluck-stone-ivory",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/gluck-stone-ivory.png"
+  },
+  {
+    "id": "qua-seramik-60x120-gluck-stone-nero",
+    "name": "gluck-stone-nero",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/gluck-stone-nero.png"
+  },
+  {
+    "id": "qua-seramik-60x120-gracia-cosmic-blue",
+    "name": "gracia-cosmic-blue",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/gracia-cosmic-blue.png"
+  },
+  {
+    "id": "qua-seramik-60x120-gracia-ice",
+    "name": "gracia-ice",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/gracia-ice.png"
+  },
+  {
+    "id": "qua-seramik-60x120-gracia-mild-beige",
+    "name": "gracia-mild-beige",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/gracia-mild-beige.png"
+  },
+  {
+    "id": "qua-seramik-60x120-gracia-terracotta",
+    "name": "gracia-terracotta",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/gracia-terracotta.png"
+  },
+  {
+    "id": "qua-seramik-60x120-lava-blanche",
+    "name": "lava-blanche",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/lava-blanche.png"
+  },
+  {
+    "id": "qua-seramik-60x120-luz-sole",
+    "name": "luz-sole",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/luz-sole.png"
+  },
+  {
+    "id": "qua-seramik-60x120-mavi-blue",
+    "name": "mavi-blue",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/mavi-blue.png"
+  },
+  {
+    "id": "qua-seramik-60x120-nervion-oro",
+    "name": "nervion-oro",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/nervion-oro.png"
+  },
+  {
+    "id": "qua-seramik-60x120-noir-terrazzo",
+    "name": "noir terrazzo",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/noir terrazzo.png"
+  },
+  {
+    "id": "qua-seramik-60x120-norden",
+    "name": "norden",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/norden.png"
+  },
+  {
+    "id": "qua-seramik-60x120-ocean",
+    "name": "ocean",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/ocean.png"
+  },
+  {
+    "id": "qua-seramik-60x120-otto-grey",
+    "name": "otto grey",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/otto grey.png"
+  },
+  {
+    "id": "qua-seramik-60x120-pole",
+    "name": "pole",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/pole.png"
+  },
+  {
+    "id": "qua-seramik-60x120-pulpis-sand-c",
+    "name": "pulpis sand c",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/pulpis sand c.jpg"
+  },
+  {
+    "id": "qua-seramik-60x120-roche",
+    "name": "roche",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/roche.png"
+  },
+  {
+    "id": "qua-seramik-60x120-space-antrasit",
+    "name": "space antrasit",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/space antrasit.png"
+  },
+  {
+    "id": "qua-seramik-60x60-alvin-grey",
+    "name": "alvin-grey",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/alvin-grey.png"
+  },
+  {
+    "id": "qua-seramik-60x60-ceres-parlak-60",
+    "name": "ceres parlak 60",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/ceres parlak 60.png"
+  },
+  {
+    "id": "qua-seramik-60x60-fluxo-bone",
+    "name": "fluxo-bone",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/fluxo-bone.png"
+  },
+  {
+    "id": "qua-seramik-60x60-fluxo-taupe",
+    "name": "fluxo-taupe",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/fluxo-taupe.png"
+  },
+  {
+    "id": "qua-seramik-60x60-hielo-dark",
+    "name": "hielo-dark",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/hielo-dark.png"
+  },
+  {
+    "id": "qua-seramik-60x60-julian",
+    "name": "julian",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/julian.png"
+  },
+  {
+    "id": "qua-seramik-60x60-luna-mid-grey",
+    "name": "luna-mid-grey",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/luna-mid-grey.png"
+  },
+  {
+    "id": "qua-seramik-60x60-ocean-blue-qua",
+    "name": "ocean blue qua",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/ocean blue qua.png"
+  },
+  {
+    "id": "qua-seramik-60x60-quartz-gri",
+    "name": "quartz gri",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/quartz gri.png"
+  },
+  {
+    "id": "qua-seramik-60x60-ravenna",
+    "name": "ravenna",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/ravenna.png"
+  },
+  {
+    "id": "qua-seramik-60x60-terrazz-a-gri",
+    "name": "terrazzı-a.gri",
+    "brand": "qua-seramik",
+    "size": "60x60",
+    "image": "/urunler/qua-seramik/60x60/terrazzı-a.gri.png"
   }
 ]
