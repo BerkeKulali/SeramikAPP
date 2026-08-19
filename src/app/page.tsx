@@ -96,6 +96,8 @@ type SlotState = {
   secondPrice: string;
   /** Görselin çerçeve içindeki genişliği (%). Boş = ebattan otomatik. */
   imageScale: string;
+  /** Slot bazında görsel oranı. "" = sayfanın oranını kullan. */
+  imageAspect: "" | ProductImageAspect;
   darkText: boolean;
   customName: string;
   imageUrlOverride: string | null;
@@ -191,6 +193,7 @@ function emptySlot(): SlotState {
     secondPriceLabel: "Kart",
     secondPrice: "",
     imageScale: "",
+    imageAspect: "",
     darkText: false,
     customName: "",
     imageUrlOverride: null,
@@ -229,6 +232,15 @@ function normalizeSlotFromPartial(s: Partial<SlotState> | undefined): SlotState 
         : "Kart",
     secondPrice: typeof s.secondPrice === "string" ? s.secondPrice : "",
     imageScale: typeof s.imageScale === "string" ? s.imageScale : "",
+    imageAspect:
+      s.imageAspect === "square" ||
+      s.imageAspect === "threeTwo" ||
+      s.imageAspect === "video" ||
+      s.imageAspect === "parquet" ||
+      s.imageAspect === "oneThree" ||
+      s.imageAspect === "oneFour"
+        ? s.imageAspect
+        : "",
     darkText: typeof s.darkText === "boolean" ? s.darkText : false,
     customName: typeof s.customName === "string" ? s.customName : "",
     imageUrlOverride:
@@ -282,6 +294,7 @@ function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
         typeof existing.secondPrice === "string" ? existing.secondPrice : "",
       imageScale:
         typeof existing.imageScale === "string" ? existing.imageScale : "",
+      imageAspect: existing.imageAspect ?? "",
       customName: typeof existing.customName === "string" ? existing.customName : "",
       imageUrlOverride:
         typeof existing.imageUrlOverride === "string" || existing.imageUrlOverride === null
@@ -620,6 +633,14 @@ function aspectRatioForProductImage(aspect: ProductImageAspect): number {
  * fazladan boşluk gibi görünüyor. Küçültme varsa aspect sınıfı kaldırılır;
  * yüksekliği SlotImage kendi iç oranıyla belirler.
  */
+/** Slot kendi oranını seçtiyse onu, seçmediyse sayfanın oranını kullanır. */
+function aspectForSlot(
+  pageAspect: ProductImageAspect,
+  slot?: SlotState | null,
+): ProductImageAspect {
+  return slot?.imageAspect ? slot.imageAspect : pageAspect;
+}
+
 function frameAspectClass(
   aspect: ProductImageAspect,
   slot: SlotState | null | undefined,
@@ -3195,6 +3216,31 @@ export default function Home() {
                         </div>
 
                         <div className="space-y-2">
+                          <label className="space-y-1 block">
+                            <div className="text-xs font-semibold text-zinc-600">
+                              Görsel oranı (bu slot)
+                            </div>
+                            <select
+                              value={s.imageAspect}
+                              onChange={(e) =>
+                                updateSlot(idx, {
+                                  imageAspect: e.target
+                                    .value as SlotState["imageAspect"],
+                                })
+                              }
+                              disabled={!mediaOk}
+                              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                            >
+                              <option value="">Sayfa ile aynı</option>
+                              <option value="square">Kare (1:1)</option>
+                              <option value="threeTwo">Yatay (3:2)</option>
+                              <option value="video">60×120 (1:2)</option>
+                              <option value="oneThree">Dikey 1:3</option>
+                              <option value="oneFour">Dikey 1:4</option>
+                              <option value="parquet">Parke (1:6)</option>
+                            </select>
+                          </label>
+
                           <div className="space-y-1">
                             <div className="flex items-center justify-between gap-2">
                               <div className="text-xs font-semibold text-zinc-600">
@@ -4094,7 +4140,7 @@ export default function Home() {
                                   Math.round(globalFontSize * 0.9),
                                 );
                                 const aspectClass = frameAspectClass(
-                                  productImageAspect,
+                                  aspectForSlot(productImageAspect, slot),
                                   slot,
                                   sizeTextForSlot(p),
                                 );
@@ -4132,7 +4178,7 @@ export default function Home() {
                                         alt={displayNameForSlot(p, slot)}
                                         slot={slot}
                                         sizeText={sizeTextForSlot(p)}
-                                        frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                        frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                         hasError={hasImageError}
                                         onError={() => markSlotImageError(idx)}
                                         onLoad={() => clearSlotImageError(idx)}
@@ -4199,7 +4245,7 @@ export default function Home() {
                                       alt={displayNameForSlot(p, slot)}
                                       slot={slot}
                                       sizeText={sizeTextForSlot(p)}
-                                      frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                      frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                       hasError={hasImageError}
                                       onError={() => markSlotImageError(idx)}
                                       onLoad={() => clearSlotImageError(idx)}
@@ -4277,7 +4323,7 @@ export default function Home() {
                                   Math.round(globalFontSize * 0.9),
                                 );
                                 const aspectClass = frameAspectClass(
-                                  productImageAspect,
+                                  aspectForSlot(productImageAspect, slot),
                                   slot,
                                   sizeTextForSlot(p),
                                 );
@@ -4300,7 +4346,7 @@ export default function Home() {
                                           alt={displayNameForSlot(p, slot)}
                                           slot={slot}
                                           sizeText={sizeTextForSlot(p)}
-                                          frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                          frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                           hasError={hasImageError}
                                           onError={() => markSlotImageError(idx)}
                                           onLoad={() => clearSlotImageError(idx)}
@@ -4353,7 +4399,7 @@ export default function Home() {
                                     Math.round(globalFontSize * 0.9),
                                   );
                                   const aspectClass = frameAspectClass(
-                                    productImageAspect,
+                                    aspectForSlot(productImageAspect, slot),
                                     slot,
                                     sizeTextForSlot(p),
                                   );
@@ -4380,7 +4426,7 @@ export default function Home() {
                                             alt={displayNameForSlot(p, slot)}
                                             slot={slot}
                                             sizeText={sizeTextForSlot(p)}
-                                            frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                            frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                             hasError={hasImageError}
                                             onError={() => markSlotImageError(idx)}
                                             onLoad={() => clearSlotImageError(idx)}
@@ -4430,7 +4476,7 @@ export default function Home() {
                                 Math.round(globalFontSize * 0.9),
                               );
                               const aspectClass = frameAspectClass(
-                                productImageAspect,
+                                aspectForSlot(productImageAspect, slot),
                                 slot,
                                 sizeTextForSlot(p),
                               );
@@ -4455,7 +4501,7 @@ export default function Home() {
                                       alt={displayNameForSlot(p, slot)}
                                       slot={slot}
                                       sizeText={sizeTextForSlot(p)}
-                                      frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                      frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                       hasError={hasImageError}
                                       onError={() => markSlotImageError(idx)}
                                       onLoad={() => clearSlotImageError(idx)}
@@ -4509,7 +4555,7 @@ export default function Home() {
                                 Math.round(globalFontSize * 0.9),
                               );
                               const aspectClass = frameAspectClass(
-                                productImageAspect,
+                                aspectForSlot(productImageAspect, slot),
                                 slot,
                                 sizeTextForSlot(p),
                               );
@@ -4535,7 +4581,7 @@ export default function Home() {
                                       alt={displayNameForSlot(p, slot)}
                                       slot={slot}
                                       sizeText={sizeTextForSlot(p)}
-                                      frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                      frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                       hasError={hasImageError}
                                       onError={() => markSlotImageError(idx)}
                                       onLoad={() => clearSlotImageError(idx)}
@@ -4584,7 +4630,7 @@ export default function Home() {
                                     Math.round(globalFontSize * 0.9),
                                   );
                                   const aspectClass = frameAspectClass(
-                                    productImageAspect,
+                                    aspectForSlot(productImageAspect, slot),
                                     slot,
                                     sizeTextForSlot(p),
                                   );
@@ -4606,7 +4652,7 @@ export default function Home() {
                                           alt={displayNameForSlot(p, slot)}
                                           slot={slot}
                                           sizeText={sizeTextForSlot(p)}
-                                          frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                          frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                           hasError={hasImageError}
                                           onError={() => markSlotImageError(idx)}
                                           onLoad={() => clearSlotImageError(idx)}
@@ -4688,7 +4734,7 @@ export default function Home() {
                                               alt={displayNameForSlot(p, slot)}
                                               slot={slot}
                                               sizeText={sizeTextForSlot(p)}
-                                              frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                              frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                               hasError={hasImageError}
                                               onError={() => markSlotImageError(idx)}
                                               onLoad={() => clearSlotImageError(idx)}
@@ -4744,7 +4790,7 @@ export default function Home() {
                                       Math.round(globalFontSize * 0.9),
                                     );
                                     const aspectClass = frameAspectClass(
-                                      productImageAspect,
+                                      aspectForSlot(productImageAspect, slot),
                                       slot,
                                       sizeTextForSlot(p),
                                     );
@@ -4766,7 +4812,7 @@ export default function Home() {
                                             alt={displayNameForSlot(p, slot)}
                                             slot={slot}
                                             sizeText={sizeTextForSlot(p)}
-                                            frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                            frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                             hasError={hasImageError}
                                             onError={() => markSlotImageError(idx)}
                                             onLoad={() => clearSlotImageError(idx)}
@@ -4823,7 +4869,7 @@ export default function Home() {
                                     Math.round(globalFontSize * 0.9),
                                   );
                                   const aspectClass = frameAspectClass(
-                                    productImageAspect,
+                                    aspectForSlot(productImageAspect, slot),
                                     slot,
                                     sizeTextForSlot(p),
                                   );
@@ -4845,7 +4891,7 @@ export default function Home() {
                                           alt={displayNameForSlot(p, slot)}
                                           slot={slot}
                                           sizeText={sizeTextForSlot(p)}
-                                          frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                          frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                           hasError={hasImageError}
                                           onError={() => markSlotImageError(idx)}
                                           onLoad={() => clearSlotImageError(idx)}
@@ -4908,7 +4954,7 @@ export default function Home() {
                                       Math.round(globalFontSize * 0.9),
                                     );
                                     const aspectClass = frameAspectClass(
-                                      productImageAspect,
+                                      aspectForSlot(productImageAspect, slot),
                                       slot,
                                       sizeTextForSlot(p),
                                     );
@@ -4930,7 +4976,7 @@ export default function Home() {
                                             alt={displayNameForSlot(p, slot)}
                                             slot={slot}
                                             sizeText={sizeTextForSlot(p)}
-                                            frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                            frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                             hasError={hasImageError}
                                             onError={() => markSlotImageError(idx)}
                                             onLoad={() => clearSlotImageError(idx)}
@@ -4977,7 +5023,7 @@ export default function Home() {
                                       Math.round(globalFontSize * 0.9),
                                     );
                                     const aspectClass = frameAspectClass(
-                                      productImageAspect,
+                                      aspectForSlot(productImageAspect, slot),
                                       slot,
                                       sizeTextForSlot(p),
                                     );
@@ -4998,7 +5044,7 @@ export default function Home() {
                                             alt={displayNameForSlot(p, slot)}
                                             slot={slot}
                                             sizeText={sizeTextForSlot(p)}
-                                            frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                            frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                             hasError={hasImageError}
                                             onError={() => markSlotImageError(idx)}
                                             onLoad={() => clearSlotImageError(idx)}
@@ -5061,7 +5107,7 @@ export default function Home() {
                                       Math.round(globalFontSize * 0.9),
                                     );
                                     const aspectClass = frameAspectClass(
-                                      productImageAspect,
+                                      aspectForSlot(productImageAspect, slot),
                                       slot,
                                       sizeTextForSlot(p),
                                     );
@@ -5083,7 +5129,7 @@ export default function Home() {
                                             alt={displayNameForSlot(p, slot)}
                                             slot={slot}
                                             sizeText={sizeTextForSlot(p)}
-                                            frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                            frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                             hasError={hasImageError}
                                             onError={() => markSlotImageError(idx)}
                                             onLoad={() => clearSlotImageError(idx)}
@@ -5144,7 +5190,7 @@ export default function Home() {
                                 Math.round(globalFontSize * 0.9),
                               );
                               const aspectClass = frameAspectClass(
-                                productImageAspect,
+                                aspectForSlot(productImageAspect, slot),
                                 slot,
                                 sizeTextForSlot(p),
                               );
@@ -5166,7 +5212,7 @@ export default function Home() {
                                       alt={displayNameForSlot(p, slot)}
                                       slot={slot}
                                       sizeText={sizeTextForSlot(p)}
-                                      frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                      frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                       hasError={hasImageError}
                                       onError={() => markSlotImageError(idx)}
                                       onLoad={() => clearSlotImageError(idx)}
@@ -5217,7 +5263,7 @@ export default function Home() {
                                     Math.round(globalFontSize * 0.9),
                                   );
                               const aspectClass = frameAspectClass(
-                                productImageAspect,
+                                aspectForSlot(productImageAspect, slot),
                                 slot,
                                 sizeTextForSlot(p),
                               );
@@ -5238,7 +5284,7 @@ export default function Home() {
                                       alt={displayNameForSlot(p, slot)}
                                       slot={slot}
                                       sizeText={sizeTextForSlot(p)}
-                                      frameRatio={aspectRatioForProductImage(productImageAspect)}
+                                      frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
                                       hasError={hasImageError}
                                       onError={() => markSlotImageError(idx)}
                                       onLoad={() => clearSlotImageError(idx)}
