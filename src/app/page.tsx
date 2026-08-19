@@ -98,6 +98,9 @@ type SlotState = {
   imageScale: string;
   /** Slot bazında görsel oranı. "" = sayfanın oranını kullan. */
   imageAspect: "" | ProductImageAspect;
+  /** Stok/fiyat satırlarını gizleyip yerine serbest yazı gösterir. */
+  hideStockPrice: boolean;
+  noteText: string;
   darkText: boolean;
   customName: string;
   imageUrlOverride: string | null;
@@ -194,6 +197,8 @@ function emptySlot(): SlotState {
     secondPrice: "",
     imageScale: "",
     imageAspect: "",
+    hideStockPrice: false,
+    noteText: "",
     darkText: false,
     customName: "",
     imageUrlOverride: null,
@@ -241,6 +246,9 @@ function normalizeSlotFromPartial(s: Partial<SlotState> | undefined): SlotState 
       s.imageAspect === "oneFour"
         ? s.imageAspect
         : "",
+    hideStockPrice:
+      typeof s.hideStockPrice === "boolean" ? s.hideStockPrice : false,
+    noteText: typeof s.noteText === "string" ? s.noteText : "",
     darkText: typeof s.darkText === "boolean" ? s.darkText : false,
     customName: typeof s.customName === "string" ? s.customName : "",
     imageUrlOverride:
@@ -295,6 +303,11 @@ function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
       imageScale:
         typeof existing.imageScale === "string" ? existing.imageScale : "",
       imageAspect: existing.imageAspect ?? "",
+      hideStockPrice:
+        typeof existing.hideStockPrice === "boolean"
+          ? existing.hideStockPrice
+          : false,
+      noteText: typeof existing.noteText === "string" ? existing.noteText : "",
       customName: typeof existing.customName === "string" ? existing.customName : "",
       imageUrlOverride:
         typeof existing.imageUrlOverride === "string" || existing.imageUrlOverride === null
@@ -354,6 +367,20 @@ function SlotStockPriceDisplay({
 }) {
   const unit = unitName?.trim() || "m²";
   const priceClass = priceLineClassName ?? stockLineClassName;
+
+  // Kampanya notu: stok/fiyat yerine serbest yazı.
+  if (slot?.hideStockPrice) {
+    const note = (slot.noteText ?? "").trim();
+    if (!note) return null;
+    return (
+      <div
+        className={[priceClass, "whitespace-pre-line"].join(" ")}
+        style={{ fontSize }}
+      >
+        {note}
+      </div>
+    );
+  }
   const priceValue = (value?: string) =>
     value?.trim() ? value.trim() : "—";
 
@@ -1373,7 +1400,9 @@ export default function Home() {
         rowKey: `${idx}:primary`,
         slotIndex: idx,
         part: "primary",
-        selected: true,
+        // Kampanya yazısı olan slotta stok/fiyat yok; yanlışlıkla 0 tutarlı
+        // satış kaydedilmesin diye işaretsiz gelir.
+        selected: !slot.hideStockPrice,
         productName: name,
         brand,
         size: sizeText,
@@ -3274,6 +3303,38 @@ export default function Home() {
                               className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                               disabled={!mediaOk}
                             />
+                          </div>
+
+                          <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/60 p-2">
+                            <label className="flex items-center gap-2 text-xs text-zinc-700">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(s.hideStockPrice)}
+                                onChange={(e) =>
+                                  updateSlot(idx, {
+                                    hideStockPrice: e.target.checked,
+                                  })
+                                }
+                                disabled={!mediaOk}
+                                className="h-4 w-4 accent-zinc-900"
+                              />
+                              <span className="font-semibold">
+                                Stok/fiyat yerine yazı
+                              </span>
+                            </label>
+
+                            {s.hideStockPrice ? (
+                              <textarea
+                                value={s.noteText}
+                                onChange={(e) =>
+                                  updateSlot(idx, { noteText: e.target.value })
+                                }
+                                placeholder={"örn. 5 palet 40x120 alana\n1 palet 10x20 hediye"}
+                                rows={2}
+                                className="w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                disabled={!mediaOk}
+                              />
+                            ) : null}
                           </div>
 
                           <label className="flex items-center gap-2 text-xs text-zinc-700">
