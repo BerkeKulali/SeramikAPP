@@ -393,7 +393,8 @@ function SlotStockPriceDisplay({
   if (slot?.hideStockPrice) {
     const note = (slot.noteText ?? "").trim();
     if (!note) return null;
-    const color = (slot.noteColor ?? "").trim();
+    const fill = (slot.noteColor ?? "").trim() || NOTE_DEFAULT_FILL;
+    const textColor = readableTextOn(fill);
     const pct = parseInt((slot.noteScale ?? "").trim(), 10);
     const noteScale =
       Number.isFinite(pct) && pct > 0 ? Math.min(300, Math.max(50, pct)) : 120;
@@ -407,21 +408,20 @@ function SlotStockPriceDisplay({
           className="flex items-center justify-center gap-3 whitespace-pre-line text-center font-extrabold leading-tight"
           style={{
             fontSize: noteFontSize,
-            // Renk verilmediyse afişin yazı rengi (currentColor) miras alınır.
-            color: color || undefined,
-            borderStyle: "solid",
-            borderWidth: Math.max(3, Math.round(noteFontSize * 0.14)),
-            borderColor: color || "currentColor",
-            paddingLeft: Math.round(noteFontSize * 0.7),
-            paddingRight: Math.round(noteFontSize * 0.7),
-            paddingTop: Math.round(noteFontSize * 0.36),
-            paddingBottom: Math.round(noteFontSize * 0.36),
+            background: fill,
+            color: textColor,
+            borderRadius: 9999,
+            letterSpacing: "-0.01em",
+            paddingLeft: Math.round(noteFontSize * 0.95),
+            paddingRight: Math.round(noteFontSize * 0.95),
+            paddingTop: Math.round(noteFontSize * 0.42),
+            paddingBottom: Math.round(noteFontSize * 0.42),
           }}
         >
           {slot.noteIcon ? (
             <NoteIcon
               name={slot.noteIcon}
-              size={Math.round(noteFontSize * 1.5)}
+              size={Math.round(noteFontSize * 1.35)}
             />
           ) : null}
           <span>{note}</span>
@@ -518,6 +518,21 @@ function SlotStockPriceDisplay({
  */
 /** Kampanya kutusundaki simge. Emoji yerine inline SVG: dışa aktarımda
  *  (html-to-image) her ortamda aynı çiziliyor. */
+const NOTE_DEFAULT_FILL = "#F5D64E";
+
+/** Zemin rengine göre okunur yazı rengi seçer (koyu zemin -> beyaz). */
+function readableTextOn(hex: string): string {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim());
+  if (!m) return "#151312";
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  // ITU-R BT.601 parlaklık
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? "#151312" : "#FFFFFF";
+}
+
 function NoteIcon({
   name,
   size,
@@ -3485,7 +3500,7 @@ export default function Home() {
                                 </label>
                                 <label className="space-y-1">
                                   <div className="text-xs font-semibold text-zinc-600">
-                                    Renk
+                                    Zemin rengi
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <input
@@ -3493,7 +3508,7 @@ export default function Home() {
                                       value={
                                         /^#[0-9a-fA-F]{6}$/.test(s.noteColor)
                                           ? s.noteColor
-                                          : "#FFFFFF"
+                                          : NOTE_DEFAULT_FILL
                                       }
                                       onChange={(e) =>
                                         updateSlot(idx, {
@@ -3511,7 +3526,7 @@ export default function Home() {
                                           noteColor: e.target.value,
                                         })
                                       }
-                                      placeholder="afiş rengi"
+                                      placeholder={NOTE_DEFAULT_FILL}
                                       className="w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm outline-none focus:border-zinc-400"
                                       disabled={!mediaOk}
                                     />
