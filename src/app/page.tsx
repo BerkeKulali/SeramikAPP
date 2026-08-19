@@ -101,6 +101,10 @@ type SlotState = {
   /** Stok/fiyat satırlarını gizleyip yerine serbest yazı gösterir. */
   hideStockPrice: boolean;
   noteText: string;
+  /** Boş = afişin yazı rengini kullan. */
+  noteColor: string;
+  /** Yazı boyutu yüzdesi. Boş = %120. */
+  noteScale: string;
   darkText: boolean;
   customName: string;
   imageUrlOverride: string | null;
@@ -199,6 +203,8 @@ function emptySlot(): SlotState {
     imageAspect: "",
     hideStockPrice: false,
     noteText: "",
+    noteColor: "",
+    noteScale: "",
     darkText: false,
     customName: "",
     imageUrlOverride: null,
@@ -249,6 +255,8 @@ function normalizeSlotFromPartial(s: Partial<SlotState> | undefined): SlotState 
     hideStockPrice:
       typeof s.hideStockPrice === "boolean" ? s.hideStockPrice : false,
     noteText: typeof s.noteText === "string" ? s.noteText : "",
+    noteColor: typeof s.noteColor === "string" ? s.noteColor : "",
+    noteScale: typeof s.noteScale === "string" ? s.noteScale : "",
     darkText: typeof s.darkText === "boolean" ? s.darkText : false,
     customName: typeof s.customName === "string" ? s.customName : "",
     imageUrlOverride:
@@ -308,6 +316,8 @@ function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
           ? existing.hideStockPrice
           : false,
       noteText: typeof existing.noteText === "string" ? existing.noteText : "",
+      noteColor: typeof existing.noteColor === "string" ? existing.noteColor : "",
+      noteScale: typeof existing.noteScale === "string" ? existing.noteScale : "",
       customName: typeof existing.customName === "string" ? existing.customName : "",
       imageUrlOverride:
         typeof existing.imageUrlOverride === "string" || existing.imageUrlOverride === null
@@ -368,16 +378,34 @@ function SlotStockPriceDisplay({
   const unit = unitName?.trim() || "m²";
   const priceClass = priceLineClassName ?? stockLineClassName;
 
-  // Kampanya notu: stok/fiyat yerine serbest yazı.
+  // Kampanya notu: stok/fiyat yerine, çerçeveli ve vurgulu serbest yazı.
   if (slot?.hideStockPrice) {
     const note = (slot.noteText ?? "").trim();
     if (!note) return null;
+    const color = (slot.noteColor ?? "").trim();
+    const pct = parseInt((slot.noteScale ?? "").trim(), 10);
+    const noteScale =
+      Number.isFinite(pct) && pct > 0 ? Math.min(300, Math.max(50, pct)) : 120;
+    const noteFontSize = Math.round(fontSize * (noteScale / 100));
     return (
-      <div
-        className={[priceClass, "whitespace-pre-line"].join(" ")}
-        style={{ fontSize }}
-      >
-        {note}
+      <div className="flex w-full justify-center">
+        <div
+          className="whitespace-pre-line text-center font-extrabold leading-tight"
+          style={{
+            fontSize: noteFontSize,
+            // Renk verilmediyse afişin yazı rengi (currentColor) miras alınır.
+            color: color || undefined,
+            borderStyle: "solid",
+            borderWidth: Math.max(3, Math.round(noteFontSize * 0.14)),
+            borderColor: color || "currentColor",
+            paddingLeft: Math.round(noteFontSize * 0.7),
+            paddingRight: Math.round(noteFontSize * 0.7),
+            paddingTop: Math.round(noteFontSize * 0.36),
+            paddingBottom: Math.round(noteFontSize * 0.36),
+          }}
+        >
+          {note}
+        </div>
       </div>
     );
   }
@@ -3334,6 +3362,64 @@ export default function Home() {
                                 className="w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                                 disabled={!mediaOk}
                               />
+                            ) : null}
+
+                            {s.hideStockPrice ? (
+                              <div className="grid grid-cols-2 gap-2">
+                                <label className="space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    Yazı boyutu (%)
+                                  </div>
+                                  <input
+                                    value={s.noteScale}
+                                    onChange={(e) =>
+                                      updateSlot(idx, {
+                                        noteScale: digitsOnly(
+                                          e.target.value,
+                                        ).slice(0, 3),
+                                      })
+                                    }
+                                    placeholder="120"
+                                    inputMode="numeric"
+                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                    disabled={!mediaOk}
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    Renk
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="color"
+                                      value={
+                                        /^#[0-9a-fA-F]{6}$/.test(s.noteColor)
+                                          ? s.noteColor
+                                          : "#FFFFFF"
+                                      }
+                                      onChange={(e) =>
+                                        updateSlot(idx, {
+                                          noteColor: e.target.value.toUpperCase(),
+                                        })
+                                      }
+                                      disabled={!mediaOk}
+                                      className="h-[38px] w-10 shrink-0 cursor-pointer rounded-lg border border-zinc-200 bg-white"
+                                      aria-label="Kampanya yazısı rengi"
+                                    />
+                                    <input
+                                      value={s.noteColor}
+                                      onChange={(e) =>
+                                        updateSlot(idx, {
+                                          noteColor: e.target.value,
+                                        })
+                                      }
+                                      placeholder="afiş rengi"
+                                      className="w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm outline-none focus:border-zinc-400"
+                                      disabled={!mediaOk}
+                                    />
+                                  </div>
+                                </label>
+                              </div>
                             ) : null}
                           </div>
 
