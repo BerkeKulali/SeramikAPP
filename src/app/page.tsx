@@ -98,6 +98,10 @@ type SlotState = {
   imageScale: string;
   /** Slot bazında görsel oranı. "" = sayfanın oranını kullan. */
   imageAspect: "" | ProductImageAspect;
+  /** Görselin çevresine ince kontur çizer (zemine karışmasın diye). */
+  imageOutline: boolean;
+  /** Kontur şiddeti (%). Boş = 35. */
+  imageOutlineStrength: string;
   /** Stok/fiyat satırlarını gizleyip yerine serbest yazı gösterir. */
   hideStockPrice: boolean;
   noteText: string;
@@ -203,6 +207,8 @@ function emptySlot(): SlotState {
     secondPrice: "",
     imageScale: "",
     imageAspect: "",
+    imageOutline: false,
+    imageOutlineStrength: "",
     hideStockPrice: false,
     noteText: "",
     noteColor: "",
@@ -255,6 +261,9 @@ function normalizeSlotFromPartial(s: Partial<SlotState> | undefined): SlotState 
       s.imageAspect === "oneFour"
         ? s.imageAspect
         : "",
+    imageOutline: typeof s.imageOutline === "boolean" ? s.imageOutline : false,
+    imageOutlineStrength:
+      typeof s.imageOutlineStrength === "string" ? s.imageOutlineStrength : "",
     hideStockPrice:
       typeof s.hideStockPrice === "boolean" ? s.hideStockPrice : false,
     noteText: typeof s.noteText === "string" ? s.noteText : "",
@@ -321,6 +330,12 @@ function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
       imageScale:
         typeof existing.imageScale === "string" ? existing.imageScale : "",
       imageAspect: existing.imageAspect ?? "",
+      imageOutline:
+        typeof existing.imageOutline === "boolean" ? existing.imageOutline : false,
+      imageOutlineStrength:
+        typeof existing.imageOutlineStrength === "string"
+          ? existing.imageOutlineStrength
+          : "",
       hideStockPrice:
         typeof existing.hideStockPrice === "boolean"
           ? existing.hideStockPrice
@@ -593,6 +608,7 @@ function SlotImage({
   slot,
   sizeText,
   frameRatio = 2,
+  baseColor = "#000000",
   hasError,
   onError,
   onLoad,
@@ -603,6 +619,8 @@ function SlotImage({
   sizeText: string;
   /** Çerçevenin genişlik/yükseklik oranı (1:4 -> 4). */
   frameRatio?: number;
+  /** Afişin yazı rengi; kontur bundan türetilir. */
+  baseColor?: string;
   hasError: boolean;
   onError: () => void;
   onLoad: () => void;
@@ -611,16 +629,40 @@ function SlotImage({
 
   const scale = resolveImageScale(sizeText, slot?.imageScale);
 
+  // Karo rengi zemine yakınsa sınır kaybolur; ince kontur bunu geri verir.
+  const outlineStyle = slot?.imageOutline
+    ? (() => {
+        const pct = parseInt((slot.imageOutlineStrength ?? "").trim(), 10);
+        const alpha =
+          (Number.isFinite(pct) && pct >= 0 ? Math.min(100, pct) : 35) / 100;
+        const m = /^#?([0-9a-fA-F]{6})$/.exec(baseColor.trim());
+        const n = m ? parseInt(m[1], 16) : 0;
+        const rgb = `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+        return {
+          boxShadow: `inset 0 0 0 3px rgba(${rgb}, ${alpha})`,
+        } as React.CSSProperties;
+      })()
+    : undefined;
+
   const image = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={alt}
-      crossOrigin="anonymous"
-      className="h-full w-full object-cover object-center"
-      onError={onError}
-      onLoad={onLoad}
-    />
+    <div className="relative h-full w-full">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        crossOrigin="anonymous"
+        className="h-full w-full object-cover object-center"
+        onError={onError}
+        onLoad={onLoad}
+      />
+      {outlineStyle ? (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={outlineStyle}
+          aria-hidden="true"
+        />
+      ) : null}
+    </div>
   );
 
   if (scale >= 100) return image;
@@ -3389,6 +3431,46 @@ export default function Home() {
                             </select>
                           </label>
 
+                          <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/60 p-2">
+                            <label className="flex items-center gap-2 text-xs text-zinc-700">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(s.imageOutline)}
+                                onChange={(e) =>
+                                  updateSlot(idx, {
+                                    imageOutline: e.target.checked,
+                                  })
+                                }
+                                disabled={!mediaOk}
+                                className="h-4 w-4 accent-zinc-900"
+                              />
+                              <span className="font-semibold">
+                                İnce kontur (zemine karışmasın)
+                              </span>
+                            </label>
+                            {s.imageOutline ? (
+                              <label className="space-y-1 block">
+                                <div className="text-xs font-semibold text-zinc-600">
+                                  Kontur şiddeti (%)
+                                </div>
+                                <input
+                                  value={s.imageOutlineStrength}
+                                  onChange={(e) =>
+                                    updateSlot(idx, {
+                                      imageOutlineStrength: digitsOnly(
+                                        e.target.value,
+                                      ).slice(0, 3),
+                                    })
+                                  }
+                                  placeholder="35"
+                                  inputMode="numeric"
+                                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                  disabled={!mediaOk}
+                                />
+                              </label>
+                            ) : null}
+                          </div>
+
                           <div className="space-y-1">
                             <div className="flex items-center justify-between gap-2">
                               <div className="text-xs font-semibold text-zinc-600">
@@ -4439,6 +4521,7 @@ export default function Home() {
                                         slot={slot}
                                         sizeText={sizeTextForSlot(p)}
                                         frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                        baseColor={canvasTextColor}
                                         hasError={hasImageError}
                                         onError={() => markSlotImageError(idx)}
                                         onLoad={() => clearSlotImageError(idx)}
@@ -4506,6 +4589,7 @@ export default function Home() {
                                       slot={slot}
                                       sizeText={sizeTextForSlot(p)}
                                       frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                      baseColor={canvasTextColor}
                                       hasError={hasImageError}
                                       onError={() => markSlotImageError(idx)}
                                       onLoad={() => clearSlotImageError(idx)}
@@ -4607,6 +4691,7 @@ export default function Home() {
                                           slot={slot}
                                           sizeText={sizeTextForSlot(p)}
                                           frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                          baseColor={canvasTextColor}
                                           hasError={hasImageError}
                                           onError={() => markSlotImageError(idx)}
                                           onLoad={() => clearSlotImageError(idx)}
@@ -4687,6 +4772,7 @@ export default function Home() {
                                             slot={slot}
                                             sizeText={sizeTextForSlot(p)}
                                             frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                            baseColor={canvasTextColor}
                                             hasError={hasImageError}
                                             onError={() => markSlotImageError(idx)}
                                             onLoad={() => clearSlotImageError(idx)}
@@ -4762,6 +4848,7 @@ export default function Home() {
                                       slot={slot}
                                       sizeText={sizeTextForSlot(p)}
                                       frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                      baseColor={canvasTextColor}
                                       hasError={hasImageError}
                                       onError={() => markSlotImageError(idx)}
                                       onLoad={() => clearSlotImageError(idx)}
@@ -4842,6 +4929,7 @@ export default function Home() {
                                       slot={slot}
                                       sizeText={sizeTextForSlot(p)}
                                       frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                      baseColor={canvasTextColor}
                                       hasError={hasImageError}
                                       onError={() => markSlotImageError(idx)}
                                       onLoad={() => clearSlotImageError(idx)}
@@ -4913,6 +5001,7 @@ export default function Home() {
                                           slot={slot}
                                           sizeText={sizeTextForSlot(p)}
                                           frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                          baseColor={canvasTextColor}
                                           hasError={hasImageError}
                                           onError={() => markSlotImageError(idx)}
                                           onLoad={() => clearSlotImageError(idx)}
@@ -4995,6 +5084,7 @@ export default function Home() {
                                               slot={slot}
                                               sizeText={sizeTextForSlot(p)}
                                               frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                              baseColor={canvasTextColor}
                                               hasError={hasImageError}
                                               onError={() => markSlotImageError(idx)}
                                               onLoad={() => clearSlotImageError(idx)}
@@ -5073,6 +5163,7 @@ export default function Home() {
                                             slot={slot}
                                             sizeText={sizeTextForSlot(p)}
                                             frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                            baseColor={canvasTextColor}
                                             hasError={hasImageError}
                                             onError={() => markSlotImageError(idx)}
                                             onLoad={() => clearSlotImageError(idx)}
@@ -5152,6 +5243,7 @@ export default function Home() {
                                           slot={slot}
                                           sizeText={sizeTextForSlot(p)}
                                           frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                          baseColor={canvasTextColor}
                                           hasError={hasImageError}
                                           onError={() => markSlotImageError(idx)}
                                           onLoad={() => clearSlotImageError(idx)}
@@ -5237,6 +5329,7 @@ export default function Home() {
                                             slot={slot}
                                             sizeText={sizeTextForSlot(p)}
                                             frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                            baseColor={canvasTextColor}
                                             hasError={hasImageError}
                                             onError={() => markSlotImageError(idx)}
                                             onLoad={() => clearSlotImageError(idx)}
@@ -5305,6 +5398,7 @@ export default function Home() {
                                             slot={slot}
                                             sizeText={sizeTextForSlot(p)}
                                             frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                            baseColor={canvasTextColor}
                                             hasError={hasImageError}
                                             onError={() => markSlotImageError(idx)}
                                             onLoad={() => clearSlotImageError(idx)}
@@ -5390,6 +5484,7 @@ export default function Home() {
                                             slot={slot}
                                             sizeText={sizeTextForSlot(p)}
                                             frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                            baseColor={canvasTextColor}
                                             hasError={hasImageError}
                                             onError={() => markSlotImageError(idx)}
                                             onLoad={() => clearSlotImageError(idx)}
@@ -5473,6 +5568,7 @@ export default function Home() {
                                       slot={slot}
                                       sizeText={sizeTextForSlot(p)}
                                       frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                      baseColor={canvasTextColor}
                                       hasError={hasImageError}
                                       onError={() => markSlotImageError(idx)}
                                       onLoad={() => clearSlotImageError(idx)}
@@ -5545,6 +5641,7 @@ export default function Home() {
                                       slot={slot}
                                       sizeText={sizeTextForSlot(p)}
                                       frameRatio={aspectRatioForProductImage(aspectForSlot(productImageAspect, slot))}
+                                      baseColor={canvasTextColor}
                                       hasError={hasImageError}
                                       onError={() => markSlotImageError(idx)}
                                       onLoad={() => clearSlotImageError(idx)}
