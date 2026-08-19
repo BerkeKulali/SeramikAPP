@@ -6209,17 +6209,108 @@
     "image": "/urunler/qua-seramik/60x60/terrazzı-a.gri.png"
   },
   {
-    "id": "karo-seramik-7.5x15-artisan-ocean-glossy",
-    "name": "artisan ocean glossy",
-    "brand": "karo-seramik",
-    "size": "7.5x15",
-    "image": "/urunler/karo-seramik/7.5x15/artisan ocean glossy.png"
-  },
-  {
     "id": "karo-seramik-7.5x15-dark-grey-flat-glossy",
     "name": "dark grey flat glossy",
     "brand": "karo-seramik",
     "size": "7.5x15",
     "image": "/urunler/karo-seramik/7.5x15/dark grey flat glossy.png"
+  },
+  {
+    "id": "karo-seramik-10x20-grey-bevelled-glossy",
+    "name": "grey bevelled glossy",
+    "brand": "karo-seramik",
+    "size": "10x20",
+    "image": "/urunler/karo-seramik/10x20/grey bevelled glossy.png"
+  },
+  {
+    "id": "karo-seramik-10x20-red-glossy",
+    "name": "red glossy",
+    "brand": "karo-seramik",
+    "size": "10x20",
+    "image": "/urunler/karo-seramik/10x20/red glossy.png"
+  },
+  {
+    "id": "karo-seramik-10x30-sage-flat",
+    "name": "sage flat",
+    "brand": "karo-seramik",
+    "size": "10x30",
+    "image": "/urunler/karo-seramik/10x30/sage flat.png"
+  },
+  {
+    "id": "karo-seramik-10x30-white-bumpy-glossy",
+    "name": "white bumpy glossy",
+    "brand": "karo-seramik",
+    "size": "10x30",
+    "image": "/urunler/karo-seramik/10x30/white bumpy glossy.png"
+  },
+  {
+    "id": "karo-seramik-7.5x15-black-bevelled",
+    "name": "black bevelled",
+    "brand": "karo-seramik",
+    "size": "7.5x15",
+    "image": "/urunler/karo-seramik/7.5x15/black bevelled.png"
+  },
+  {
+    "id": "karo-seramik-7.5x15-super-white-bevelled",
+    "name": "super white bevelled",
+    "brand": "karo-seramik",
+    "size": "7.5x15",
+    "image": "/urunler/karo-seramik/7.5x15/super white bevelled.png"
+  },
+  {
+    "id": "karo-seramik-7.5x15-super-white-flat",
+    "name": "super white flat",
+    "brand": "karo-seramik",
+    "size": "7.5x15",
+    "image": "/urunler/karo-seramik/7.5x15/super white flat.png"
+  },
+  {
+    "id": "karo-seramik-7.5x30-artisan-aspen-glossy",
+    "name": "Artisan Aspen Glossy",
+    "brand": "karo-seramik",
+    "size": "7.5x30",
+    "image": "/urunler/karo-seramik/7.5x30/Artisan Aspen Glossy.png"
+  },
+  {
+    "id": "karo-seramik-7.5x30-artisan-mist-glossy",
+    "name": "Artisan Mist Glossy",
+    "brand": "karo-seramik",
+    "size": "7.5x30",
+    "image": "/urunler/karo-seramik/7.5x30/Artisan Mist Glossy.png"
+  },
+  {
+    "id": "karo-seramik-7.5x30-artisan-ocean-glossy",
+    "name": "Artisan Ocean Glossy",
+    "brand": "karo-seramik",
+    "size": "7.5x30",
+    "image": "/urunler/karo-seramik/7.5x30/Artisan Ocean Glossy.png"
+  },
+  {
+    "id": "karo-seramik-7.5x30-artisan-olive-glossy",
+    "name": "Artisan Olive Glossy",
+    "brand": "karo-seramik",
+    "size": "7.5x30",
+    "image": "/urunler/karo-seramik/7.5x30/Artisan Olive Glossy.png"
+  },
+  {
+    "id": "karo-seramik-7.5x30-bumpy-silver-glossy",
+    "name": "bumpy silver glossy",
+    "brand": "karo-seramik",
+    "size": "7.5x30",
+    "image": "/urunler/karo-seramik/7.5x30/bumpy silver glossy.png"
+  },
+  {
+    "id": "karo-seramik-7.5x30-carrara-flat-matt",
+    "name": "carrara flat matt",
+    "brand": "karo-seramik",
+    "size": "7.5x30",
+    "image": "/urunler/karo-seramik/7.5x30/carrara flat matt.png"
+  },
+  {
+    "id": "karo-seramik-7.5x30-screenshot-2026-08-18-at-4-17-29-pm",
+    "name": "Screenshot 2026-08-18 at 4.17.29 PM",
+    "brand": "karo-seramik",
+    "size": "7.5x30",
+    "image": "/urunler/karo-seramik/7.5x30/Screenshot 2026-08-18 at 4.17.29 PM.png"
   }
 ]
