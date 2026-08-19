@@ -105,6 +105,8 @@ type SlotState = {
   noteColor: string;
   /** Yazı boyutu yüzdesi. Boş = %120. */
   noteScale: string;
+  /** Kutunun solundaki dikkat çekici simge. "" = simge yok. */
+  noteIcon: "" | "gift" | "star" | "percent" | "tag";
   darkText: boolean;
   customName: string;
   imageUrlOverride: string | null;
@@ -205,6 +207,7 @@ function emptySlot(): SlotState {
     noteText: "",
     noteColor: "",
     noteScale: "",
+    noteIcon: "gift",
     darkText: false,
     customName: "",
     imageUrlOverride: null,
@@ -257,6 +260,13 @@ function normalizeSlotFromPartial(s: Partial<SlotState> | undefined): SlotState 
     noteText: typeof s.noteText === "string" ? s.noteText : "",
     noteColor: typeof s.noteColor === "string" ? s.noteColor : "",
     noteScale: typeof s.noteScale === "string" ? s.noteScale : "",
+    noteIcon:
+      s.noteIcon === "gift" ||
+      s.noteIcon === "star" ||
+      s.noteIcon === "percent" ||
+      s.noteIcon === "tag"
+        ? s.noteIcon
+        : "",
     darkText: typeof s.darkText === "boolean" ? s.darkText : false,
     customName: typeof s.customName === "string" ? s.customName : "",
     imageUrlOverride:
@@ -318,6 +328,7 @@ function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
       noteText: typeof existing.noteText === "string" ? existing.noteText : "",
       noteColor: typeof existing.noteColor === "string" ? existing.noteColor : "",
       noteScale: typeof existing.noteScale === "string" ? existing.noteScale : "",
+      noteIcon: existing.noteIcon ?? "",
       customName: typeof existing.customName === "string" ? existing.customName : "",
       imageUrlOverride:
         typeof existing.imageUrlOverride === "string" || existing.imageUrlOverride === null
@@ -388,9 +399,12 @@ function SlotStockPriceDisplay({
       Number.isFinite(pct) && pct > 0 ? Math.min(300, Math.max(50, pct)) : 120;
     const noteFontSize = Math.round(fontSize * (noteScale / 100));
     return (
-      <div className="flex w-full justify-center">
+      <div
+        className="flex w-full justify-center"
+        style={{ marginTop: Math.round(noteFontSize * 0.55) }}
+      >
         <div
-          className="whitespace-pre-line text-center font-extrabold leading-tight"
+          className="flex items-center justify-center gap-3 whitespace-pre-line text-center font-extrabold leading-tight"
           style={{
             fontSize: noteFontSize,
             // Renk verilmediyse afişin yazı rengi (currentColor) miras alınır.
@@ -404,7 +418,13 @@ function SlotStockPriceDisplay({
             paddingBottom: Math.round(noteFontSize * 0.36),
           }}
         >
-          {note}
+          {slot.noteIcon ? (
+            <NoteIcon
+              name={slot.noteIcon}
+              size={Math.round(noteFontSize * 1.5)}
+            />
+          ) : null}
+          <span>{note}</span>
         </div>
       </div>
     );
@@ -496,6 +516,62 @@ function SlotStockPriceDisplay({
  * ortalanır; böylece 7,5x30 gibi küçük ebatlar 60x120 gibi büyük formatların
  * yanında gözle görülür şekilde küçük durur.
  */
+/** Kampanya kutusundaki simge. Emoji yerine inline SVG: dışa aktarımda
+ *  (html-to-image) her ortamda aynı çiziliyor. */
+function NoteIcon({
+  name,
+  size,
+}: {
+  name: Exclude<SlotState["noteIcon"], "">;
+  size: number;
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+    style: { flexShrink: 0 },
+  };
+  if (name === "gift") {
+    return (
+      <svg {...common}>
+        <rect x="3" y="8" width="18" height="4" rx="1" />
+        <path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8" />
+        <path d="M12 8v13" />
+        <path d="M12 8S10 2.8 7.4 4.4C5.4 5.6 7 8 12 8z" />
+        <path d="M12 8s2-5.2 4.6-3.6C18.6 5.6 17 8 12 8z" />
+      </svg>
+    );
+  }
+  if (name === "star") {
+    return (
+      <svg {...common}>
+        <path d="M12 3l2.7 5.7 6.3.8-4.6 4.3 1.2 6.2L12 17l-5.6 3 1.2-6.2L3 9.5l6.3-.8z" />
+      </svg>
+    );
+  }
+  if (name === "percent") {
+    return (
+      <svg {...common}>
+        <path d="M19 5L5 19" />
+        <circle cx="7.5" cy="7.5" r="2.5" />
+        <circle cx="16.5" cy="16.5" r="2.5" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...common}>
+      <path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V4a1 1 0 0 1 1-1h8a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6z" />
+      <circle cx="7.5" cy="7.5" r="1.5" />
+    </svg>
+  );
+}
+
 function SlotImage({
   src,
   alt,
@@ -3384,6 +3460,28 @@ export default function Home() {
                                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                                     disabled={!mediaOk}
                                   />
+                                </label>
+                                <label className="col-span-2 space-y-1">
+                                  <div className="text-xs font-semibold text-zinc-600">
+                                    Simge
+                                  </div>
+                                  <select
+                                    value={s.noteIcon}
+                                    onChange={(e) =>
+                                      updateSlot(idx, {
+                                        noteIcon: e.target
+                                          .value as SlotState["noteIcon"],
+                                      })
+                                    }
+                                    disabled={!mediaOk}
+                                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                  >
+                                    <option value="gift">Hediye kutusu</option>
+                                    <option value="star">Yıldız</option>
+                                    <option value="percent">Yüzde</option>
+                                    <option value="tag">Etiket</option>
+                                    <option value="">Simge yok</option>
+                                  </select>
                                 </label>
                                 <label className="space-y-1">
                                   <div className="text-xs font-semibold text-zinc-600">
