@@ -2539,6 +2539,13 @@ export default function Home() {
                 >
                   Satışlar →
                 </Link>
+                <Link
+                  prefetch={false}
+                  href="/studio"
+                  className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-zinc-900 bg-zinc-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800"
+                >
+                  Stüdyo 2 →
+                </Link>
               </div>
 
               <div>

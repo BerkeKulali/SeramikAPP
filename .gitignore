@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# geçici: uzak oturum dosya silemediği için buraya taşınır
+_to_delete/
