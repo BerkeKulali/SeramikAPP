@@ -4248,7 +4248,8 @@ export default function Home() {
                             );
                           })()
                         ) : selectedTemplate === 3 &&
-                          productImageAspect === "oneThree" ? (
+                          (productImageAspect === "oneThree" ||
+                            productImageAspect === "oneFour") ? (
                           <div className="h-full w-full flex items-center justify-center overflow-hidden">
                             <div className="w-full flex flex-col items-center justify-center gap-y-12 py-10">
                               {[0, 1, 2].map((idx) => {
