@@ -4247,12 +4247,25 @@ export default function Home() {
                               </div>
                             );
                           })()
-                        ) : selectedTemplate === 3 &&
-                          (productImageAspect === "oneThree" ||
+                        ) : (selectedTemplate === 3 &&
+                            (productImageAspect === "oneThree" ||
+                              productImageAspect === "oneFour")) ||
+                          ((selectedTemplate === 4 || selectedTemplate === 5) &&
                             productImageAspect === "oneFour") ? (
+                          // Küçük ebatlar (1:4) ince olduğu için 4'lü ve 5'li de
+                          // iki sütun yerine tek sütunda alt alta sığıyor.
                           <div className="h-full w-full flex items-center justify-center overflow-hidden">
-                            <div className="w-full flex flex-col items-center justify-center gap-y-12 py-10">
-                              {[0, 1, 2].map((idx) => {
+                            <div
+                              className={[
+                                "w-full flex flex-col items-center justify-center py-10",
+                                selectedTemplate >= 5
+                                  ? "gap-y-5"
+                                  : selectedTemplate === 4
+                                    ? "gap-y-8"
+                                    : "gap-y-12",
+                              ].join(" ")}
+                            >
+                              {Array.from({ length: selectedTemplate }, (_, i) => i).map((idx) => {
                                 const slot = slots[idx];
                                 const p =
                                   slot?.productId != null
