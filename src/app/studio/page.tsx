@@ -36,15 +36,20 @@ const FONT_MIN = 60;
 const FONT_MAX = 160;
 
 /**
- * Nötr zemin tonları. Orta ton, koyu karo (L≈0.15) ile açık karo (L≈0.70)
- * arasında durduğu için ikisi de zeminden ayrışır — çerçeve/kontur gerekmez.
+ * Kırık beyazdan yumuşak siyaha uzanan tek bir gri merdiveni. Eski tonlar
+ * kahverengiye kaçıyordu (renk sapması 17); bunlar nötr (sapma 2), taşa
+ * yakın çok hafif bir yeşil-gri ile — ölü gri gibi durmasın diye.
+ *
+ * Ölçülen L* ve karo ayrımı (koyu karo L*14, açık karo L*94):
+ *   kağıt  95 · açık 75 (Δ61/19) · orta 46 (Δ32/48) · koyu 27 (Δ13/67)
+ *   siyah  14 — koyu karoyla ayrımı yok; orada ışık havuzu devreye giriyor.
  */
 const GROUNDS = [
-  { id: "orta", label: "Nötr orta", bg: "#6A6259", ink: "#FFFFFF" },
-  { id: "koyu", label: "Nötr koyu", bg: "#4A453F", ink: "#FFFFFF" },
-  { id: "acik", label: "Nötr açık", bg: "#B9B2A8", ink: "#1A1714" },
-  { id: "siyah", label: "Siyah", bg: "#131110", ink: "#FFFFFF" },
-  { id: "beyaz", label: "Beyaz", bg: "#F4F3F1", ink: "#151311" },
+  { id: "orta", label: "Orta gri", bg: "#6B6D6C", ink: "#FFFFFF" },
+  { id: "koyu", label: "Antrasit", bg: "#3E4040", ink: "#FFFFFF" },
+  { id: "acik", label: "Açık gri", bg: "#B7B9B7", ink: "#191A19" },
+  { id: "siyah", label: "Yumuşak siyah", bg: "#212322", ink: "#FFFFFF" },
+  { id: "beyaz", label: "Kırık beyaz", bg: "#F2F2F0", ink: "#141514" },
 ] as const;
 type GroundId = (typeof GROUNDS)[number]["id"];
 
@@ -358,16 +363,32 @@ function thumbUrl(url: string, w = 320): string {
   return u.replace("/upload/", `/upload/w_${w},c_limit,q_auto,f_auto/`);
 }
 
-/** Karoyu zeminden kaldıran gölge. Karo boyutuna göre ölçeklenir; koyu
- *  zeminde gölge okunmadığı için ayrıca ince bir kenar ışığı eklenir. */
+/** Karoyu zeminden kaldıran derinlik. Karo boyutuna göre ölçeklenir.
+ *
+ *  Açık zeminde düz gölge yeter. Koyu zeminde siyahın daha koyusu olmadığı
+ *  için gölge okunmaz; oraya ÜÇ katman birden gider:
+ *    1. üst kenarda ince ışık — karo ışığı yakalıyormuş gibi,
+ *    2. altta sıkı temas gölgesi,
+ *    3. karonun çevresine geniş, çok soluk bir ışık havuzu — zemin karonun
+ *       etrafında hafifçe aydınlanır, gölge artık siyahın değil bu
+ *       aydınlığın üstüne düşer. Yumuşak siyahta koyu karoyu ayıran şey bu.
+ */
 function tileShadow(darkGround: boolean, h: number): string {
   const blur = Math.max(18, Math.min(58, Math.round(h * 0.11)));
   const y = Math.round(blur * 0.46);
   const nearBlur = Math.round(blur * 0.3);
   const nearY = Math.max(2, Math.round(y * 0.26));
-  return darkGround
-    ? `0 ${y}px ${blur}px rgba(0,0,0,.62), 0 ${nearY}px ${nearBlur}px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.11)`
-    : `0 ${y}px ${blur}px rgba(0,0,0,.22), 0 ${nearY}px ${nearBlur}px rgba(0,0,0,.13)`;
+  if (!darkGround) {
+    return `0 ${y}px ${blur}px rgba(0,0,0,.22), 0 ${nearY}px ${nearBlur}px rgba(0,0,0,.13)`;
+  }
+  const pool = Math.round(blur * 2.7);
+  const spread = Math.round(blur * 0.55);
+  return [
+    "0 -1px 0 rgba(255,255,255,.30)",
+    `0 ${y}px ${blur}px rgba(0,0,0,.80)`,
+    `0 ${nearY}px ${nearBlur}px rgba(0,0,0,.62)`,
+    `0 0 ${pool}px ${spread}px rgba(255,255,255,.085)`,
+  ].join(", ");
 }
 
 function digits(v: string) {
