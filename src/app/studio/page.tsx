@@ -113,8 +113,12 @@ type PageState = {
   brandName: string;
   ground: GroundId;
   accent: string;
+  /** "urun" = normal afiş. "kampanya" = yalnız kampanya detayı olan sayfa. */
+  pageMode: "urun" | "kampanya";
   campaignOn: boolean;
+  campaignTitle: string;
   campaignText: string;
+  campaignNote: string;
   footerLeft: string;
   footerRight: string;
   fontScale: number;
@@ -234,8 +238,11 @@ function normalizeState(raw: unknown): PageState | null {
     brandName: asStr(o.brandName),
     ground: normalizeGround(o.ground),
     accent: /^#[0-9a-f]{6}$/i.test(accent) ? accent : BRAND_BLUE,
+    pageMode: o.pageMode === "kampanya" ? "kampanya" : "urun",
     campaignOn: o.campaignOn === true,
+    campaignTitle: asStr(o.campaignTitle),
     campaignText: asStr(o.campaignText),
+    campaignNote: asStr(o.campaignNote),
     footerLeft: asStr(o.footerLeft),
     footerRight: asStr(o.footerRight),
     fontScale,
@@ -364,11 +371,14 @@ function TileImage({
   src,
   alt,
   ratio,
+  maxHeight,
   onNaturalRatio,
 }: {
   src: string;
   alt: string;
   ratio: number;
+  /** Tuval pikseli cinsinden tavan. Ölçülmediyse kapsayıcının %100'ü. */
+  maxHeight?: number;
   onNaturalRatio?: (r: number) => void;
 }) {
   const [resolved, setResolved] = useState<string | null>(null);
@@ -453,7 +463,7 @@ function TileImage({
       crossOrigin="anonymous"
       style={{
         maxWidth: "100%",
-        maxHeight: "100%",
+        maxHeight: maxHeight ? `${maxHeight}px` : "100%",
         width: "auto",
         height: "auto",
         display: "block",
@@ -488,12 +498,26 @@ function PickerThumb({ src, alt }: { src: string; alt: string }) {
 }
 
 /** Ürün seçilmemiş slot için, ebadın oranını koruyan yer tutucu. */
-function TilePlaceholder({ ratio, color }: { ratio: number; color: string }) {
+function TilePlaceholder({
+  ratio,
+  color,
+  maxHeight,
+}: {
+  ratio: number;
+  color: string;
+  maxHeight?: number;
+}) {
   const w = Math.round(ratio * 100);
   return (
     <svg
       viewBox={`0 0 ${w} 100`}
-      style={{ maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", display: "block" }}
+      style={{
+        maxWidth: "100%",
+        maxHeight: maxHeight ? `${maxHeight}px` : "100%",
+        width: "auto",
+        height: "auto",
+        display: "block",
+      }}
       aria-hidden="true"
     >
       <rect
@@ -784,6 +808,10 @@ export default function Studio2Page() {
    *  uyuşmayan görseli panelde uyarmak için. */
   const [photoRatio, setPhotoRatio] = useState<Record<string, number>>({});
 
+  /** Ürün alanının tuval pikseli cinsinden yüksekliği (ölçülür). */
+  const [productAreaH, setProductAreaH] = useState(0);
+  const areaRef = useRef<HTMLDivElement | null>(null);
+
   /** Yazı ölçeği kutusunun ham metni. Sayıya bağlanırsa "1" yazarken 60'a
    *  yapışıyor, silmek imkânsız hâle geliyor. */
   const [fontScaleText, setFontScaleText] = useState("100");
@@ -797,8 +825,11 @@ export default function Studio2Page() {
     brandName: "GÜRAL SERAMİK",
     ground: "orta",
     accent: BRAND_BLUE,
+    pageMode: "urun" as const,
     campaignOn: false,
+    campaignTitle: "AĞUSTOS KAMPANYASI",
     campaignText: "5 PALET ALANA 1 PALET 10×20 HEDİYE",
+    campaignNote: "Kampanya stoklarla sınırlıdır.",
     footerLeft: "FİYATLAR KDV HARİÇTİR",
     footerRight: "STOKLARLA SINIRLIDIR",
     fontScale: 100,
@@ -968,12 +999,22 @@ export default function Studio2Page() {
   /* --------------------------------- dışa aktarım --------------------------------- */
 
   const fileBase = useMemo(() => {
+    if (state.pageMode === "kampanya") {
+      const t = state.campaignTitle.trim() || "kampanya";
+      return t.replace(/[\\/:*?"<>|]/g, "-");
+    }
     const parts = [state.brandName, state.size, state.depot]
       .map((x) => (x || "").trim())
       .filter(Boolean)
       .join(" ");
     return (parts || "afis").replace(/[\\/:*?"<>|]/g, "-");
-  }, [state.brandName, state.size, state.depot]);
+  }, [
+    state.pageMode,
+    state.campaignTitle,
+    state.brandName,
+    state.size,
+    state.depot,
+  ]);
 
   /** Kanvastaki tüm görseller yüklenene kadar bekler. Kuyruk dışa aktarımında
    *  sayfa değiştikten sonra ekran görüntüsü almadan önce şart. */
@@ -997,6 +1038,8 @@ export default function Studio2Page() {
   }
 
   function expectedImageCount(st: PageState) {
+    // kampanya sayfasında yalnız logo var
+    if (st.pageMode === "kampanya") return 1;
     // slot görselleri + logo
     return st.slots.slice(0, st.count).filter((x) => x.imageUrl).length + 1;
   }
@@ -1055,6 +1098,9 @@ export default function Studio2Page() {
   /* --------------------------------- kuyruk --------------------------------- */
 
   function snapshotTitle(st: PageState) {
+    if (st.pageMode === "kampanya") {
+      return `KAMPANYA · ${st.campaignTitle.trim() || "başlıksız"}`;
+    }
     const names = st.slots
       .slice(0, st.count)
       .map((sl) => {
@@ -1197,6 +1243,20 @@ export default function Studio2Page() {
       dead = true;
     };
   }, [slotImageKey]);
+
+  useEffect(() => {
+    const el = areaRef.current;
+    if (!el) return;
+    // offsetHeight, kanvasın CSS ölçeğinden etkilenmez — tuval pikseli verir.
+    const read = () => {
+      const h = el.offsetHeight;
+      setProductAreaH((prev) => (Math.abs(prev - h) > 0.5 ? h : prev));
+    };
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
 
   /** Görselin oranı seçilen ebattan belirgin farklıysa uyarı metni. */
   function ratioWarning(slot: Slot): string | null {
@@ -1400,6 +1460,10 @@ export default function Studio2Page() {
   /* ---------------------------------- satış ---------------------------------- */
 
   async function recordSales() {
+    if (state.pageMode === "kampanya") {
+      setMsg("Kampanya sayfasında satılacak ürün yok");
+      return;
+    }
     const today = new Date().toISOString().slice(0, 10);
 
     // Çift stokta iki ayrı satır çıkar (1. KALİTE ve END.). Studio 1'de END.
@@ -1473,12 +1537,24 @@ export default function Studio2Page() {
   // farklı yükseklikte olursa görsele kalan yer de farklı oluyor ve aynı
   // ebattaki karolar farklı boyutta çiziliyordu (çift stoklu slot bunu
   // bozuyordu). En yüksek ihtiyacı hesaplayıp hepsine uyguluyoruz.
+  // Ürün alanının gerçek yüksekliği. Karoya ayrılan tavanı buradan
+  // hesaplıyoruz ki yazı görselin hemen altında dursun.
+  const areaH = productAreaH;
   const anyDualStock = state.slots
     .slice(0, state.count)
     .some((sl) => sl.dualStock);
   const infoHeight = Math.round(
     (cols === 1 ? (anyDualStock ? 200 : 132) : anyDualStock ? 182 : 150) * s,
   );
+
+  const slotGap = Math.round(14 * s);
+  const rows = cols === 1 ? Math.max(1, state.count) : 2;
+  const rowGap = cols === 1 ? 28 : 30;
+  const slotH =
+    areaH > 0 ? (areaH - 44 - rowGap * (rows - 1)) / rows : 0;
+  /** Karonun tuval pikseli cinsinden yükseklik tavanı. 0 = henüz ölçülmedi. */
+  const tileMaxH =
+    slotH > 0 ? Math.max(60, Math.round(slotH - infoHeight - slotGap)) : 0;
 
   function SlotView({ index }: { index: number }) {
     const slot = state.slots[index];
@@ -1633,22 +1709,35 @@ export default function Studio2Page() {
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          gap: Math.round(14 * s),
+          // Görsel + yazı tek blok olarak dikeyde ortalanır; yazı artık
+          // sayfanın dibine değil, karonun hemen altına oturuyor.
+          justifyContent: "center",
+          gap: slotGap,
         }}
       >
         <div
           style={{
-            flex: 1,
+            // Ölçüm gelene kadar eski davranış (esnek kutu) sürer.
+            flex: tileMaxH ? "0 1 auto" : 1,
             minHeight: 0,
             display: "flex",
-            alignItems: cols === 1 ? "center" : "flex-end",
+            alignItems: "center",
             justifyContent: "center",
           }}
         >
           {slot.imageUrl ? (
-            <TileImage src={slot.imageUrl} alt={name} ratio={ratio} />
+            <TileImage
+              src={slot.imageUrl}
+              alt={name}
+              ratio={ratio}
+              maxHeight={tileMaxH || undefined}
+            />
           ) : (
-            <TilePlaceholder ratio={ratio} color={muted} />
+            <TilePlaceholder
+              ratio={ratio}
+              color={muted}
+              maxHeight={tileMaxH || undefined}
+            />
           )}
         </div>
         {info}
@@ -1762,6 +1851,42 @@ export default function Studio2Page() {
           <section className="rounded-2xl bg-white p-4 ring-1 ring-zinc-200">
             <div className="mb-3 text-sm font-bold">Sayfa</div>
 
+            <div className="mb-3">
+              <div className="mb-1 text-xs font-semibold text-zinc-600">
+                Sayfa türü
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ["urun", "Ürün afişi"],
+                    ["kampanya", "Kampanya sayfası"],
+                  ] as const
+                ).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => patch({ pageMode: mode })}
+                    className={[
+                      "rounded-lg px-3 py-2 text-sm font-semibold",
+                      state.pageMode === mode
+                        ? "bg-zinc-900 text-white"
+                        : "border border-zinc-200 bg-white hover:bg-zinc-50",
+                    ].join(" ")}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {state.pageMode === "kampanya" ? (
+                <div className="mt-1 text-[10px] leading-relaxed text-zinc-500">
+                  Bu sayfada ürün yok — yalnız kampanya metni basılır. Kuyruğa
+                  ekleyip diğer sayfalarla aynı PDF'e koyabilirsin.
+                </div>
+              ) : null}
+            </div>
+
+            {state.pageMode === "urun" ? (
+              <>
             <label className="mb-3 block space-y-1">
               <div className="text-xs font-semibold text-zinc-600">Ebat</div>
               <select
@@ -1801,6 +1926,8 @@ export default function Studio2Page() {
                 ))}
               </div>
             </div>
+              </>
+            ) : null}
 
             <div className="mb-3 grid grid-cols-2 gap-2">
               <label className="space-y-1">
@@ -1900,6 +2027,45 @@ export default function Studio2Page() {
           </section>
 
           <section className="rounded-2xl bg-white p-4 ring-1 ring-zinc-200">
+            {state.pageMode === "kampanya" ? (
+              <div className="space-y-3">
+                <div className="text-sm font-bold">Kampanya sayfası</div>
+                <label className="block space-y-1">
+                  <div className="text-xs font-semibold text-zinc-600">Başlık</div>
+                  <input
+                    value={state.campaignTitle}
+                    onChange={(e) => patch({ campaignTitle: e.target.value })}
+                    placeholder="örn. AĞUSTOS KAMPANYASI"
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <div className="text-xs font-semibold text-zinc-600">
+                    Detay (her satır alt alta basılır)
+                  </div>
+                  <textarea
+                    value={state.campaignText}
+                    onChange={(e) => patch({ campaignText: e.target.value })}
+                    rows={4}
+                    placeholder={"5 PALET 40x120 ALANA\n1 PALET 10x20 HEDİYE"}
+                    className="w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <div className="text-xs font-semibold text-zinc-600">
+                    Alt not (küçük yazı)
+                  </div>
+                  <textarea
+                    value={state.campaignNote}
+                    onChange={(e) => patch({ campaignNote: e.target.value })}
+                    rows={2}
+                    placeholder="örn. Kampanya stoklarla sınırlıdır."
+                    className="w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              </div>
+            ) : (
+              <>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -1917,6 +2083,8 @@ export default function Studio2Page() {
                 className="mt-2 w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
               />
             ) : null}
+              </>
+            )}
           </section>
 
           <section className="rounded-2xl bg-white p-4 ring-1 ring-zinc-200">
@@ -2040,7 +2208,10 @@ export default function Studio2Page() {
             </div>
           </section>
 
-          <section className="space-y-3">
+          <section
+            className="space-y-3"
+            hidden={state.pageMode === "kampanya"}
+          >
             {state.slots.map((slot, i) => {
               const p = slot.productId ? productsById.get(slot.productId) : undefined;
               return (
@@ -2406,27 +2577,96 @@ export default function Studio2Page() {
                         marginTop: 24,
                       }}
                     />
-                    <div style={{ marginTop: 20 }}>
-                      <span
-                        style={{
-                          display: "inline-block",
-                          background: ground.ink,
-                          color: ground.bg,
-                          fontSize: 30,
-                          fontWeight: 850,
-                          letterSpacing: ".06em",
-                          padding: "9px 21px",
-                          borderRadius: 12,
-                        }}
-                      >
-                        {state.size.replace("x", " × ")}
-                      </span>
-                    </div>
+                    {state.pageMode === "urun" ? (
+                      <div style={{ marginTop: 20 }}>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            background: ground.ink,
+                            color: ground.bg,
+                            fontSize: 30,
+                            fontWeight: 850,
+                            letterSpacing: ".06em",
+                            padding: "9px 21px",
+                            borderRadius: 12,
+                          }}
+                        >
+                          {state.size.replace("x", " × ")}
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
 
-                  {/* ürünler */}
-                  {cols === 1 ? (
+                  {/* ürünler / kampanya sayfası */}
+                  {state.pageMode === "kampanya" ? (
                     <div
+                      style={{
+                        flex: 1,
+                        minHeight: 0,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        textAlign: "center",
+                        padding: "40px 90px",
+                        gap: 34,
+                      }}
+                    >
+                      <div style={{ color: state.accent, display: "flex" }}>
+                        <GiftIcon size={132} />
+                      </div>
+                      {state.campaignTitle.trim() ? (
+                        <div
+                          style={{
+                            fontSize: 96,
+                            fontWeight: 880,
+                            lineHeight: 1.02,
+                            letterSpacing: "-.02em",
+                            whiteSpace: "pre-line",
+                          }}
+                        >
+                          {state.campaignTitle}
+                        </div>
+                      ) : null}
+                      <div
+                        style={{
+                          width: 200,
+                          height: 8,
+                          borderRadius: 4,
+                          background: state.accent,
+                        }}
+                      />
+                      {state.campaignText.trim() ? (
+                        <div
+                          style={{
+                            fontSize: 58,
+                            fontWeight: 780,
+                            lineHeight: 1.28,
+                            letterSpacing: "-.01em",
+                            whiteSpace: "pre-line",
+                          }}
+                        >
+                          {state.campaignText}
+                        </div>
+                      ) : null}
+                      {state.campaignNote.trim() ? (
+                        <div
+                          style={{
+                            marginTop: 6,
+                            fontSize: 30,
+                            fontWeight: 650,
+                            lineHeight: 1.35,
+                            color: muted,
+                            whiteSpace: "pre-line",
+                          }}
+                        >
+                          {state.campaignNote}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : cols === 1 ? (
+                    <div
+                      ref={areaRef}
                       style={{
                         flex: 1,
                         minHeight: 0,
@@ -2442,6 +2682,7 @@ export default function Studio2Page() {
                     </div>
                   ) : (
                     <div
+                      ref={areaRef}
                       style={{
                         flex: 1,
                         minHeight: 0,
@@ -2459,7 +2700,9 @@ export default function Studio2Page() {
                   )}
 
                   {/* kampanya */}
-                  {state.campaignOn && state.campaignText.trim() ? (
+                  {state.pageMode === "urun" &&
+                  state.campaignOn &&
+                  state.campaignText.trim() ? (
                     <div
                       style={{
                         flexShrink: 0,
