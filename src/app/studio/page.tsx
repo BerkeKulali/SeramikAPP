@@ -1120,23 +1120,39 @@ export default function Studio2Page() {
 
   /** Kanvastaki tüm görseller yüklenene kadar bekler. Kuyruk dışa aktarımında
    *  sayfa değiştikten sonra ekran görüntüsü almadan önce şart. */
-  async function waitForCanvas(expectedImages: number, timeout = 9000) {
+  /** Kanvas beklenen sayfayı gösterip tüm görselleri yükleyene kadar bekler.
+   *  expectedSnap verilirse önce DOM'un o sayfaya geçmesi beklenir. */
+  async function waitForCanvas(
+    expectedImages: number,
+    expectedSnap?: string,
+    timeout = 12000,
+  ) {
     const start = Date.now();
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     while (Date.now() - start < timeout) {
       await new Promise((r) => requestAnimationFrame(() => r(null)));
+      const node = document.getElementById("afis-kanvas");
+      const committed =
+        !expectedSnap || node?.getAttribute("data-snap") === expectedSnap;
       const imgs = Array.from(
         document.querySelectorAll<HTMLImageElement>("#afis-kanvas img"),
       );
       const ready =
+        committed &&
         imgs.length >= expectedImages &&
         imgs.every((i) => i.complete && i.naturalWidth > 0);
       if (ready) {
+        // Bir kare daha: son yerleşim boyansın.
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
         await sleep(140);
         return;
       }
-      await sleep(90);
+      await sleep(60);
     }
+  }
+
+  function snapKey(st: PageState) {
+    return JSON.stringify(st);
   }
 
   function expectedImageCount(st: PageState) {
@@ -1148,9 +1164,15 @@ export default function Studio2Page() {
     return st.slots.slice(0, st.count).filter((x) => x.imageUrl).length + 1;
   }
 
-  async function renderJpeg(): Promise<string | null> {
+  /** bg verilmezse o anki zemin kullanılır. Kuyruk dışa aktarımında MUTLAKA
+   *  o sayfanın kendi zemini geçilmeli: bu fonksiyon döngü boyunca aynı
+   *  render kapanışında kaldığı için `ground` güncellenmiyor ve bütün
+   *  sayfalar butona basıldığı andaki zemin rengiyle basılıyordu (siyah
+   *  zeminde koyu yazı, beyaz zeminde beyaz yazı). */
+  async function renderJpeg(bg?: string): Promise<string | null> {
     const node = canvasRef.current;
     if (!node) return null;
+    const backgroundColor = bg ?? ground.bg;
     // İki geçiş: ilk geçişte fontlar/görseller yerleşiyor.
     await toJpeg(node, { quality: 0.96, width: CANVAS_W, height: CANVAS_H });
     return toJpeg(node, {
@@ -1158,7 +1180,7 @@ export default function Studio2Page() {
       width: CANVAS_W,
       height: CANVAS_H,
       pixelRatio: 1,
-      backgroundColor: ground.bg,
+      backgroundColor,
     });
   }
 
@@ -1215,26 +1237,29 @@ export default function Studio2Page() {
     return `${st.size} · ${names[0] ?? "boş"}${names.length > 1 ? ` +${names.length - 1}` : ""}`;
   }
 
+  /** Kanvasın o anki hâlinden küçük önizleme üretir. */
+  async function captureThumb(): Promise<string | null> {
+    try {
+      const node = canvasRef.current;
+      if (!node) return null;
+      return await toJpeg(node, {
+        quality: 0.6,
+        width: CANVAS_W,
+        height: CANVAS_H,
+        canvasWidth: 216,
+        canvasHeight: 384,
+        backgroundColor: ground.bg,
+      });
+    } catch {
+      return null;
+    }
+  }
+
   async function addToQueue() {
     try {
       setBusy("Sayfa kuyruğa ekleniyor…");
-      await waitForCanvas(expectedImageCount(state));
-      let thumb: string | null = null;
-      try {
-        const node = canvasRef.current;
-        if (node) {
-          thumb = await toJpeg(node, {
-            quality: 0.6,
-            width: CANVAS_W,
-            height: CANVAS_H,
-            canvasWidth: 216,
-            canvasHeight: 384,
-            backgroundColor: ground.bg,
-          });
-        }
-      } catch {
-        thumb = null;
-      }
+      await waitForCanvas(expectedImageCount(state), snapKey(state));
+      const thumb = await captureThumb();
       const item: QueueItem = {
         id: `${Date.now()}-${Math.round(Math.random() * 1e6)}`,
         title: snapshotTitle(state),
@@ -1257,19 +1282,25 @@ export default function Studio2Page() {
     setMsg("Sayfa düzenlemeye alındı");
   }
 
-  function replaceInQueue(id: string) {
-    setQueue((q) =>
-      q.map((it) =>
-        it.id === id
-          ? {
-              ...it,
-              title: snapshotTitle(state),
-              snapshot: JSON.parse(JSON.stringify(state)) as PageState,
-            }
-          : it,
-      ),
-    );
-    setMsg("Kuyruktaki sayfa güncellendi ✓");
+  /** Kuyruktaki sayfayı ekrandaki hâliyle değiştirir. Küçük önizleme de
+   *  yeniden üretilir; eskiden yalnız snapshot değişiyor, kuyrukta hep ilk
+   *  hâlin resmi görünüyordu. */
+  async function replaceInQueue(id: string) {
+    try {
+      setBusy("Sayfa güncelleniyor…");
+      await waitForCanvas(expectedImageCount(state), snapKey(state));
+      const thumb = await captureThumb();
+      const title = snapshotTitle(state);
+      const snapshot = JSON.parse(JSON.stringify(state)) as PageState;
+      setQueue((q) =>
+        q.map((it) => (it.id === id ? { ...it, title, thumb, snapshot } : it)),
+      );
+      setMsg("Kuyruktaki sayfa güncellendi ✓");
+    } catch {
+      setMsg("Sayfa güncellenemedi");
+    } finally {
+      setBusy(null);
+    }
   }
 
   function removeFromQueue(id: string) {
@@ -1305,8 +1336,11 @@ export default function Studio2Page() {
         const item = queue[i];
         setProgress(`${i + 1} / ${queue.length}`);
         setState(item.snapshot);
-        await waitForCanvas(expectedImageCount(item.snapshot));
-        const url = await renderJpeg();
+        await waitForCanvas(
+          expectedImageCount(item.snapshot),
+          snapKey(item.snapshot),
+        );
+        const url = await renderJpeg(groundOf(item.snapshot.ground).bg);
         if (!url) continue;
         if (i > 0) pdf.addPage([CANVAS_W, CANVAS_H], "portrait");
         pdf.addImage(url, "JPEG", 0, 0, CANVAS_W, CANVAS_H);
@@ -2402,7 +2436,7 @@ export default function Studio2Page() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => replaceInQueue(it.id)}
+                          onClick={() => void replaceInQueue(it.id)}
                           className="rounded border border-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold hover:bg-zinc-50"
                         >
                           Üzerine yaz
@@ -2767,6 +2801,11 @@ export default function Studio2Page() {
                 <div
                   ref={canvasRef}
                   id="afis-kanvas"
+                  // Kuyruk dışa aktarımında DOM'un GERÇEKTEN hangi sayfayı
+                  // gösterdiğini bilmek için imza. Görsel sayısına bakmak
+                  // yetmiyordu; iki sayfada sayı aynıysa React daha commit
+                  // etmeden ekran görüntüsü alınıp önceki sayfa basılıyordu.
+                  data-snap={snapKey(state)}
                   style={{
                     width: CANVAS_W,
                     height: CANVAS_H,
