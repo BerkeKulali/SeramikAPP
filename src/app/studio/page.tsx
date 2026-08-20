@@ -36,21 +36,58 @@ const FONT_MIN = 60;
 const FONT_MAX = 160;
 
 /**
- * Kırık beyazdan yumuşak siyaha uzanan tek bir gri merdiveni. Eski tonlar
- * kahverengiye kaçıyordu (renk sapması 17); bunlar nötr (sapma 2), taşa
- * yakın çok hafif bir yeşil-gri ile — ölü gri gibi durmasın diye.
+ * İki zemin ailesi, aynı beş ton. Saf nötr gri (kroma 0) 2013-18 dilidir;
+ * eski kahverengi tonlar ise doğru fikrin yanlış dozuydu (kroma 17-20).
+ * Doğru yer arada: ölçülü sıcaklık, kroma 8-12. Siyahlar da nötr değil —
+ * gerçek malzemede nötr siyah yoktur.
  *
- * Ölçülen L* ve karo ayrımı (koyu karo L*14, açık karo L*94):
- *   kağıt  95 · açık 75 (Δ61/19) · orta 46 (Δ32/48) · koyu 27 (Δ13/67)
- *   siyah  14 — koyu karoyla ayrımı yok; orada ışık havuzu devreye giriyor.
+ * Ölçülen L*: kâğıt 95 · açık 77 · orta 47 · koyu 27 · siyah 13.
+ * Orta ton, koyu karo (L*14) ile açık karoyu (L*94) aynı anda ayırır.
+ * Siyahta ayrımı ışık havuzu sağlar (bkz. tileShadow).
  */
-const GROUNDS = [
-  { id: "orta", label: "Orta gri", bg: "#6B6D6C", ink: "#FFFFFF" },
-  { id: "koyu", label: "Antrasit", bg: "#3E4040", ink: "#FFFFFF" },
-  { id: "acik", label: "Açık gri", bg: "#B7B9B7", ink: "#191A19" },
-  { id: "siyah", label: "Yumuşak siyah", bg: "#212322", ink: "#FFFFFF" },
-  { id: "beyaz", label: "Kırık beyaz", bg: "#F2F2F0", ink: "#141514" },
+const GROUND_FAMILIES = [
+  { id: "sicak", label: "Sıcak gri" },
+  { id: "zeytin", label: "Zeytin-gri" },
 ] as const;
+type GroundFamily = (typeof GROUND_FAMILIES)[number]["id"];
+
+const GROUND_TONES = ["beyaz", "acik", "orta", "koyu", "siyah"] as const;
+type GroundTone = (typeof GROUND_TONES)[number];
+
+const TONE_LABEL: Record<GroundTone, string> = {
+  beyaz: "kâğıt",
+  acik: "açık",
+  orta: "orta",
+  koyu: "koyu",
+  siyah: "siyah",
+};
+
+const GROUNDS = [
+  { id: "sicak-beyaz", family: "sicak", tone: "beyaz", label: "Sıcak kâğıt", bg: "#F3F0EA", ink: "#151311" },
+  { id: "sicak-acik", family: "sicak", tone: "acik", label: "Sıcak açık", bg: "#C2BDB4", ink: "#1A1714" },
+  { id: "sicak-orta", family: "sicak", tone: "orta", label: "Sıcak orta", bg: "#757068", ink: "#FFFFFF" },
+  { id: "sicak-koyu", family: "sicak", tone: "koyu", label: "Sıcak koyu", bg: "#413C36", ink: "#FFFFFF" },
+  { id: "sicak-siyah", family: "sicak", tone: "siyah", label: "Mürekkep siyahı", bg: "#241F1B", ink: "#FFFFFF" },
+  { id: "zeytin-beyaz", family: "zeytin", tone: "beyaz", label: "Zeytin kâğıt", bg: "#EFF1EB", ink: "#141614" },
+  { id: "zeytin-acik", family: "zeytin", tone: "acik", label: "Zeytin açık", bg: "#BBBFB6", ink: "#171A16" },
+  { id: "zeytin-orta", family: "zeytin", tone: "orta", label: "Zeytin orta", bg: "#6D7268", ink: "#FFFFFF" },
+  { id: "zeytin-koyu", family: "zeytin", tone: "koyu", label: "Zeytin koyu", bg: "#3B403A", ink: "#FFFFFF" },
+  { id: "zeytin-siyah", family: "zeytin", tone: "siyah", label: "Zeytin siyahı", bg: "#1E221F", ink: "#FFFFFF" },
+] as const;
+
+/** Eski kayıtlarda zemin "orta", "siyah" gibi tek kelimeydi. */
+const LEGACY_GROUNDS: Record<string, string> = {
+  orta: "sicak-orta",
+  koyu: "sicak-koyu",
+  acik: "sicak-acik",
+  siyah: "sicak-siyah",
+  beyaz: "sicak-beyaz",
+};
+
+function groundId(family: GroundFamily, tone: GroundTone): GroundId {
+  return `${family}-${tone}` as GroundId;
+}
+
 type GroundId = (typeof GROUNDS)[number]["id"];
 
 const SIZES = [
@@ -199,7 +236,9 @@ function pickFrom<T extends readonly string[]>(
 }
 
 function normalizeGround(v: unknown): GroundId {
-  return GROUNDS.some((g) => g.id === v) ? (v as GroundId) : "orta";
+  if (GROUNDS.some((g) => g.id === v)) return v as GroundId;
+  const legacy = typeof v === "string" ? LEGACY_GROUNDS[v] : undefined;
+  return (legacy as GroundId | undefined) ?? "sicak-orta";
 }
 
 function normalizeSlot(raw: unknown): Slot {
@@ -396,7 +435,11 @@ function digits(v: string) {
 }
 
 function groundOf(id: GroundId) {
-  return GROUNDS.find((g) => g.id === id) ?? GROUNDS[0];
+  return (
+    GROUNDS.find((g) => g.id === id) ??
+    GROUNDS.find((g) => g.id === LEGACY_GROUNDS[id as string]) ??
+    GROUNDS[2]
+  );
 }
 
 /* --------------------------- karo görseli --------------------------- */
@@ -871,7 +914,7 @@ export default function Studio2Page() {
     count: 3,
     depot: DEPOTS[0],
     brandName: "GÜRAL SERAMİK",
-    ground: "orta",
+    ground: "sicak-orta" as const,
     accent: BRAND_BLUE,
     pageMode: "urun" as const,
     campaignOn: false,
@@ -1933,7 +1976,7 @@ export default function Studio2Page() {
                         // Kampanya düzeni kâğıt hissi için açık zemine göre
                         // kuruldu; koyu zeminden geliyorsa beyaza alıyoruz.
                         mode === "kampanya" && ground.ink === "#FFFFFF"
-                          ? { pageMode: mode, ground: "beyaz" }
+                          ? { pageMode: mode, ground: groundId(ground.family, "beyaz") }
                           : { pageMode: mode },
                       )
                     }
@@ -2028,25 +2071,48 @@ export default function Studio2Page() {
 
             <div className="mb-3 space-y-1">
               <div className="text-xs font-semibold text-zinc-600">Zemin</div>
-              <div className="flex gap-2">
-                {GROUNDS.map((g) => (
+              <div className="mb-2 flex gap-2">
+                {GROUND_FAMILIES.map((f) => (
                   <button
-                    key={g.id}
+                    key={f.id}
                     type="button"
-                    title={g.label}
-                    onClick={() => patch({ ground: g.id })}
+                    onClick={() => patch({ ground: groundId(f.id, ground.tone) })}
                     className={[
-                      "h-9 flex-1 rounded-lg border text-[11px] font-bold",
-                      state.ground === g.id ? "border-zinc-900 ring-2 ring-zinc-900" : "border-zinc-200",
+                      "h-8 flex-1 rounded-lg border text-xs font-semibold",
+                      ground.family === f.id
+                        ? "border-zinc-900 bg-zinc-900 text-white"
+                        : "border-zinc-200 bg-white hover:bg-zinc-50",
                     ].join(" ")}
-                    style={{ background: g.bg, color: g.ink }}
                   >
-                    {g.label.replace("Nötr ", "")}
+                    {f.label}
                   </button>
                 ))}
               </div>
+              <div className="flex gap-2">
+                {GROUND_TONES.map((t) => {
+                  const g = groundOf(groundId(ground.family, t));
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      title={g.label}
+                      onClick={() => patch({ ground: g.id })}
+                      className={[
+                        "h-9 flex-1 rounded-lg border text-[11px] font-bold",
+                        state.ground === g.id
+                          ? "border-zinc-900 ring-2 ring-zinc-900"
+                          : "border-zinc-200",
+                      ].join(" ")}
+                      style={{ background: g.bg, color: g.ink }}
+                    >
+                      {TONE_LABEL[t]}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="pt-1 text-[11px] text-zinc-500">
-                Nötr tonlar hem koyu hem açık karoyu zeminden ayırır.
+                Orta ton hem koyu hem açık karoyu ayırır. Siyahta ayrımı
+                karonun etrafındaki ışık havuzu sağlar.
               </div>
             </div>
 
