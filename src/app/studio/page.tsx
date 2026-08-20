@@ -421,11 +421,15 @@ function GradeChip({
   text,
   accent,
   ink,
+  bg,
   scale,
 }: {
   text: string;
   accent: string;
   ink: string;
+  /** Sayfa zemini. "1." rozetinin yazı rengi bu — zemin ink ile zaten
+   *  kontrastlı olduğu için rozet her zeminde okunur kalır. */
+  bg: string;
   scale: number;
 }) {
   if (!text) return null;
@@ -436,7 +440,7 @@ function GradeChip({
         display: "inline-flex",
         alignItems: "center",
         background: primary ? ink : accent,
-        color: primary ? "#141210" : "#FFFFFF",
+        color: primary ? bg : "#FFFFFF",
         fontSize: Math.round(21 * scale),
         fontWeight: 850,
         letterSpacing: ".06em",
@@ -1265,7 +1269,13 @@ export default function Studio2Page() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: Math.round(15 * s), minWidth: 0 }}>
-            <GradeChip text={chip} accent={state.accent} ink={ground.ink} scale={s} />
+            <GradeChip
+              text={chip}
+              accent={state.accent}
+              ink={ground.ink}
+              bg={ground.bg}
+              scale={s}
+            />
             <div>
               <div style={{ fontSize: Math.round(32 * s), fontWeight: 750, lineHeight: 1.05 }}>
                 {name || "—"}
@@ -1289,7 +1299,13 @@ export default function Studio2Page() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: Math.round(10 * s), minWidth: 0 }}>
-            <GradeChip text={chip} accent={state.accent} ink={ground.ink} scale={s} />
+            <GradeChip
+              text={chip}
+              accent={state.accent}
+              ink={ground.ink}
+              bg={ground.bg}
+              scale={s}
+            />
             <div style={{ fontSize: Math.round(27 * s), fontWeight: 750, lineHeight: 1.05 }}>
               {name || "—"}
             </div>
