@@ -79,6 +79,11 @@ type Slot = {
   grade: (typeof GRADES)[number];
   isRec: boolean;
   stock: string;
+  /** Açık = aynı ürünün 1. ve END. kalitesi ayrı stok/fiyatla gösterilir.
+   *  Açıkken dualPrice yok sayılır (her kalitenin tek fiyatı olur). */
+  dualStock: boolean;
+  stockEnd: string;
+  priceEnd: string;
   /** Boş = tek fiyat. Dolu = Vadeli/Kart. */
   dualPrice: boolean;
   price: string;
@@ -124,6 +129,9 @@ function emptySlot(): Slot {
     grade: "",
     isRec: false,
     stock: "",
+    dualStock: false,
+    stockEnd: "",
+    priceEnd: "",
     dualPrice: false,
     price: "",
     priceSecond: "",
@@ -187,6 +195,9 @@ function normalizeSlot(raw: unknown): Slot {
     grade: pickFrom(o.grade, GRADES, ""),
     isRec: o.isRec === true,
     stock: asStr(o.stock),
+    dualStock: o.dualStock === true,
+    stockEnd: asStr(o.stockEnd),
+    priceEnd: asStr(o.priceEnd),
     dualPrice: o.dualPrice === true,
     price: asStr(o.price),
     priceSecond: asStr(o.priceSecond),
@@ -300,6 +311,21 @@ function gradeLabel(s: Slot): string {
   if (!s.grade) return "";
   const base = s.grade === "1." ? "1. KALİTE" : "END.";
   return s.isRec ? `REC ${base}` : base;
+}
+
+/** Türkçe biçimli sayıyı çözer: "1.240" -> 1240, "12,5" -> 12.5.
+ *  Tek nokta üç haneli bir kuyruk getiriyorsa binlik ayracı sayılır,
+ *  aksi hâlde ondalık nokta kabul edilir ("12.5" -> 12.5). */
+function parseTrNumber(v: string): number {
+  const t = String(v ?? "").trim();
+  if (!t) return 0;
+  if (t.includes(",")) return parseFloat(t.replace(/\./g, "").replace(",", ".")) || 0;
+  const dots = (t.match(/\./g) || []).length;
+  if (dots === 1) {
+    const dec = t.split(".")[1] ?? "";
+    return parseFloat(dec.length === 3 ? t.replace(".", "") : t) || 0;
+  }
+  return parseFloat(t.replace(/\./g, "")) || 0;
 }
 
 function digits(v: string) {
@@ -618,12 +644,12 @@ function PriceBlock({
 }
 
 function StockLine({
-  slot,
+  value,
   scale,
   muted,
   ink,
 }: {
-  slot: Slot;
+  value: string;
   scale: number;
   muted: string;
   ink: string;
@@ -650,11 +676,44 @@ function StockLine({
           color: ink,
         }}
       >
-        {slot.stock.trim() || "—"}
+        {value.trim() || "—"}
       </span>
       <span style={{ fontSize: Math.round(26 * scale), fontWeight: 750, color: ink }}>
         m²
       </span>
+    </div>
+  );
+}
+
+/** Çift stok satırlarında kullanılan sade fiyat. Sabit yükseklik yok;
+ *  satırın kendi hizasına oturur. */
+function PriceValue({
+  value,
+  scale,
+  muted,
+}: {
+  value: string;
+  scale: number;
+  muted: string;
+}) {
+  const fs = Math.round(46 * scale);
+  return (
+    <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+      <div style={{ fontSize: fs, fontWeight: 820, lineHeight: 0.95, letterSpacing: "-.02em" }}>
+        {value.trim() || "—"}
+        <span style={{ fontSize: Math.round(fs * 0.52), fontWeight: 700 }}> ₺</span>
+      </div>
+      <div
+        style={{
+          fontSize: Math.round(17 * scale),
+          fontWeight: 600,
+          letterSpacing: ".11em",
+          color: muted,
+          marginTop: Math.round(4 * scale),
+        }}
+      >
+        + KDV / m²
+      </div>
     </div>
   );
 }
@@ -1285,27 +1344,46 @@ export default function Studio2Page() {
   /* ---------------------------------- satış ---------------------------------- */
 
   async function recordSales() {
-    const items = state.slots
-      .map((s) => {
-        const p = s.productId ? productsById.get(s.productId) : undefined;
-        const name = displayName(p, s);
-        if (!name) return null;
-        const qty = parseFloat(s.stock.replace(",", ".")) || 0;
-        const unit = parseFloat(s.price.replace(/\./g, "").replace(",", ".")) || 0;
-        if (!qty || !unit) return null;
-        return {
-          date: new Date().toISOString().slice(0, 10),
-          productName: name,
-          brand: p?.brand ?? state.brandName,
-          size: s.sizeOverride || state.size,
-          quantity: qty,
-          unitPrice: unit,
-          customer: "",
-          note: state.depot,
-          source: "banner" as const,
-        };
-      })
-      .filter(Boolean);
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Çift stokta iki ayrı satır çıkar (1. KALİTE ve END.). Studio 1'de END.
+    // satırının düşmemesi bir hataydı; burada baştan iki satır yazılıyor.
+    const items = state.slots.slice(0, state.count).flatMap((s) => {
+      const p = s.productId ? productsById.get(s.productId) : undefined;
+      const name = displayName(p, s);
+      if (!name) return [];
+      const base = {
+        date: today,
+        brand: p?.brand ?? state.brandName,
+        size: s.sizeOverride || state.size,
+        customer: "",
+        note: state.depot,
+        source: "banner" as const,
+      };
+      const rows: Array<typeof base & {
+        productName: string;
+        quantity: number;
+        unitPrice: number;
+      }> = [];
+      const push = (suffix: string, stock: string, price: string) => {
+        const quantity = parseTrNumber(stock);
+        const unitPrice = parseTrNumber(price);
+        if (!quantity || !unitPrice) return;
+        rows.push({
+          ...base,
+          productName: suffix ? `${name} ${suffix}` : name,
+          quantity,
+          unitPrice,
+        });
+      };
+      if (s.dualStock) {
+        push(s.isRec ? "REC 1. KALİTE" : "1. KALİTE", s.stock, s.price);
+        push(s.isRec ? "REC END." : "END.", s.stockEnd, s.priceEnd);
+      } else {
+        push(gradeLabel(s), s.stock, s.price);
+      }
+      return rows;
+    });
     if (!items.length) {
       setMsg("Kaydedilecek satır yok (stok ve fiyat gerekli)");
       return;
@@ -1344,8 +1422,62 @@ export default function Studio2Page() {
     const name = displayName(p, slot);
     const chip = gradeLabel(slot);
 
-    const info =
-      cols === 1 ? (
+    /** Çift stok: aynı ürünün 1. ve END. kalitesi, her biri kendi stok ve
+     *  fiyatıyla alt alta. Studio 1'deki dualStock davranışının karşılığı. */
+    const dualStockRow = (
+      label: string,
+      stockValue: string,
+      priceValue: string,
+      primary: boolean,
+    ) => (
+      <div
+        key={label}
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          gap: Math.round(20 * s),
+        }}
+      >
+        <div
+          style={{ display: "flex", alignItems: "center", gap: Math.round(13 * s), minWidth: 0 }}
+        >
+          <GradeChip
+            text={label}
+            accent={state.accent}
+            ink={ground.ink}
+            bg={ground.bg}
+            scale={s * 0.92}
+          />
+          <StockLine value={stockValue} scale={s * 0.86} muted={muted} ink={ground.ink} />
+        </div>
+        <PriceValue value={priceValue} scale={s * (primary ? 1 : 0.92)} muted={muted} />
+      </div>
+    );
+
+    const info = slot.dualStock ? (
+      <div
+        style={{
+          flexShrink: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: Math.round((cols === 1 ? 14 : 8) * s),
+          paddingBottom: Math.round(6 * s),
+        }}
+      >
+        <div
+          style={{
+            fontSize: Math.round((cols === 1 ? 32 : 27) * s),
+            fontWeight: 750,
+            lineHeight: 1.05,
+          }}
+        >
+          {name || "—"}
+        </div>
+        {dualStockRow(slot.isRec ? "REC 1. KALİTE" : "1. KALİTE", slot.stock, slot.price, true)}
+        {dualStockRow(slot.isRec ? "REC END." : "END.", slot.stockEnd, slot.priceEnd, false)}
+      </div>
+    ) : cols === 1 ? (
         <div
           style={{
             flexShrink: 0,
@@ -1370,7 +1502,7 @@ export default function Studio2Page() {
                 {name || "—"}
               </div>
               <div style={{ marginTop: Math.round(9 * s) }}>
-                <StockLine slot={slot} scale={s} muted={muted} ink={ground.ink} />
+                <StockLine value={slot.stock} scale={s} muted={muted} ink={ground.ink} />
               </div>
             </div>
           </div>
@@ -1407,7 +1539,7 @@ export default function Studio2Page() {
               gap: Math.round(14 * s),
             }}
           >
-            <StockLine slot={slot} scale={s} muted={muted} ink={ground.ink} />
+            <StockLine value={slot.stock} scale={s} muted={muted} ink={ground.ink} />
             <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
               <PriceBlock slot={slot} scale={s} muted={muted} />
             </div>
@@ -1935,11 +2067,14 @@ export default function Studio2Page() {
                       </select>
                     </label>
                     <label className="space-y-1">
-                      <div className="text-xs font-semibold text-zinc-600">Kalite</div>
+                      <div className="text-xs font-semibold text-zinc-600">
+                        Kalite{slot.dualStock ? " (çift stokta ikisi de basılır)" : ""}
+                      </div>
                       <select
                         value={slot.grade}
+                        disabled={slot.dualStock}
                         onChange={(e) => patchSlot(i, { grade: e.target.value as Slot["grade"] })}
-                        className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm"
+                        className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm disabled:bg-zinc-100 disabled:text-zinc-400"
                       >
                         {GRADES.map((x) => (
                           <option key={x} value={x}>
@@ -1979,7 +2114,9 @@ export default function Studio2Page() {
 
                   <div className="grid grid-cols-2 gap-2">
                     <label className="space-y-1">
-                      <div className="text-xs font-semibold text-zinc-600">Stok (m²)</div>
+                      <div className="text-xs font-semibold text-zinc-600">
+                        {slot.dualStock ? "1. KALİTE stok (m²)" : "Stok (m²)"}
+                      </div>
                       <input
                         value={slot.stock}
                         onChange={(e) => patchSlot(i, { stock: e.target.value })}
@@ -1990,7 +2127,11 @@ export default function Studio2Page() {
                     </label>
                     <label className="space-y-1">
                       <div className="text-xs font-semibold text-zinc-600">
-                        {slot.dualPrice ? `${slot.priceLabel} fiyatı` : "Fiyat"}
+                        {slot.dualStock
+                          ? "1. KALİTE fiyatı"
+                          : slot.dualPrice
+                            ? `${slot.priceLabel} fiyatı`
+                            : "Fiyat"}
                       </div>
                       <input
                         value={slot.price}
@@ -2005,14 +2146,64 @@ export default function Studio2Page() {
                   <label className="mt-2 flex items-center gap-2 text-xs">
                     <input
                       type="checkbox"
-                      checked={slot.dualPrice}
-                      onChange={(e) => patchSlot(i, { dualPrice: e.target.checked })}
+                      checked={slot.dualStock}
+                      onChange={(e) => patchSlot(i, { dualStock: e.target.checked })}
                       className="h-4 w-4 accent-zinc-900"
                     />
-                    <span className="font-semibold">Çift fiyat (Vadeli + Kart)</span>
+                    <span className="font-semibold">Çift stok (1. KALİTE + END.)</span>
                   </label>
 
-                  {slot.dualPrice ? (
+                  {slot.dualStock ? (
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <label className="space-y-1">
+                        <div className="text-xs font-semibold text-zinc-600">
+                          END. stok (m²)
+                        </div>
+                        <input
+                          value={slot.stockEnd}
+                          onChange={(e) => patchSlot(i, { stockEnd: e.target.value })}
+                          placeholder="örn. 85"
+                          inputMode="decimal"
+                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                        />
+                      </label>
+                      <label className="space-y-1">
+                        <div className="text-xs font-semibold text-zinc-600">END. fiyatı</div>
+                        <input
+                          value={slot.priceEnd}
+                          onChange={(e) => patchSlot(i, { priceEnd: digits(e.target.value) })}
+                          placeholder="örn. 290"
+                          inputMode="numeric"
+                          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+
+                  <label className="mt-2 flex items-center gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={slot.dualPrice}
+                      disabled={slot.dualStock}
+                      onChange={(e) => patchSlot(i, { dualPrice: e.target.checked })}
+                      className="h-4 w-4 accent-zinc-900 disabled:opacity-40"
+                    />
+                    <span
+                      className={
+                        slot.dualStock ? "font-semibold text-zinc-400" : "font-semibold"
+                      }
+                    >
+                      Çift fiyat (Vadeli + Kart)
+                    </span>
+                  </label>
+                  {slot.dualStock ? (
+                    <div className="mt-1 text-[10px] leading-relaxed text-zinc-500">
+                      Çift stokta her kalitenin kendi fiyatı var; Vadeli/Kart ayrımı
+                      aynı anda kullanılamaz.
+                    </div>
+                  ) : null}
+
+                  {slot.dualPrice && !slot.dualStock ? (
                     <div className="mt-2 grid grid-cols-3 gap-2">
                       <label className="space-y-1">
                         <div className="text-xs font-semibold text-zinc-600">1. etiket</div>
