@@ -29,6 +29,8 @@ type DraftSummary = {
   manufacturer: string;
   pageCount: number;
   productNames: string[];
+  /** Kaydı hangi stüdyo yazdı: "studio2" | "" (eski stüdyo). */
+  kind?: string;
 };
 
 function isNotFound(err: unknown): boolean {
@@ -121,6 +123,7 @@ export async function POST(req: Request) {
       manufacturer?: string;
       pageCount?: number;
       productNames?: string[];
+      kind?: string;
       catalog?: unknown;
       draft?: unknown;
     };
@@ -136,8 +139,13 @@ export async function POST(req: Request) {
 
     // id: gövdede varsa onu kullan; yoksa aynı BAŞLIKLA eşleşeni bul (üzerine yaz); yoksa yeni.
     const explicitId = str(body.id);
+    // Aynı başlık FARKLI stüdyodan geliyorsa üzerine yazma — iki stüdyonun
+    // kayıtları birbirini ezmesin.
+    const kind = str(body.kind);
     const byTitle = list.find(
-      (x) => x.title.trim().toLowerCase() === title.toLowerCase(),
+      (x) =>
+        x.title.trim().toLowerCase() === title.toLowerCase() &&
+        str(x.kind) === kind,
     );
     const id = explicitId || byTitle?.id || makeId();
 
@@ -154,6 +162,7 @@ export async function POST(req: Request) {
       productNames: Array.isArray(body.productNames)
         ? Array.from(new Set(body.productNames.map(str).filter(Boolean)))
         : [],
+      kind,
     };
 
     await writeRawJson(`${DRAFTS_DIR}/${id}.json`, catalog);

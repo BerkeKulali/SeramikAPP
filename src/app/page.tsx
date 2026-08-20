@@ -30,6 +30,8 @@ type DraftSummary = {
   manufacturer: string;
   pageCount: number;
   productNames: string[];
+  /** "studio2" = Stüdyo 2 kaydı; bu ekranda listelenmez. */
+  kind?: string;
 };
 
 type CatalogV1 = {
@@ -4336,20 +4338,25 @@ export default function Home() {
               <div className="min-h-[160px] flex-1 overflow-y-auto p-3">
                 {(() => {
                   const q = savedSearch.trim().toLowerCase();
+                  // Stüdyo 2 kayıtları burada açılamaz (veri biçimi farklı) —
+                  // listeye hiç girmesinler.
+                  const mine = savedItems.filter(
+                    (d) => d.kind !== "studio2" && !d.title.startsWith("STUDIO2"),
+                  );
                   const list = q
-                    ? savedItems.filter((d) => {
+                    ? mine.filter((d) => {
                         const hay = `${d.title} ${d.manufacturer} ${d.size} ${d.productNames.join(" ")}`.toLowerCase();
                         return hay.includes(q);
                       })
-                    : savedItems;
-                  if (savedLoading && savedItems.length === 0) {
+                    : mine;
+                  if (savedLoading && mine.length === 0) {
                     return (
                       <div className="px-2 py-8 text-center text-sm text-zinc-500">
                         Yükleniyor…
                       </div>
                     );
                   }
-                  if (savedItems.length === 0) {
+                  if (mine.length === 0) {
                     return (
                       <div className="px-2 py-8 text-center text-sm text-zinc-500">
                         Henüz kayıtlı afiş yok. &quot;Studio&apos;ya Kaydet&quot;

@@ -129,6 +129,119 @@ function emptySlot(): Slot {
   };
 }
 
+/** Bulutta tutulan kayıt listesi satırı (eski stüdyoyla ortak API). */
+type DraftSummary = {
+  id: string;
+  title: string;
+  savedAt: string;
+  size: string;
+  manufacturer: string;
+  pageCount: number;
+  productNames: string[];
+  /** "studio2" = bu stüdyonun kaydı. Yoksa eski stüdyonun kaydıdır. */
+  kind?: string;
+};
+
+/** Diskten/buluttan gelen kayıt. Şekli garanti değil, doğrulanarak okunur. */
+type Studio2Catalog = {
+  kind: "studio2";
+  version: 2;
+  savedAt: string;
+  title: string;
+  current: PageState;
+  queue: QueueItem[];
+};
+
+/* --------------------- kayıt doğrulama (savunmacı okuma) --------------------- */
+
+function asStr(v: unknown, fallback = ""): string {
+  return typeof v === "string" ? v : fallback;
+}
+
+function pickFrom<T extends readonly string[]>(
+  v: unknown,
+  list: T,
+  fallback: T[number],
+): T[number] {
+  return typeof v === "string" && (list as readonly string[]).includes(v)
+    ? (v as T[number])
+    : fallback;
+}
+
+function normalizeGround(v: unknown): GroundId {
+  return GROUNDS.some((g) => g.id === v) ? (v as GroundId) : "orta";
+}
+
+function normalizeSlot(raw: unknown): Slot {
+  const o = (raw ?? {}) as Record<string, unknown>;
+  const base = emptySlot();
+  return {
+    productId: typeof o.productId === "string" ? o.productId : null,
+    imageUrl: typeof o.imageUrl === "string" ? o.imageUrl : null,
+    customName: asStr(o.customName),
+    surface: pickFrom(o.surface, SURFACES, ""),
+    grade: pickFrom(o.grade, GRADES, ""),
+    isRec: o.isRec === true,
+    stock: asStr(o.stock),
+    dualPrice: o.dualPrice === true,
+    price: asStr(o.price),
+    priceSecond: asStr(o.priceSecond),
+    priceLabel: asStr(o.priceLabel) || base.priceLabel,
+    priceSecondLabel: asStr(o.priceSecondLabel) || base.priceSecondLabel,
+    sizeOverride: asStr(o.sizeOverride),
+  };
+}
+
+/** Geçersizse null döner — bozuk kayıt sayfayı çökertmesin. */
+function normalizeState(raw: unknown): PageState | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const slotsRaw = Array.isArray(o.slots) ? o.slots : null;
+  if (!slotsRaw) return null;
+  const rawCount =
+    typeof o.count === "number" && Number.isFinite(o.count)
+      ? Math.round(o.count)
+      : slotsRaw.length;
+  const count = Math.min(4, Math.max(1, rawCount || 1));
+  const accent = asStr(o.accent);
+  const fontScale =
+    typeof o.fontScale === "number" && Number.isFinite(o.fontScale)
+      ? Math.min(200, Math.max(50, Math.round(o.fontScale)))
+      : 100;
+  return {
+    version: 2,
+    size: asStr(o.size) || "60x120",
+    count,
+    depot: asStr(o.depot) || DEPOTS[0],
+    brandName: asStr(o.brandName),
+    ground: normalizeGround(o.ground),
+    accent: /^#[0-9a-f]{6}$/i.test(accent) ? accent : BRAND_BLUE,
+    campaignOn: o.campaignOn === true,
+    campaignText: asStr(o.campaignText),
+    footerLeft: asStr(o.footerLeft),
+    footerRight: asStr(o.footerRight),
+    fontScale,
+    slots: Array.from({ length: count }, (_, i) => normalizeSlot(slotsRaw[i])),
+  };
+}
+
+function normalizeQueue(raw: unknown): QueueItem[] {
+  if (!Array.isArray(raw)) return [];
+  const out: QueueItem[] = [];
+  raw.forEach((it, i) => {
+    const o = (it ?? {}) as Record<string, unknown>;
+    const snapshot = normalizeState(o.snapshot);
+    if (!snapshot) return;
+    out.push({
+      id: asStr(o.id) || `sayfa-${i + 1}`,
+      title: asStr(o.title) || `Sayfa ${i + 1}`,
+      thumb: typeof o.thumb === "string" ? o.thumb : null,
+      snapshot,
+    });
+  });
+  return out;
+}
+
 /** "7,5X30" -> {short:7.5, long:30}. Çözülemezse null. */
 function parseSize(text: string): { short: number; long: number } | null {
   const m = String(text ?? "")
@@ -519,6 +632,15 @@ export default function Studio2Page() {
   const [query, setQuery] = useState("");
   const [pickerTab, setPickerTab] = useState<"katalog" | "kutuphane">("katalog");
 
+  /* kayıtlı afişler */
+  const [docTitle, setDocTitle] = useState("");
+  const [savedOpen, setSavedOpen] = useState(false);
+  const [savedItems, setSavedItems] = useState<DraftSummary[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [savedError, setSavedError] = useState<string | null>(null);
+  const [savedSearch, setSavedSearch] = useState("");
+  const jsonRef = useRef<HTMLInputElement | null>(null);
+
   const [state, setState] = useState<PageState>(() => ({
     version: 2,
     size: "60x120",
@@ -884,25 +1006,190 @@ export default function Studio2Page() {
 
   /* ---------------------------------- taslak ---------------------------------- */
 
+  /** Kayıt başlığı: kullanıcı yazdıysa o, yoksa sayfadan türetilen ad. */
+  const saveTitle = useMemo(
+    () => (docTitle.trim() || fileBase).slice(0, 120),
+    [docTitle, fileBase],
+  );
+
+  function productNamesOf(st: PageState): string[] {
+    return st.slots
+      .slice(0, st.count)
+      .map((sl) =>
+        displayName(sl.productId ? productsById.get(sl.productId) : undefined, sl),
+      )
+      .filter(Boolean);
+  }
+
+  function buildCatalog(): Studio2Catalog {
+    return {
+      kind: "studio2",
+      version: 2,
+      savedAt: new Date().toISOString(),
+      title: saveTitle,
+      current: JSON.parse(JSON.stringify(state)) as PageState,
+      queue: JSON.parse(JSON.stringify(queue)) as QueueItem[],
+    };
+  }
+
+  /** Buluta kaydeder. Aynı başlık varsa üzerine yazar (eski stüdyodaki gibi). */
   async function saveDraft() {
     try {
-      setBusy("Taslak kaydediliyor…");
+      setBusy("Kaydediliyor…");
+      const names = new Set<string>();
+      productNamesOf(state).forEach((n) => names.add(n));
+      queue.forEach((it) => productNamesOf(it.snapshot).forEach((n) => names.add(n)));
+
       const res = await fetch("/api/drafts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: `STUDIO2 · ${fileBase}`,
-          catalog: { studio2: state, queue },
+          title: saveTitle,
+          kind: "studio2",
+          size: state.size,
+          manufacturer: state.brandName,
+          pageCount: Math.max(1, queue.length),
+          productNames: Array.from(names),
+          catalog: buildCatalog(),
         }),
       });
-      if (!res.ok) throw new Error(String(res.status));
-      setMsg("Taslak kaydedildi ✓");
-    } catch {
-      setMsg("Taslak kaydedilemedi");
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const body = (await res.json()) as { error?: string };
+          detail = body?.error ? ` – ${body.error}` : "";
+        } catch {}
+        throw new Error(`Kaydedilemedi (${res.status})${detail}`);
+      }
+      const data = (await res.json()) as {
+        items?: DraftSummary[];
+        overwritten?: boolean;
+      };
+      if (Array.isArray(data.items)) setSavedItems(data.items);
+      setMsg(
+        `“${saveTitle}” ${data.overwritten ? "güncellendi" : "kaydedildi"} (${Math.max(1, queue.length)} sayfa) ✓`,
+      );
+    } catch (e) {
+      setMsg((e as Error)?.message ?? "Kaydedilemedi");
     } finally {
       setBusy(null);
     }
   }
+
+  async function refreshSaved() {
+    try {
+      setSavedLoading(true);
+      setSavedError(null);
+      const res = await fetch("/api/drafts", { cache: "no-store" });
+      if (!res.ok) throw new Error(`Liste alınamadı (${res.status})`);
+      const data = (await res.json()) as { items?: DraftSummary[] };
+      setSavedItems(Array.isArray(data.items) ? data.items : []);
+    } catch (e) {
+      setSavedError((e as Error)?.message ?? "Liste alınamadı");
+    } finally {
+      setSavedLoading(false);
+    }
+  }
+
+  function openSavedModal() {
+    setSavedError(null);
+    setSavedSearch("");
+    setSavedOpen(true);
+    void refreshSaved();
+  }
+
+  /** Kaydı açar: hem sayfayı hem sayfa kuyruğunu geri yükler. */
+  async function openSavedDraft(id: string) {
+    try {
+      setSavedError(null);
+      const res = await fetch(`/api/drafts?id=${encodeURIComponent(id)}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`Açılamadı (${res.status})`);
+      const data = (await res.json()) as { catalog?: unknown };
+      const cat = (data?.catalog ?? {}) as Record<string, unknown>;
+      const nextQueue = normalizeQueue(cat.queue);
+      // cat.studio2: ilk sürümde kaydedilmiş biçim — geriye dönük uyum.
+      const current =
+        normalizeState(cat.current) ??
+        normalizeState(cat.studio2) ??
+        nextQueue[0]?.snapshot ??
+        null;
+      if (!current) throw new Error("Bu kayıt Stüdyo 2 biçiminde değil");
+      setQueue(nextQueue);
+      setState(current);
+      setDocTitle(asStr(cat.title));
+      setSavedOpen(false);
+      setMsg(
+        `Kayıt açıldı${nextQueue.length ? ` · ${nextQueue.length} sayfa` : ""} ✓`,
+      );
+    } catch (e) {
+      setSavedError((e as Error)?.message ?? "Açılamadı");
+    }
+  }
+
+  async function deleteSavedDraft(id: string, title: string) {
+    if (!window.confirm(`“${title}” silinsin mi?`)) return;
+    try {
+      setSavedError(null);
+      const res = await fetch(`/api/drafts?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(`Silinemedi (${res.status})`);
+      const data = (await res.json()) as { items?: DraftSummary[] };
+      setSavedItems(Array.isArray(data.items) ? data.items : []);
+    } catch (e) {
+      setSavedError((e as Error)?.message ?? "Silinemedi");
+    }
+  }
+
+  /* ------------------------- yerel yedek (.json) ------------------------- */
+
+  function exportJson() {
+    const blob = new Blob([JSON.stringify(buildCatalog(), null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${saveTitle}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    setMsg("Yerel yedek indirildi ✓");
+  }
+
+  async function importJson(file: File) {
+    try {
+      const cat = JSON.parse(await file.text()) as Record<string, unknown>;
+      const nextQueue = normalizeQueue(cat.queue);
+      const current =
+        normalizeState(cat.current) ??
+        normalizeState(cat.studio2) ??
+        nextQueue[0]?.snapshot ??
+        null;
+      if (!current) throw new Error("Dosya Stüdyo 2 biçiminde değil");
+      setQueue(nextQueue);
+      setState(current);
+      setDocTitle(asStr(cat.title));
+      setMsg("Yedek yüklendi ✓");
+    } catch (e) {
+      setMsg((e as Error)?.message ?? "Yedek okunamadı");
+    }
+  }
+
+  /** Listede yalnızca Stüdyo 2 kayıtları — eski stüdyonunkiler burada açılamaz. */
+  const savedFiltered = useMemo(() => {
+    const q = savedSearch.trim().toLocaleLowerCase("tr");
+    return savedItems
+      .filter((it) => it.kind === "studio2" || it.title.startsWith("STUDIO2"))
+      .filter((it) => {
+        if (!q) return true;
+        const hay = [it.title, it.size, it.manufacturer, ...(it.productNames ?? [])]
+          .join(" ")
+          .toLocaleLowerCase("tr");
+        return hay.includes(q);
+      });
+  }, [savedItems, savedSearch]);
 
   /* ---------------------------------- satış ---------------------------------- */
 
@@ -1062,6 +1349,17 @@ export default function Studio2Page() {
         className="hidden"
         onChange={onUpload}
       />
+      <input
+        ref={jsonRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.currentTarget.files?.[0];
+          e.currentTarget.value = "";
+          if (f) void importJson(f);
+        }}
+      />
 
       <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1700px] items-center justify-between gap-4 px-5 py-3">
@@ -1086,9 +1384,20 @@ export default function Studio2Page() {
             <button
               type="button"
               onClick={() => void saveDraft()}
-              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+              disabled={Boolean(busy)}
+              className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+              title="Sayfayı ve tüm sayfa kuyruğunu buluta kaydet — aynı isim üzerine yazar"
             >
-              Taslağı Kaydet
+              Kaydet
+            </button>
+            <button
+              type="button"
+              onClick={openSavedModal}
+              disabled={Boolean(busy)}
+              className="rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-60"
+              title="Kayıtlı afişleri aç / ürün ismiyle ara"
+            >
+              Kayıtlı Afişler
             </button>
             <button
               type="button"
@@ -1296,8 +1605,8 @@ export default function Studio2Page() {
             {queue.length === 0 ? (
               <div className="text-[11px] leading-relaxed text-zinc-500">
                 Sayfayı hazırlayıp üstteki <b>+ Kuyruğa Ekle</b> ile biriktir,
-                sonra hepsini tek PDF olarak indir. Kuyruk taslakla birlikte
-                kaydedilir.
+                sonra hepsini tek PDF olarak indir. Kuyruk, <b>Kaydet</b> ile
+                birlikte saklanır.
               </div>
             ) : (
               <div className="space-y-2">
@@ -1363,6 +1672,39 @@ export default function Studio2Page() {
                 ))}
               </div>
             )}
+
+            <div className="mt-4 border-t border-zinc-100 pt-3">
+              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-zinc-400">
+                Kayıt adı
+              </label>
+              <input
+                value={docTitle}
+                onChange={(e) => setDocTitle(e.target.value)}
+                placeholder={fileBase}
+                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+              />
+              <div className="mt-1 text-[10px] leading-relaxed text-zinc-500">
+                Aynı adla tekrar kaydedersen eski kaydın üzerine yazılır.
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={exportJson}
+                  className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
+                  title="Sayfa + kuyruğu bilgisayara .json olarak indir"
+                >
+                  Yedeği İndir
+                </button>
+                <button
+                  type="button"
+                  onClick={() => jsonRef.current?.click()}
+                  className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
+                  title=".json yedeği geri yükle"
+                >
+                  Yedek Yükle
+                </button>
+              </div>
+            </div>
           </section>
 
           <section className="space-y-3">
@@ -1847,6 +2189,122 @@ export default function Studio2Page() {
                       </div>
                     </button>
                   ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* -------------------------- KAYITLI AFİŞLER -------------------------- */}
+      {savedOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white">
+            <div className="border-b border-zinc-100 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-bold">Kayıtlı Afişler</div>
+                  <div className="mt-0.5 text-[11px] text-zinc-500">
+                    Stüdyo 2 kayıtları (tüm sayfalarıyla). Ürün ismiyle arayın,
+                    açmak için tıklayın.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSavedOpen(false)}
+                  className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+                >
+                  Kapat
+                </button>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <input
+                  value={savedSearch}
+                  onChange={(e) => setSavedSearch(e.target.value)}
+                  placeholder="Kayıt adı, ebat veya ürün ismi ara…"
+                  aria-label="Kayıtlı afişlerde ara"
+                  className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => void refreshSaved()}
+                  className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+                >
+                  Yenile
+                </button>
+              </div>
+              {savedError ? (
+                <div className="mt-2 text-[11px] font-semibold text-red-600">
+                  {savedError}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {savedLoading ? (
+                <div className="text-sm text-zinc-500">Yükleniyor…</div>
+              ) : savedFiltered.length === 0 ? (
+                <div className="text-sm text-zinc-500">
+                  {savedItems.length
+                    ? "Stüdyo 2 kaydı bulunamadı. (Eski stüdyonun kayıtları burada listelenmez.)"
+                    : "Henüz kayıt yok. Sayfayı hazırlayıp üstteki Kaydet'e bas."}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {savedFiltered.map((it) => (
+                    <div
+                      key={it.id}
+                      className="flex items-center gap-3 rounded-xl border border-zinc-200 p-3"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => void openSavedDraft(it.id)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <div className="truncate text-sm font-semibold">
+                          {it.title}
+                        </div>
+                        <div className="mt-0.5 truncate text-[11px] text-zinc-500">
+                          {[
+                            it.size,
+                            it.manufacturer,
+                            `${it.pageCount} sayfa`,
+                            it.savedAt
+                              ? new Date(it.savedAt).toLocaleString("tr-TR")
+                              : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </div>
+                        {it.productNames?.length ? (
+                          <div className="mt-1 truncate text-[10px] text-zinc-400">
+                            {it.productNames.slice(0, 6).join(", ")}
+                            {it.productNames.length > 6
+                              ? ` +${it.productNames.length - 6}`
+                              : ""}
+                          </div>
+                        ) : null}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void openSavedDraft(it.id)}
+                        className="shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-800"
+                      >
+                        Aç
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void deleteSavedDraft(it.id, it.title)}
+                        className="shrink-0 rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                      >
+                        Sil
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
