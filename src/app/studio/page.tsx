@@ -119,6 +119,9 @@ type PageState = {
   campaignTitle: string;
   campaignText: string;
   campaignNote: string;
+  /** Kampanya sayfasında gösterilecek hediye ürün sayısı (0-3).
+   *  Ürünler normal slots dizisinden okunur. */
+  giftCount: number;
   footerLeft: string;
   footerRight: string;
   fontScale: number;
@@ -243,6 +246,10 @@ function normalizeState(raw: unknown): PageState | null {
     campaignTitle: asStr(o.campaignTitle),
     campaignText: asStr(o.campaignText),
     campaignNote: asStr(o.campaignNote),
+    giftCount:
+      typeof o.giftCount === "number" && Number.isFinite(o.giftCount)
+        ? Math.min(3, Math.max(0, Math.round(o.giftCount)))
+        : 0,
     footerLeft: asStr(o.footerLeft),
     footerRight: asStr(o.footerRight),
     fontScale,
@@ -830,6 +837,7 @@ export default function Studio2Page() {
     campaignTitle: "AĞUSTOS KAMPANYASI",
     campaignText: "5 PALET ALANA 1 PALET 10×20 HEDİYE",
     campaignNote: "Kampanya stoklarla sınırlıdır.",
+    giftCount: 0,
     footerLeft: "FİYATLAR KDV HARİÇTİR",
     footerRight: "STOKLARLA SINIRLIDIR",
     fontScale: 100,
@@ -907,6 +915,14 @@ export default function Studio2Page() {
     setState((s) => {
       const slots = Array.from({ length: n }, (_, i) => s.slots[i] ?? emptySlot());
       return { ...s, count: n, slots };
+    });
+  }
+
+  function setGiftCount(n: number) {
+    setState((st) => {
+      const need = Math.max(st.count, n);
+      const slots = Array.from({ length: need }, (_, i) => st.slots[i] ?? emptySlot());
+      return { ...st, giftCount: n, slots };
     });
   }
 
@@ -1038,8 +1054,10 @@ export default function Studio2Page() {
   }
 
   function expectedImageCount(st: PageState) {
-    // kampanya sayfasında yalnız logo var
-    if (st.pageMode === "kampanya") return 1;
+    // kampanya sayfası: logo + hediye ürün görselleri
+    if (st.pageMode === "kampanya") {
+      return st.slots.slice(0, st.giftCount).filter((x) => x.imageUrl).length + 1;
+    }
     // slot görselleri + logo
     return st.slots.slice(0, st.count).filter((x) => x.imageUrl).length + 1;
   }
@@ -1879,8 +1897,9 @@ export default function Studio2Page() {
               </div>
               {state.pageMode === "kampanya" ? (
                 <div className="mt-1 text-[10px] leading-relaxed text-zinc-500">
-                  Bu sayfada ürün yok — yalnız kampanya metni basılır. Kuyruğa
-                  ekleyip diğer sayfalarla aynı PDF'e koyabilirsin.
+                  Ürün afişi düzeni yok; kampanya metni ve istersen hediye
+                  ürünler basılır. Kuyruğa ekleyip diğer sayfalarla aynı PDF
+                  içine koyabilirsin.
                 </div>
               ) : null}
             </div>
@@ -2063,6 +2082,111 @@ export default function Studio2Page() {
                     className="w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
                   />
                 </label>
+
+                <div className="border-t border-zinc-100 pt-3">
+                  <div className="mb-1 text-xs font-semibold text-zinc-600">
+                    Hediye ürün sayısı
+                  </div>
+                  <div className="flex gap-2">
+                    {[0, 1, 2, 3].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setGiftCount(n)}
+                        className={[
+                          "h-9 flex-1 rounded-lg border text-sm font-bold",
+                          state.giftCount === n
+                            ? "border-zinc-900 bg-zinc-900 text-white"
+                            : "border-zinc-200 bg-white hover:bg-zinc-50",
+                        ].join(" ")}
+                      >
+                        {n === 0 ? "Yok" : n}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-1 text-[10px] leading-relaxed text-zinc-500">
+                    Hediye edilen karonun görseli kampanya metninin altında,
+                    adı ve ebadıyla basılır.
+                  </div>
+                </div>
+
+                {state.slots.slice(0, state.giftCount).map((sl, i) => {
+                  const pr = sl.productId ? productsById.get(sl.productId) : undefined;
+                  return (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-zinc-200 p-3"
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <div className="text-xs font-bold">Hediye {i + 1}</div>
+                        <button
+                          type="button"
+                          onClick={() => clearSlot(i)}
+                          className="rounded border border-zinc-200 px-2 py-1 text-[10px] font-semibold hover:bg-zinc-50"
+                        >
+                          Temizle
+                        </button>
+                      </div>
+                      <div className="mb-2 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPickerFor(i);
+                            setPickerTab("katalog");
+                            setShowCount(PICKER_PAGE);
+                          }}
+                          className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+                        >
+                          {sl.imageUrl ? "Değiştir" : "Ürün Seç"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            uploadTarget.current = i;
+                            fileRef.current?.click();
+                          }}
+                          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+                        >
+                          Yükle
+                        </button>
+                      </div>
+                      {sl.imageUrl ? (
+                        <div className="mb-2 truncate text-[11px] text-zinc-500">
+                          {pr ? `${pr.brand} · ${pr.size} · ${pr.name}` : "Kütüphane görseli"}
+                        </div>
+                      ) : null}
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="space-y-1">
+                          <div className="text-xs font-semibold text-zinc-600">
+                            Ad (boşsa otomatik)
+                          </div>
+                          <input
+                            value={sl.customName}
+                            onChange={(e) => patchSlot(i, { customName: e.target.value })}
+                            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                          />
+                        </label>
+                        <label className="space-y-1">
+                          <div className="text-xs font-semibold text-zinc-600">Ebat</div>
+                          <select
+                            value={sl.sizeOverride}
+                            onChange={(e) => patchSlot(i, { sizeOverride: e.target.value })}
+                            className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm"
+                          >
+                            <option value="">
+                              Ürünün kendi ebadı{pr?.size ? ` (${pr.size})` : ""}
+                            </option>
+                            {SIZES.map((x) => (
+                              <option key={x} value={x}>
+                                {x}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <>
@@ -2649,6 +2773,81 @@ export default function Studio2Page() {
                           {state.campaignText}
                         </div>
                       ) : null}
+                      {state.giftCount > 0 ? (
+                        <div
+                          style={{
+                            marginTop: 6,
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            justifyContent: "center",
+                            gap: 44,
+                          }}
+                        >
+                          {state.slots.slice(0, state.giftCount).map((sl, i) => {
+                            const pr = sl.productId
+                              ? productsById.get(sl.productId)
+                              : undefined;
+                            // Kampanya sayfasında sayfa ebadı yok; karo,
+                            // ürünün kendi ebadıyla çizilir.
+                            const gSize = sl.sizeOverride || pr?.size || state.size;
+                            const gName = displayName(pr, sl);
+                            const gRatio = frameRatioForSize(gSize);
+                            const gMaxH = state.giftCount > 2 ? 210 : 260;
+                            return (
+                              <div
+                                key={i}
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "center",
+                                  gap: 14,
+                                  minWidth: 0,
+                                  maxWidth: `${Math.floor(900 / state.giftCount)}px`,
+                                }}
+                              >
+                                {sl.imageUrl ? (
+                                  <TileImage
+                                    src={sl.imageUrl}
+                                    alt={gName}
+                                    ratio={gRatio}
+                                    maxHeight={gMaxH}
+                                  />
+                                ) : (
+                                  <TilePlaceholder
+                                    ratio={gRatio}
+                                    color={muted}
+                                    maxHeight={gMaxH}
+                                  />
+                                )}
+                                <div>
+                                  <div
+                                    style={{
+                                      fontSize: 30,
+                                      fontWeight: 800,
+                                      lineHeight: 1.15,
+                                    }}
+                                  >
+                                    {gName || "—"}
+                                  </div>
+                                  <div
+                                    style={{
+                                      marginTop: 4,
+                                      fontSize: 24,
+                                      fontWeight: 700,
+                                      letterSpacing: ".08em",
+                                      color: muted,
+                                    }}
+                                  >
+                                    {gSize.replace("x", " × ")}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+
                       {state.campaignNote.trim() ? (
                         <div
                           style={{
