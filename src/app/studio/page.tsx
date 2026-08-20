@@ -26,7 +26,7 @@ const CANVAS_W = 1080;
 const CANVAS_H = 1920;
 
 /** Logo mavisi. Gerçek marka hex'i farklıysa tek yerden değiştirilir. */
-const BRAND_BLUE = "#1C5CA8";
+const BRAND_BLUE = "#0057A6";
 
 /**
  * Nötr zemin tonları. Orta ton, koyu karo (L≈0.15) ile açık karo (L≈0.70)
@@ -1620,12 +1620,16 @@ export default function Studio2Page() {
                         <img
                           src={
                             ground.ink === "#FFFFFF"
-                              ? "/images/logos/kulalilar-light.png"
-                              : "/images/logos/kulalilar-dark.png"
+                              ? "/images/logos/kulalilar-mark-light.png"
+                              : "/images/logos/kulalilar-mark-dark.png"
                           }
                           alt="KULALILAR"
                           crossOrigin="anonymous"
-                          style={{ height: 96, width: "auto", display: "block" }}
+                          style={{
+                            height: 112,
+                            width: "auto",
+                            display: "block",
+                          }}
                         />
                       </div>
                       <div style={{ textAlign: "right" }}>
