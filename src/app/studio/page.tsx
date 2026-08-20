@@ -29,6 +29,9 @@ const CANVAS_H = 1920;
 const BRAND_BLUE = "#0057A6";
 
 /** Yazı ölçeği sınırları (%). */
+/** Seçicide bir sayfada çizilen kart sayısı. */
+const PICKER_PAGE = 60;
+
 const FONT_MIN = 60;
 const FONT_MAX = 160;
 
@@ -328,6 +331,15 @@ function parseTrNumber(v: string): number {
   return parseFloat(t.replace(/\./g, "")) || 0;
 }
 
+/** Cloudinary görselini küçük önizlemeye çevirir. Seçicide tam boy
+ *  orijinalleri (her biri MB'larca) çekmek tarayıcıyı kilitliyordu. */
+function thumbUrl(url: string, w = 320): string {
+  const u = String(url ?? "");
+  if (!u.includes("res.cloudinary.com") || !u.includes("/upload/")) return u;
+  if (/\/upload\/(c_|w_|h_|q_|f_)/.test(u)) return u;
+  return u.replace("/upload/", `/upload/w_${w},c_limit,q_auto,f_auto/`);
+}
+
 function digits(v: string) {
   return v.replace(/[^\d]/g, "");
 }
@@ -447,6 +459,31 @@ function TileImage({
         display: "block",
       }}
     />
+  );
+}
+
+/** Seçicideki kart görseli. Tembel yüklenir, yüklenemezse kart çökmez —
+ *  eskiden bozuk görseller listeyi ince şeritlere çeviriyordu. */
+function PickerThumb({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="relative w-full bg-zinc-100" style={{ aspectRatio: "3 / 2" }}>
+      {failed || !src ? (
+        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-zinc-400">
+          görsel yok
+        </div>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+    </div>
   );
 }
 
@@ -728,6 +765,11 @@ export default function Studio2Page() {
   const [pickerFor, setPickerFor] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [pickerTab, setPickerTab] = useState<"katalog" | "kutuphane">("katalog");
+  const [libLoading, setLibLoading] = useState(false);
+  const [libError, setLibError] = useState<string | null>(null);
+  const [libLoaded, setLibLoaded] = useState(false);
+  /** Seçicide bir seferde çizilen kart sayısı. Tümünü basmak kasıyordu. */
+  const [showCount, setShowCount] = useState(PICKER_PAGE);
 
   /* kayıtlı afişler */
   const [docTitle, setDocTitle] = useState("");
@@ -801,17 +843,21 @@ export default function Studio2Page() {
   }, []);
 
   const loadLibrary = useCallback(() => {
+    setLibLoading(true);
+    setLibError(null);
     fetch("/api/uploads", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => {
-        if (Array.isArray(d?.items)) setLibrary(d.items as LibraryItem[]);
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`Kütüphane alınamadı (${r.status})`);
+        return r.json();
       })
-      .catch(() => {});
+      .then((d) => {
+        const items = Array.isArray(d?.items) ? (d.items as LibraryItem[]) : [];
+        // url'siz kayıtlar seçicide görünmez ince şeritler bırakıyordu.
+        setLibrary(items.filter((it) => it && typeof it.url === "string" && it.url));
+      })
+      .catch((e: unknown) => setLibError((e as Error)?.message ?? "Kütüphane alınamadı"))
+      .finally(() => setLibLoading(false));
   }, []);
-
-  useEffect(() => {
-    loadLibrary();
-  }, [loadLibrary]);
 
   /* ---------------------------- state yardımcıları ---------------------------- */
 
@@ -866,15 +912,24 @@ export default function Studio2Page() {
       (p) => p.size.toLowerCase() === state.size.toLowerCase(),
     );
     const pool = bySize.length ? bySize : products;
-    if (!q) return pool.slice(0, 200);
-    return pool
-      .filter(
-        (p) =>
-          p.name.toLocaleLowerCase("tr").includes(q) ||
-          p.brand.toLocaleLowerCase("tr").includes(q),
-      )
-      .slice(0, 200);
+    if (!q) return pool;
+    return pool.filter(
+      (p) =>
+        p.name.toLocaleLowerCase("tr").includes(q) ||
+        p.brand.toLocaleLowerCase("tr").includes(q),
+    );
   }, [products, query, state.size]);
+
+  /** Kütüphanede de arama çalışsın — eskiden sorgu yalnızca kataloğa
+   *  uygulanıyordu, kütüphane sekmesinde yazmak hiçbir şey yapmıyordu. */
+  const libraryFiltered = useMemo(() => {
+    const q = query.trim().toLocaleLowerCase("tr");
+    if (!q) return library;
+    return library.filter((it) => {
+      const hay = `${it.displayName ?? ""} ${it.publicId}`.toLocaleLowerCase("tr");
+      return hay.includes(q);
+    });
+  }, [library, query]);
 
   function pickProduct(i: number, p: Product) {
     patchSlot(i, { productId: p.id, imageUrl: p.image, customName: "" });
@@ -899,7 +954,8 @@ export default function Studio2Page() {
       if (!res.ok) throw new Error(String(res.status));
       const d = (await res.json()) as { url?: string };
       if (d?.url) patchSlot(idx, { productId: null, imageUrl: d.url });
-      loadLibrary();
+      // Yeni görsel kütüphanede görünsün; kütüphane hiç açılmadıysa boşuna çekme.
+      if (libLoaded) loadLibrary();
       setMsg("Görsel yüklendi ✓");
     } catch {
       setMsg("Görsel yüklenemedi");
@@ -2451,7 +2507,10 @@ export default function Studio2Page() {
             <div className="flex items-center gap-2 border-b border-zinc-100 p-3">
               <button
                 type="button"
-                onClick={() => setPickerTab("katalog")}
+                onClick={() => {
+                  setPickerTab("katalog");
+                  setShowCount(PICKER_PAGE);
+                }}
                 className={[
                   "rounded-lg px-3 py-2 text-sm font-semibold",
                   pickerTab === "katalog" ? "bg-zinc-900 text-white" : "hover:bg-zinc-50",
@@ -2463,7 +2522,13 @@ export default function Studio2Page() {
                 type="button"
                 onClick={() => {
                   setPickerTab("kutuphane");
-                  loadLibrary();
+                  setShowCount(PICKER_PAGE);
+                  // Kütüphane yalnızca ilk açılışta çekilir; her sekme
+                  // tıklamasında yeniden çekmek gereksiz bekleme yaratıyordu.
+                  if (!libLoaded) {
+                    setLibLoaded(true);
+                    loadLibrary();
+                  }
                 }}
                 className={[
                   "rounded-lg px-3 py-2 text-sm font-semibold",
@@ -2474,8 +2539,15 @@ export default function Studio2Page() {
               </button>
               <input
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Ara…"
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setShowCount(PICKER_PAGE);
+                }}
+                placeholder={
+                  pickerTab === "katalog"
+                    ? "Ürün veya marka ara…"
+                    : "Dosya adı ara…"
+                }
                 className="ml-2 flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm"
               />
               <button
@@ -2486,40 +2558,95 @@ export default function Studio2Page() {
                 Kapat
               </button>
             </div>
-            <div className="grid flex-1 grid-cols-2 gap-2 overflow-y-auto p-3 sm:grid-cols-4">
-              {pickerTab === "katalog"
-                ? filtered.map((p) => (
+            {(() => {
+              const isKat = pickerTab === "katalog";
+              const total = isKat ? filtered.length : libraryFiltered.length;
+              const shown = Math.min(showCount, total);
+
+              if (!isKat && libLoading) {
+                return (
+                  <div className="flex-1 p-8 text-center text-sm text-zinc-500">
+                    Kütüphane yükleniyor…
+                  </div>
+                );
+              }
+              if (!isKat && libError) {
+                return (
+                  <div className="flex-1 p-8 text-center text-sm">
+                    <div className="font-semibold text-red-600">{libError}</div>
                     <button
-                      key={p.id}
                       type="button"
-                      onClick={() => pickProduct(pickerFor, p)}
-                      className="overflow-hidden rounded-xl border border-zinc-200 text-left hover:border-zinc-400"
+                      onClick={loadLibrary}
+                      className="mt-3 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.image} alt={p.name} className="aspect-[3/2] w-full object-cover" />
-                      <div className="p-2">
-                        <div className="truncate text-[11px] font-semibold">{p.name}</div>
-                        <div className="truncate text-[10px] text-zinc-500">
-                          {p.brand} · {p.size}
-                        </div>
-                      </div>
+                      Tekrar dene
                     </button>
-                  ))
-                : library.map((it) => (
-                    <button
-                      key={it.publicId}
-                      type="button"
-                      onClick={() => pickLibrary(pickerFor, it)}
-                      className="overflow-hidden rounded-xl border border-zinc-200 text-left hover:border-zinc-400"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={it.url} alt="" className="aspect-[3/2] w-full object-cover" />
-                      <div className="truncate p-2 text-[11px] font-semibold">
-                        {it.displayName || it.publicId.split("/").pop()}
-                      </div>
-                    </button>
-                  ))}
-            </div>
+                  </div>
+                );
+              }
+              if (total === 0) {
+                return (
+                  <div className="flex-1 p-8 text-center text-sm text-zinc-500">
+                    {query.trim()
+                      ? `“${query.trim()}” ile eşleşen görsel yok.`
+                      : isKat
+                        ? "Katalogda ürün yok."
+                        : "Kütüphanede görsel yok. Slottaki Yükle ile ekleyebilirsin."}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex-1 overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-4">
+                    {isKat
+                      ? filtered.slice(0, shown).map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => pickProduct(pickerFor, p)}
+                            className="overflow-hidden rounded-xl border border-zinc-200 text-left hover:border-zinc-400"
+                          >
+                            <PickerThumb src={p.image} alt={p.name} />
+                            <div className="p-2">
+                              <div className="truncate text-[11px] font-semibold">{p.name}</div>
+                              <div className="truncate text-[10px] text-zinc-500">
+                                {p.brand} · {p.size}
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      : libraryFiltered.slice(0, shown).map((it) => (
+                          <button
+                            key={it.publicId}
+                            type="button"
+                            onClick={() => pickLibrary(pickerFor, it)}
+                            className="overflow-hidden rounded-xl border border-zinc-200 text-left hover:border-zinc-400"
+                          >
+                            <PickerThumb src={thumbUrl(it.url)} alt="" />
+                            <div className="truncate p-2 text-[11px] font-semibold">
+                              {it.displayName || it.publicId.split("/").pop() || "görsel"}
+                            </div>
+                          </button>
+                        ))}
+                  </div>
+                  <div className="flex items-center justify-between gap-3 px-3 pb-4 pt-1">
+                    <div className="text-[11px] text-zinc-500">
+                      {shown} / {total} görsel
+                    </div>
+                    {shown < total ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowCount((n) => n + PICKER_PAGE)}
+                        className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold hover:bg-zinc-50"
+                      >
+                        Daha fazla göster
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       ) : null}
