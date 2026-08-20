@@ -85,6 +85,14 @@ type Slot = {
   sizeOverride: string;
 };
 
+/** PDF kuyruğundaki bir sayfa: o anki sayfa durumunun kopyası. */
+type QueueItem = {
+  id: string;
+  title: string;
+  thumb: string | null;
+  snapshot: PageState;
+};
+
 type PageState = {
   version: 2;
   size: string;
@@ -527,6 +535,9 @@ export default function Studio2Page() {
     slots: [emptySlot(), emptySlot(), emptySlot()],
   }));
 
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [progress, setProgress] = useState<string | null>(null);
+
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const uploadTarget = useRef<number | null>(null);
@@ -674,6 +685,32 @@ export default function Studio2Page() {
     return (parts || "afis").replace(/[\\/:*?"<>|]/g, "-");
   }, [state.brandName, state.size, state.depot]);
 
+  /** Kanvastaki tüm görseller yüklenene kadar bekler. Kuyruk dışa aktarımında
+   *  sayfa değiştikten sonra ekran görüntüsü almadan önce şart. */
+  async function waitForCanvas(expectedImages: number, timeout = 9000) {
+    const start = Date.now();
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    while (Date.now() - start < timeout) {
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      const imgs = Array.from(
+        document.querySelectorAll<HTMLImageElement>("#afis-kanvas img"),
+      );
+      const ready =
+        imgs.length >= expectedImages &&
+        imgs.every((i) => i.complete && i.naturalWidth > 0);
+      if (ready) {
+        await sleep(140);
+        return;
+      }
+      await sleep(90);
+    }
+  }
+
+  function expectedImageCount(st: PageState) {
+    // slot görselleri + logo
+    return st.slots.slice(0, st.count).filter((x) => x.imageUrl).length + 1;
+  }
+
   async function renderJpeg(): Promise<string | null> {
     const node = canvasRef.current;
     if (!node) return null;
@@ -725,6 +762,126 @@ export default function Studio2Page() {
     }
   }
 
+  /* --------------------------------- kuyruk --------------------------------- */
+
+  function snapshotTitle(st: PageState) {
+    const names = st.slots
+      .slice(0, st.count)
+      .map((sl) => {
+        const p = sl.productId ? productsById.get(sl.productId) : undefined;
+        return displayName(p, sl);
+      })
+      .filter(Boolean);
+    return `${st.size} · ${names[0] ?? "boş"}${names.length > 1 ? ` +${names.length - 1}` : ""}`;
+  }
+
+  async function addToQueue() {
+    try {
+      setBusy("Sayfa kuyruğa ekleniyor…");
+      await waitForCanvas(expectedImageCount(state));
+      let thumb: string | null = null;
+      try {
+        const node = canvasRef.current;
+        if (node) {
+          thumb = await toJpeg(node, {
+            quality: 0.6,
+            width: CANVAS_W,
+            height: CANVAS_H,
+            canvasWidth: 216,
+            canvasHeight: 384,
+            backgroundColor: ground.bg,
+          });
+        }
+      } catch {
+        thumb = null;
+      }
+      const item: QueueItem = {
+        id: `${Date.now()}-${Math.round(Math.random() * 1e6)}`,
+        title: snapshotTitle(state),
+        thumb,
+        snapshot: JSON.parse(JSON.stringify(state)) as PageState,
+      };
+      setQueue((q) => [...q, item]);
+      setMsg(`Kuyruğa eklendi (${queue.length + 1} sayfa) ✓`);
+    } catch {
+      setMsg("Sayfa kuyruğa eklenemedi");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function loadFromQueue(id: string) {
+    const item = queue.find((q) => q.id === id);
+    if (!item) return;
+    setState(JSON.parse(JSON.stringify(item.snapshot)) as PageState);
+    setMsg("Sayfa düzenlemeye alındı");
+  }
+
+  function replaceInQueue(id: string) {
+    setQueue((q) =>
+      q.map((it) =>
+        it.id === id
+          ? {
+              ...it,
+              title: snapshotTitle(state),
+              snapshot: JSON.parse(JSON.stringify(state)) as PageState,
+            }
+          : it,
+      ),
+    );
+    setMsg("Kuyruktaki sayfa güncellendi ✓");
+  }
+
+  function removeFromQueue(id: string) {
+    setQueue((q) => q.filter((it) => it.id !== id));
+  }
+
+  function moveInQueue(id: string, dir: -1 | 1) {
+    setQueue((q) => {
+      const i = q.findIndex((it) => it.id === id);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= q.length) return q;
+      const next = q.slice();
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  }
+
+  /** Kuyruktaki her sayfayı sırayla kanvasa basıp tek PDF'e ekler. */
+  async function downloadQueuePdf() {
+    if (!queue.length) {
+      setMsg("Kuyruk boş");
+      return;
+    }
+    const saved = JSON.parse(JSON.stringify(state)) as PageState;
+    try {
+      setBusy("Çok sayfalı PDF hazırlanıyor…");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "px",
+        format: [CANVAS_W, CANVAS_H],
+      });
+      for (let i = 0; i < queue.length; i += 1) {
+        const item = queue[i];
+        setProgress(`${i + 1} / ${queue.length}`);
+        setState(item.snapshot);
+        await waitForCanvas(expectedImageCount(item.snapshot));
+        const url = await renderJpeg();
+        if (!url) continue;
+        if (i > 0) pdf.addPage([CANVAS_W, CANVAS_H], "portrait");
+        pdf.addImage(url, "JPEG", 0, 0, CANVAS_W, CANVAS_H);
+      }
+      pdf.save(`${fileBase} (${queue.length} sayfa).pdf`);
+      setMsg(`${queue.length} sayfalık PDF indirildi ✓`);
+    } catch {
+      setMsg("PDF oluşturulamadı");
+    } finally {
+      setState(saved);
+      setProgress(null);
+      setBusy(null);
+    }
+  }
+
   /* ---------------------------------- taslak ---------------------------------- */
 
   async function saveDraft() {
@@ -735,7 +892,7 @@ export default function Studio2Page() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: `STUDIO2 · ${fileBase}`,
-          catalog: { studio2: state },
+          catalog: { studio2: state, queue },
         }),
       });
       if (!res.ok) throw new Error(String(res.status));
@@ -950,9 +1107,25 @@ export default function Studio2Page() {
             <button
               type="button"
               onClick={() => void downloadPdf()}
-              className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
             >
-              PDF İndir
+              Bu Sayfa PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => void addToQueue()}
+              className="rounded-lg border border-zinc-900 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+            >
+              + Kuyruğa Ekle
+            </button>
+            <button
+              type="button"
+              onClick={() => void downloadQueuePdf()}
+              disabled={!queue.length}
+              className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:bg-zinc-300"
+            >
+              PDF İndir{queue.length ? ` (${queue.length} sayfa)` : ""}
+              {progress ? ` · ${progress}` : ""}
             </button>
           </div>
         </div>
@@ -1102,6 +1275,94 @@ export default function Studio2Page() {
                 className="mt-2 w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
               />
             ) : null}
+          </section>
+
+          <section className="rounded-2xl bg-white p-4 ring-1 ring-zinc-200">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-sm font-bold">
+                Sayfa kuyruğu{" "}
+                <span className="text-zinc-400">({queue.length})</span>
+              </div>
+              {queue.length ? (
+                <button
+                  type="button"
+                  onClick={() => setQueue([])}
+                  className="rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-semibold hover:bg-zinc-50"
+                >
+                  Kuyruğu boşalt
+                </button>
+              ) : null}
+            </div>
+            {queue.length === 0 ? (
+              <div className="text-[11px] leading-relaxed text-zinc-500">
+                Sayfayı hazırlayıp üstteki <b>+ Kuyruğa Ekle</b> ile biriktir,
+                sonra hepsini tek PDF olarak indir. Kuyruk taslakla birlikte
+                kaydedilir.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {queue.map((it, i) => (
+                  <div
+                    key={it.id}
+                    className="flex items-center gap-2 rounded-xl border border-zinc-200 p-2"
+                  >
+                    <div className="w-6 shrink-0 text-center text-xs font-bold text-zinc-400">
+                      {i + 1}
+                    </div>
+                    {it.thumb ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={it.thumb}
+                        alt=""
+                        className="h-14 w-8 shrink-0 rounded object-cover ring-1 ring-zinc-200"
+                      />
+                    ) : (
+                      <div className="h-14 w-8 shrink-0 rounded bg-zinc-100" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[11px] font-semibold">{it.title}</div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        <button
+                          type="button"
+                          onClick={() => loadFromQueue(it.id)}
+                          className="rounded border border-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold hover:bg-zinc-50"
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => replaceInQueue(it.id)}
+                          className="rounded border border-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold hover:bg-zinc-50"
+                        >
+                          Üzerine yaz
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveInQueue(it.id, -1)}
+                          className="rounded border border-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold hover:bg-zinc-50"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveInQueue(it.id, 1)}
+                          className="rounded border border-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold hover:bg-zinc-50"
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeFromQueue(it.id)}
+                          className="rounded border border-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold hover:bg-zinc-50"
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="space-y-3">
