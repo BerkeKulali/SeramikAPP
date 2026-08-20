@@ -625,10 +625,11 @@ function StockLine({
   ink: string;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: Math.round(9 * scale) }}>
+    // Stok, müşterinin uzaktan okuyacağı bilgi — fiyatla aynı ağırlıkta.
+    <div style={{ display: "flex", alignItems: "baseline", gap: Math.round(10 * scale) }}>
       <span
         style={{
-          fontSize: Math.round(17 * scale),
+          fontSize: Math.round(19 * scale),
           fontWeight: 700,
           letterSpacing: ".14em",
           color: muted,
@@ -638,15 +639,16 @@ function StockLine({
       </span>
       <span
         style={{
-          fontSize: Math.round(34 * scale),
+          fontSize: Math.round(52 * scale),
           fontWeight: 850,
+          letterSpacing: "-.02em",
           lineHeight: 1,
           color: ink,
         }}
       >
         {slot.stock.trim() || "—"}
       </span>
-      <span style={{ fontSize: Math.round(20 * scale), fontWeight: 700, color: muted }}>
+      <span style={{ fontSize: Math.round(26 * scale), fontWeight: 750, color: ink }}>
         m²
       </span>
     </div>
@@ -1312,8 +1314,10 @@ export default function Studio2Page() {
   /* --------------------------------- önizleme --------------------------------- */
 
   const square = isSquareSize(state.size);
-  const cols = square && state.count > 1 ? 2 : 1;
-  const cellScale = cols === 2 ? (state.count > 2 ? 0.8 : 0.9) : 1;
+  // İki sütun ancak iki SIRA dolduğunda anlamlı (3 ve 4 kare). 2 karede tek
+  // sıra dibe yapışıp sayfanın üstünü boş bırakıyordu; onlar alt alta.
+  const cols = square && state.count >= 3 ? 2 : 1;
+  const cellScale = cols === 2 ? 0.82 : 1;
   const s = scale * cellScale;
 
   function SlotView({ index }: { index: number }) {
@@ -1396,10 +1400,18 @@ export default function Studio2Page() {
         </div>
       );
 
+    // 3 karede son ürün alt sırayı tek başına kaplar, ortalanmış durur.
+    const spanRow = cols === 2 && state.count === 3 && index === 2;
+
     return (
       <div
         style={{
           flex: cols === 1 ? 1 : undefined,
+          gridColumn: spanRow ? "1 / -1" : undefined,
+          // Tek başına kalan ürün, diğerleriyle aynı genişlikte ve ortalanmış
+          // olsun — yazıları sayfanın soluna savrulmasın.
+          width: spanRow ? "calc(50% - 13px)" : undefined,
+          marginInline: spanRow ? "auto" : undefined,
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
@@ -2141,8 +2153,7 @@ export default function Studio2Page() {
                         minHeight: 0,
                         display: "grid",
                         gridTemplateColumns: "1fr 1fr",
-                        gridTemplateRows:
-                          state.count > 2 ? "1fr 1fr" : "1fr",
+                        gridTemplateRows: "1fr 1fr",
                         gap: "30px 26px",
                         padding: "20px 62px 24px",
                       }}
