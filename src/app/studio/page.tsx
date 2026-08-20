@@ -28,6 +28,10 @@ const CANVAS_H = 1920;
 /** Logo mavisi. Gerçek marka hex'i farklıysa tek yerden değiştirilir. */
 const BRAND_BLUE = "#0057A6";
 
+/** Yazı ölçeği sınırları (%). */
+const FONT_MIN = 60;
+const FONT_MAX = 160;
+
 /**
  * Nötr zemin tonları. Orta ton, koyu karo (L≈0.15) ile açık karo (L≈0.70)
  * arasında durduğu için ikisi de zeminden ayrışır — çerçeve/kontur gerekmez.
@@ -473,7 +477,7 @@ function GradeChip({
         fontWeight: 850,
         letterSpacing: ".06em",
         padding: `${Math.round(7 * scale)}px ${Math.round(13 * scale)}px`,
-        borderRadius: 4,
+        borderRadius: Math.round(8 * scale),
         whiteSpace: "nowrap",
       }}
     >
@@ -679,6 +683,11 @@ export default function Studio2Page() {
    *  uyuşmayan görseli panelde uyarmak için. */
   const [photoRatio, setPhotoRatio] = useState<Record<string, number>>({});
 
+  /** Yazı ölçeği kutusunun ham metni. Sayıya bağlanırsa "1" yazarken 60'a
+   *  yapışıyor, silmek imkânsız hâle geliyor. */
+  const [fontScaleText, setFontScaleText] = useState("100");
+  const [lastFontScale, setLastFontScale] = useState(100);
+
   const [state, setState] = useState<PageState>(() => ({
     version: 2,
     size: "60x120",
@@ -704,6 +713,12 @@ export default function Studio2Page() {
 
   const ground = groundOf(state.ground);
   const scale = state.fontScale / 100;
+
+  // Ölçek dışarıdan değişirse (kayıt açma, kuyruk sayfası) kutuyu eşitle.
+  if (lastFontScale !== state.fontScale) {
+    setLastFontScale(state.fontScale);
+    setFontScaleText(String(state.fontScale));
+  }
   const muted =
     ground.ink === "#FFFFFF" ? "rgba(255,255,255,.62)" : "rgba(0,0,0,.55)";
 
@@ -1653,13 +1668,30 @@ export default function Studio2Page() {
               <label className="space-y-1">
                 <div className="text-xs font-semibold text-zinc-600">Yazı ölçeği (%)</div>
                 <input
-                  value={String(state.fontScale)}
-                  onChange={(e) =>
-                    patch({ fontScale: Math.min(160, Math.max(60, Number(digits(e.target.value)) || 100)) })
-                  }
+                  value={fontScaleText}
+                  onChange={(e) => {
+                    // Yazarken sınırlama yok: "" ve "1" gibi ara adımlar
+                    // serbest. Aksi hâlde her tuşta 60'a yapışıyordu.
+                    const raw = digits(e.target.value).slice(0, 3);
+                    setFontScaleText(raw);
+                    const n = Number(raw);
+                    if (raw && n >= FONT_MIN && n <= FONT_MAX) patch({ fontScale: n });
+                  }}
+                  onBlur={() => {
+                    // Alandan çıkarken sınıra çek ve kutuyu gerçek değere eşitle.
+                    const n = Number(fontScaleText);
+                    const next = fontScaleText
+                      ? Math.min(FONT_MAX, Math.max(FONT_MIN, n))
+                      : state.fontScale;
+                    setFontScaleText(String(next));
+                    if (next !== state.fontScale) patch({ fontScale: next });
+                  }}
                   inputMode="numeric"
                   className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
                 />
+                <div className="text-[10px] text-zinc-400">
+                  {FONT_MIN}–{FONT_MAX} arası. Boş bırakırsan eski değere döner.
+                </div>
               </label>
             </div>
           </section>
@@ -2092,7 +2124,7 @@ export default function Studio2Page() {
                             fontWeight: 850,
                             letterSpacing: ".10em",
                             padding: "9px 19px",
-                            borderRadius: 4,
+                            borderRadius: 10,
                           }}
                         >
                           {state.depot}
@@ -2122,7 +2154,7 @@ export default function Studio2Page() {
                           fontWeight: 850,
                           letterSpacing: ".06em",
                           padding: "9px 21px",
-                          borderRadius: 3,
+                          borderRadius: 12,
                         }}
                       >
                         {state.size.replace("x", " × ")}
