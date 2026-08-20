@@ -116,6 +116,9 @@ type PageState = {
   /** "urun" = normal afiş. "kampanya" = yalnız kampanya detayı olan sayfa. */
   pageMode: "urun" | "kampanya";
   campaignOn: boolean;
+  /** Vurgunun üstündeki ince satır — "Tamamını alana". */
+  campaignLead: string;
+  /** Kalın vurgu satırı — "1 palet 10×20 hediye". */
   campaignTitle: string;
   campaignText: string;
   campaignNote: string;
@@ -243,6 +246,7 @@ function normalizeState(raw: unknown): PageState | null {
     accent: /^#[0-9a-f]{6}$/i.test(accent) ? accent : BRAND_BLUE,
     pageMode: o.pageMode === "kampanya" ? "kampanya" : "urun",
     campaignOn: o.campaignOn === true,
+    campaignLead: asStr(o.campaignLead),
     campaignTitle: asStr(o.campaignTitle),
     campaignText: asStr(o.campaignText),
     campaignNote: asStr(o.campaignNote),
@@ -354,6 +358,18 @@ function thumbUrl(url: string, w = 320): string {
   return u.replace("/upload/", `/upload/w_${w},c_limit,q_auto,f_auto/`);
 }
 
+/** Karoyu zeminden kaldıran gölge. Karo boyutuna göre ölçeklenir; koyu
+ *  zeminde gölge okunmadığı için ayrıca ince bir kenar ışığı eklenir. */
+function tileShadow(darkGround: boolean, h: number): string {
+  const blur = Math.max(18, Math.min(58, Math.round(h * 0.11)));
+  const y = Math.round(blur * 0.46);
+  const nearBlur = Math.round(blur * 0.3);
+  const nearY = Math.max(2, Math.round(y * 0.26));
+  return darkGround
+    ? `0 ${y}px ${blur}px rgba(0,0,0,.62), 0 ${nearY}px ${nearBlur}px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.11)`
+    : `0 ${y}px ${blur}px rgba(0,0,0,.22), 0 ${nearY}px ${nearBlur}px rgba(0,0,0,.13)`;
+}
+
 function digits(v: string) {
   return v.replace(/[^\d]/g, "");
 }
@@ -379,6 +395,7 @@ function TileImage({
   alt,
   ratio,
   maxHeight,
+  shadow,
   onNaturalRatio,
 }: {
   src: string;
@@ -386,6 +403,8 @@ function TileImage({
   ratio: number;
   /** Tuval pikseli cinsinden tavan. Ölçülmediyse kapsayıcının %100'ü. */
   maxHeight?: number;
+  /** Karoyu zeminden kaldıran gölge (box-shadow değeri). */
+  shadow?: string;
   onNaturalRatio?: (r: number) => void;
 }) {
   const [resolved, setResolved] = useState<string | null>(null);
@@ -474,6 +493,7 @@ function TileImage({
         width: "auto",
         height: "auto",
         display: "block",
+        boxShadow: shadow,
       }}
     />
   );
@@ -834,9 +854,10 @@ export default function Studio2Page() {
     accent: BRAND_BLUE,
     pageMode: "urun" as const,
     campaignOn: false,
-    campaignTitle: "AĞUSTOS KAMPANYASI",
-    campaignText: "5 PALET ALANA 1 PALET 10×20 HEDİYE",
-    campaignNote: "Kampanya stoklarla sınırlıdır.",
+    campaignLead: "Tamamını alana",
+    campaignTitle: "1 palet 10×20 hediye",
+    campaignText: "",
+    campaignNote: "Bir palet 96 m² · Kampanya stoklarla sınırlıdır",
     giftCount: 0,
     footerLeft: "FİYATLAR KDV HARİÇTİR",
     footerRight: "STOKLARLA SINIRLIDIR",
@@ -1016,7 +1037,7 @@ export default function Studio2Page() {
 
   const fileBase = useMemo(() => {
     if (state.pageMode === "kampanya") {
-      const t = state.campaignTitle.trim() || "kampanya";
+      const t = state.campaignTitle.trim() || state.campaignLead.trim() || "kampanya";
       return t.replace(/[\\/:*?"<>|]/g, "-");
     }
     const parts = [state.brandName, state.size, state.depot]
@@ -1026,6 +1047,7 @@ export default function Studio2Page() {
     return (parts || "afis").replace(/[\\/:*?"<>|]/g, "-");
   }, [
     state.pageMode,
+    state.campaignLead,
     state.campaignTitle,
     state.brandName,
     state.size,
@@ -1117,7 +1139,7 @@ export default function Studio2Page() {
 
   function snapshotTitle(st: PageState) {
     if (st.pageMode === "kampanya") {
-      return `KAMPANYA · ${st.campaignTitle.trim() || "başlıksız"}`;
+      return `KAMPANYA · ${st.campaignTitle.trim() || st.campaignLead.trim() || "başlıksız"}`;
     }
     const names = st.slots
       .slice(0, st.count)
@@ -1558,6 +1580,7 @@ export default function Studio2Page() {
   // Ürün alanının gerçek yüksekliği. Karoya ayrılan tavanı buradan
   // hesaplıyoruz ki yazı görselin hemen altında dursun.
   const areaH = productAreaH;
+  const darkGround = ground.ink === "#FFFFFF";
   const anyDualStock = state.slots
     .slice(0, state.count)
     .some((sl) => sl.dualStock);
@@ -1749,6 +1772,7 @@ export default function Studio2Page() {
               alt={name}
               ratio={ratio}
               maxHeight={tileMaxH || undefined}
+              shadow={tileShadow(darkGround, tileMaxH || 400)}
             />
           ) : (
             <TilePlaceholder
@@ -1883,7 +1907,15 @@ export default function Studio2Page() {
                   <button
                     key={mode}
                     type="button"
-                    onClick={() => patch({ pageMode: mode })}
+                    onClick={() =>
+                      patch(
+                        // Kampanya düzeni kâğıt hissi için açık zemine göre
+                        // kuruldu; koyu zeminden geliyorsa beyaza alıyoruz.
+                        mode === "kampanya" && ground.ink === "#FFFFFF"
+                          ? { pageMode: mode, ground: "beyaz" }
+                          : { pageMode: mode },
+                      )
+                    }
                     className={[
                       "rounded-lg px-3 py-2 text-sm font-semibold",
                       state.pageMode === mode
@@ -2050,23 +2082,41 @@ export default function Studio2Page() {
               <div className="space-y-3">
                 <div className="text-sm font-bold">Kampanya sayfası</div>
                 <label className="block space-y-1">
-                  <div className="text-xs font-semibold text-zinc-600">Başlık</div>
+                  <div className="text-xs font-semibold text-zinc-600">
+                    Üst satır (ince)
+                  </div>
                   <input
-                    value={state.campaignTitle}
-                    onChange={(e) => patch({ campaignTitle: e.target.value })}
-                    placeholder="örn. AĞUSTOS KAMPANYASI"
+                    value={state.campaignLead}
+                    onChange={(e) => patch({ campaignLead: e.target.value })}
+                    placeholder="örn. Tamamını alana"
                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
                   />
                 </label>
                 <label className="block space-y-1">
                   <div className="text-xs font-semibold text-zinc-600">
-                    Detay (her satır alt alta basılır)
+                    Vurgu satırı (kalın)
+                  </div>
+                  <textarea
+                    value={state.campaignTitle}
+                    onChange={(e) => patch({ campaignTitle: e.target.value })}
+                    rows={2}
+                    placeholder={"örn. 1 palet 10×20 hediye"}
+                    className="w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                  />
+                  <div className="text-[10px] leading-relaxed text-zinc-500">
+                    Küçük harf yaz — sayfa tümü büyük harf değil, karışık
+                    dizilecek şekilde tasarlandı.
+                  </div>
+                </label>
+                <label className="block space-y-1">
+                  <div className="text-xs font-semibold text-zinc-600">
+                    Ek satırlar (isteğe bağlı)
                   </div>
                   <textarea
                     value={state.campaignText}
                     onChange={(e) => patch({ campaignText: e.target.value })}
-                    rows={4}
-                    placeholder={"5 PALET 40x120 ALANA\n1 PALET 10x20 HEDİYE"}
+                    rows={2}
+                    placeholder="örn. Söke fabrika sevkinde geçerlidir"
                     className="w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
                   />
                 </label>
@@ -2691,16 +2741,18 @@ export default function Studio2Page() {
                         </div>
                       </div>
                     </div>
-                    <div
-                      style={{
-                        height: 2,
-                        background:
-                          ground.ink === "#FFFFFF"
-                            ? "rgba(255,255,255,.22)"
-                            : "rgba(0,0,0,.18)",
-                        marginTop: 24,
-                      }}
-                    />
+                    {state.pageMode === "urun" ? (
+                      <div
+                        style={{
+                          height: 2,
+                          background:
+                            ground.ink === "#FFFFFF"
+                              ? "rgba(255,255,255,.22)"
+                              : "rgba(0,0,0,.18)",
+                          marginTop: 24,
+                        }}
+                      />
+                    ) : null}
                     {state.pageMode === "urun" ? (
                       <div style={{ marginTop: 20 }}>
                         <span
@@ -2729,42 +2781,48 @@ export default function Studio2Page() {
                         minHeight: 0,
                         display: "flex",
                         flexDirection: "column",
-                        alignItems: "center",
                         justifyContent: "center",
-                        textAlign: "center",
-                        padding: "40px 90px",
-                        gap: 34,
+                        padding: "0 84px",
+                        gap: 0,
                       }}
                     >
-                      <div style={{ color: state.accent, display: "flex" }}>
-                        <GiftIcon size={132} />
-                      </div>
-                      {state.campaignTitle.trim() ? (
-                        <div
-                          style={{
-                            fontSize: 96,
-                            fontWeight: 880,
-                            lineHeight: 1.02,
-                            letterSpacing: "-.02em",
-                            whiteSpace: "pre-line",
-                          }}
-                        >
-                          {state.campaignTitle}
-                        </div>
-                      ) : null}
                       <div
                         style={{
-                          width: 200,
-                          height: 8,
-                          borderRadius: 4,
-                          background: state.accent,
+                          fontSize: 26,
+                          fontWeight: 750,
+                          letterSpacing: ".26em",
+                          color: state.accent,
                         }}
-                      />
+                      >
+                        KAMPANYA
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 26,
+                          fontSize: 112,
+                          lineHeight: 0.96,
+                          letterSpacing: "-.04em",
+                        }}
+                      >
+                        {state.campaignLead.trim() ? (
+                          <div style={{ fontWeight: 300, whiteSpace: "pre-line" }}>
+                            {state.campaignLead}
+                          </div>
+                        ) : null}
+                        {state.campaignTitle.trim() ? (
+                          <div style={{ fontWeight: 780, whiteSpace: "pre-line" }}>
+                            {state.campaignTitle}
+                          </div>
+                        ) : null}
+                      </div>
+
                       {state.campaignText.trim() ? (
                         <div
                           style={{
-                            fontSize: 58,
-                            fontWeight: 780,
+                            marginTop: 30,
+                            fontSize: 44,
+                            fontWeight: 400,
                             lineHeight: 1.28,
                             letterSpacing: "-.01em",
                             whiteSpace: "pre-line",
@@ -2773,93 +2831,93 @@ export default function Studio2Page() {
                           {state.campaignText}
                         </div>
                       ) : null}
+
                       {state.giftCount > 0 ? (
                         <div
                           style={{
-                            marginTop: 6,
-                            width: "100%",
+                            marginTop: 64,
                             display: "flex",
-                            alignItems: "flex-start",
-                            justifyContent: "center",
-                            gap: 44,
+                            alignItems: "flex-end",
+                            gap: state.giftCount > 1 ? 34 : 40,
                           }}
                         >
                           {state.slots.slice(0, state.giftCount).map((sl, i) => {
                             const pr = sl.productId
                               ? productsById.get(sl.productId)
                               : undefined;
-                            // Kampanya sayfasında sayfa ebadı yok; karo,
-                            // ürünün kendi ebadıyla çizilir.
                             const gSize = sl.sizeOverride || pr?.size || state.size;
                             const gName = displayName(pr, sl);
                             const gRatio = frameRatioForSize(gSize);
-                            const gMaxH = state.giftCount > 2 ? 210 : 260;
-                            return (
+                            const gMaxH =
+                              state.giftCount === 1 ? 300 : state.giftCount === 2 ? 250 : 200;
+                            const tile = sl.imageUrl ? (
+                              <TileImage
+                                src={sl.imageUrl}
+                                alt={gName}
+                                ratio={gRatio}
+                                maxHeight={gMaxH}
+                                shadow={tileShadow(darkGround, gMaxH)}
+                              />
+                            ) : (
+                              <TilePlaceholder
+                                ratio={gRatio}
+                                color={muted}
+                                maxHeight={gMaxH}
+                              />
+                            );
+                            const label = (
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: state.giftCount === 1 ? 32 : 27,
+                                    fontWeight: 750,
+                                    lineHeight: 1.25,
+                                  }}
+                                >
+                                  {gName || "—"}
+                                </div>
+                                <div
+                                  style={{
+                                    marginTop: 10,
+                                    fontSize: state.giftCount === 1 ? 26 : 22,
+                                    fontWeight: 650,
+                                    letterSpacing: ".06em",
+                                    color: muted,
+                                  }}
+                                >
+                                  {gSize.replace("x", " × ")}
+                                </div>
+                              </div>
+                            );
+                            // Tek hediyede ad karonun yanında, çoklu hediyede altında.
+                            return state.giftCount === 1 ? (
+                              <div
+                                key={i}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "flex-end",
+                                  gap: 40,
+                                  minWidth: 0,
+                                }}
+                              >
+                                {tile}
+                                <div style={{ paddingBottom: 6, maxWidth: 300 }}>{label}</div>
+                              </div>
+                            ) : (
                               <div
                                 key={i}
                                 style={{
                                   display: "flex",
                                   flexDirection: "column",
-                                  alignItems: "center",
-                                  gap: 14,
+                                  gap: 16,
                                   minWidth: 0,
-                                  maxWidth: `${Math.floor(900 / state.giftCount)}px`,
                                 }}
                               >
-                                {sl.imageUrl ? (
-                                  <TileImage
-                                    src={sl.imageUrl}
-                                    alt={gName}
-                                    ratio={gRatio}
-                                    maxHeight={gMaxH}
-                                  />
-                                ) : (
-                                  <TilePlaceholder
-                                    ratio={gRatio}
-                                    color={muted}
-                                    maxHeight={gMaxH}
-                                  />
-                                )}
-                                <div>
-                                  <div
-                                    style={{
-                                      fontSize: 30,
-                                      fontWeight: 800,
-                                      lineHeight: 1.15,
-                                    }}
-                                  >
-                                    {gName || "—"}
-                                  </div>
-                                  <div
-                                    style={{
-                                      marginTop: 4,
-                                      fontSize: 24,
-                                      fontWeight: 700,
-                                      letterSpacing: ".08em",
-                                      color: muted,
-                                    }}
-                                  >
-                                    {gSize.replace("x", " × ")}
-                                  </div>
-                                </div>
+                                {tile}
+                                {label}
                               </div>
                             );
                           })}
-                        </div>
-                      ) : null}
-
-                      {state.campaignNote.trim() ? (
-                        <div
-                          style={{
-                            marginTop: 6,
-                            fontSize: 30,
-                            fontWeight: 650,
-                            lineHeight: 1.35,
-                            color: muted,
-                            whiteSpace: "pre-line",
-                          }}
-                        >
-                          {state.campaignNote}
                         </div>
                       ) : null}
                     </div>
@@ -2927,6 +2985,22 @@ export default function Studio2Page() {
                       >
                         {state.campaignText}
                       </div>
+                    </div>
+                  ) : null}
+
+                  {state.pageMode === "kampanya" && state.campaignNote.trim() ? (
+                    <div
+                      style={{
+                        flexShrink: 0,
+                        padding: "0 84px 10px",
+                        fontSize: 24,
+                        fontWeight: 600,
+                        lineHeight: 1.4,
+                        color: muted,
+                        whiteSpace: "pre-line",
+                      }}
+                    >
+                      {state.campaignNote}
                     </div>
                   ) : null}
 
