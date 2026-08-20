@@ -340,28 +340,56 @@ function TileImage({
     img.crossOrigin = "anonymous";
     img.onload = () => {
       if (dead) return;
+      onNaturalRatio?.(img.naturalWidth / img.naturalHeight);
+
       const frameLandscape = ratio >= 1;
       const photoLandscape = img.naturalWidth >= img.naturalHeight;
-      if (frameLandscape === photoLandscape) {
+      const mustRotate = frameLandscape !== photoLandscape;
+      // Çevirdikten sonraki kaynak ölçüleri.
+      const srcW = mustRotate ? img.naturalHeight : img.naturalWidth;
+      const srcH = mustRotate ? img.naturalWidth : img.naturalHeight;
+      const srcRatio = srcW / srcH;
+      const needsCrop = Math.abs(srcRatio - ratio) / ratio > 0.01;
+
+      if (!mustRotate && !needsCrop) {
         setResolved(src);
-        onNaturalRatio?.(img.naturalWidth / img.naturalHeight);
         return;
       }
+
       try {
+        // Ebadın oranına ORTADAN kırp: karo afişte her zaman gerçek
+        // oranında görünür (30x90 = 1:3), foto oranı ne olursa olsun.
+        let cropW = srcW;
+        let cropH = srcH;
+        if (srcRatio > ratio) cropW = srcH * ratio;
+        else cropH = srcW / ratio;
+
+        // Bellek için uzun kenarı sınırla.
+        const MAX = 2400;
+        const k = Math.min(1, MAX / Math.max(cropW, cropH));
+        const outW = Math.max(1, Math.round(cropW * k));
+        const outH = Math.max(1, Math.round(cropH * k));
+
         const c = document.createElement("canvas");
-        c.width = img.naturalHeight;
-        c.height = img.naturalWidth;
+        c.width = outW;
+        c.height = outH;
         const ctx = c.getContext("2d");
         if (!ctx) throw new Error("2d yok");
-        ctx.translate(c.width / 2, c.height / 2);
-        ctx.rotate(Math.PI / 2);
-        ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+        ctx.imageSmoothingQuality = "high";
+        ctx.translate(outW / 2, outH / 2);
+        if (mustRotate) ctx.rotate(Math.PI / 2);
+        // Çevirdikten sonra kaynak eksenleri yer değiştirir.
+        const drawW = mustRotate ? outH : outW;
+        const drawH = mustRotate ? outW : outH;
+        const sw = mustRotate ? cropH : cropW;
+        const sh = mustRotate ? cropW : cropH;
+        const sx = (img.naturalWidth - sw) / 2;
+        const sy = (img.naturalHeight - sh) / 2;
+        ctx.drawImage(img, sx, sy, sw, sh, -drawW / 2, -drawH / 2, drawW, drawH);
         setResolved(c.toDataURL("image/jpeg", 0.94));
-        onNaturalRatio?.(c.width / c.height);
       } catch {
-        // Tuval kirlenirse çevirmeden göster; kırpmaktansa dik göstermek yeğdir.
+        // Tuval kirlenirse (CORS) kırpamayız; bozmaktansa olduğu gibi göster.
         setResolved(src);
-        onNaturalRatio?.(img.naturalWidth / img.naturalHeight);
       }
     };
     img.onerror = () => {
@@ -644,6 +672,10 @@ export default function Studio2Page() {
   const [savedError, setSavedError] = useState<string | null>(null);
   const [savedSearch, setSavedSearch] = useState("");
   const jsonRef = useRef<HTMLInputElement | null>(null);
+
+  /** Yüklenen görsellerin kendi en/boy oranı (url -> oran). Ebatla
+   *  uyuşmayan görseli panelde uyarmak için. */
+  const [photoRatio, setPhotoRatio] = useState<Record<string, number>>({});
 
   const [state, setState] = useState<PageState>(() => ({
     version: 2,
@@ -1009,6 +1041,44 @@ export default function Studio2Page() {
   }
 
   /* ---------------------------------- taslak ---------------------------------- */
+
+  /* Görsellerin gerçek oranını ölç (uyarı için). */
+  const slotImageKey = state.slots
+    .slice(0, state.count)
+    .map((sl) => sl.imageUrl ?? "")
+    .join("|");
+
+  useEffect(() => {
+    let dead = false;
+    const urls = slotImageKey.split("|").filter(Boolean);
+    for (const url of urls) {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        if (dead || !img.naturalHeight) return;
+        const r = img.naturalWidth / img.naturalHeight;
+        setPhotoRatio((prev) => (prev[url] != null ? prev : { ...prev, [url]: r }));
+      };
+      img.src = url;
+    }
+    return () => {
+      dead = true;
+    };
+  }, [slotImageKey]);
+
+  /** Görselin oranı seçilen ebattan belirgin farklıysa uyarı metni. */
+  function ratioWarning(slot: Slot): string | null {
+    if (!slot.imageUrl) return null;
+    const nat = photoRatio[slot.imageUrl];
+    if (!nat || !Number.isFinite(nat)) return null;
+    const size = slot.sizeOverride || state.size;
+    const declared = frameRatioForSize(size);
+    // Fotoğraf dik çekilmişse çevriliyor; karşılaştırmayı yatık oran üzerinden yap.
+    const natL = nat >= 1 ? nat : 1 / nat;
+    if (Math.abs(natL - declared) / declared <= 0.08) return null;
+    const f = (x: number) => x.toFixed(1).replace(".", ",");
+    return `Görselin oranı ${f(natL)}:1 · ${size} ebadı ${f(declared)}:1 — görsel ebada göre ortadan kırpılıyor. Yanlış ürünün fotoğrafı olabilir.`;
+  }
 
   /** Kayıt başlığı: kullanıcı yazdıysa o, yoksa sayfadan türetilen ad. */
   const saveTitle = useMemo(
@@ -1784,6 +1854,16 @@ export default function Studio2Page() {
                     </div>
                   ) : null}
 
+                  {(() => {
+                    const warn = ratioWarning(slot);
+                    if (!warn) return null;
+                    return (
+                      <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-2 text-[11px] leading-relaxed text-amber-900">
+                        {warn}
+                      </div>
+                    );
+                  })()}
+
                   <label className="mb-2 block space-y-1">
                     <div className="text-xs font-semibold text-zinc-600">Ürün adı (boşsa otomatik)</div>
                     <input
@@ -1932,7 +2012,7 @@ export default function Studio2Page() {
               <span>
                 {CANVAS_W}×{CANVAS_H} · {state.size} · {state.count} ürün
               </span>
-              <span>Karo kırpılmaz, oranı korunur</span>
+              <span>Karo her zaman gerçek ebat oranında çizilir</span>
             </div>
             <div
               className="overflow-hidden rounded-2xl ring-1 ring-zinc-200"
