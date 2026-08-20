@@ -4,6 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toJpeg } from "html-to-image";
 import { jsPDF } from "jspdf";
+import { readXlsxRows, readDelimitedRows } from "@/src/lib/xlsx-lite";
+import {
+  buildImport,
+  type ImportResult,
+  type ImportRow,
+} from "@/src/lib/stok-import";
 
 /* ------------------------------------------------------------------ *
  *  KULALILAR · Afiş Stüdyo 2
@@ -894,6 +900,14 @@ export default function Studio2Page() {
   const [savedError, setSavedError] = useState<string | null>(null);
   const [savedSearch, setSavedSearch] = useState("");
   const jsonRef = useRef<HTMLInputElement | null>(null);
+  const xlsxRef = useRef<HTMLInputElement | null>(null);
+
+  /* Excel'den kuyruk */
+  const [importOpen, setImportOpen] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  /** Satır anahtarı -> kullanıcının seçtiği ürün kimliği ("" = eşleşme yok). */
+  const [importPick, setImportPick] = useState<Record<string, string>>({});
 
   /** Yüklenen görsellerin kendi en/boy oranı (url -> oran). Ebatla
    *  uyuşmayan görseli panelde uyarmak için. */
@@ -1137,10 +1151,13 @@ export default function Studio2Page() {
       const imgs = Array.from(
         document.querySelectorAll<HTMLImageElement>("#afis-kanvas img"),
       );
+      // "complete" hem yüklenen hem HATA VEREN görsel için true olur. Eskiden
+      // naturalWidth>0 şartı vardı; katalogda fotoğrafı eksik tek bir ürün
+      // bütün dışa aktarımı sayfa başına 12 saniye bekletiyordu.
       const ready =
         committed &&
         imgs.length >= expectedImages &&
-        imgs.every((i) => i.complete && i.naturalWidth > 0);
+        imgs.every((i) => i.complete);
       if (ready) {
         // Bir kare daha: son yerleşim boyansın.
         await new Promise((r) => requestAnimationFrame(() => r(null)));
@@ -1349,6 +1366,112 @@ export default function Studio2Page() {
       setMsg(`${queue.length} sayfalık PDF indirildi ✓`);
     } catch {
       setMsg("PDF oluşturulamadı");
+    } finally {
+      setState(saved);
+      setProgress(null);
+      setBusy(null);
+    }
+  }
+
+  /* --------------------------- Excel'den kuyruk --------------------------- */
+
+  async function onImportFile(file: File) {
+    try {
+      setBusy("Excel okunuyor…");
+      setImportError(null);
+      const rows = /\.(csv|txt|tsv)$/i.test(file.name)
+        ? readDelimitedRows(await file.text())
+        : await readXlsxRows(await file.arrayBuffer());
+      const res = buildImport(rows, products);
+      if (!res.counts.toplam) {
+        throw new Error("Dosyada ürün satırı bulunamadı");
+      }
+      // Kullanıcı seçimlerini otomatik eşleşmelerle doldur.
+      const pick: Record<string, string> = {};
+      res.pages.forEach((pg) =>
+        pg.rows.forEach((r) => {
+          pick[r.key] = r.productId ?? "";
+        }),
+      );
+      setImportResult(res);
+      setImportPick(pick);
+      setImportOpen(true);
+      setMsg(null);
+    } catch (e) {
+      setImportError((e as Error)?.message ?? "Dosya okunamadı");
+      setImportResult(null);
+      setImportOpen(true);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function slotFromRow(r: ImportRow, productId: string): Slot {
+    const p = productId ? productsById.get(productId) : undefined;
+    const sl = emptySlot();
+    sl.productId = p ? p.id : null;
+    sl.imageUrl = p ? p.image : null;
+    // Eşleşme varsa ad otomatik gelsin; yoksa Excel'deki temizlenmiş ad yazılsın.
+    sl.customName = p ? "" : r.fallbackName;
+    sl.surface = (SURFACES as readonly string[]).includes(r.surface)
+      ? (r.surface as Slot["surface"])
+      : "";
+    sl.grade = r.grade;
+    sl.isRec = r.isRec;
+    sl.stock = r.stock;
+    sl.price = r.price;
+    return sl;
+  }
+
+  /** Önizlemedeki sayfaları PageState listesine çevirir. Bir sayfada 4'ten
+   *  fazla ürün varsa 4'erli bölünür — düzen en fazla 4 taşıyor. */
+  function pagesFromImport(res: ImportResult): PageState[] {
+    const out: PageState[] = [];
+    res.pages.forEach((pg) => {
+      for (let i = 0; i < pg.rows.length; i += 4) {
+        const chunk = pg.rows.slice(i, i + 4);
+        const size =
+          chunk.map((r) => r.size).find(Boolean) || state.size;
+        out.push({
+          ...state,
+          pageMode: "urun",
+          campaignOn: false,
+          size,
+          count: chunk.length,
+          slots: chunk.map((r) => slotFromRow(r, importPick[r.key] ?? "")),
+        });
+      }
+    });
+    return out;
+  }
+
+  /** Sayfaları kuyruğa ekler ve her biri için küçük önizleme üretir. */
+  async function applyImport() {
+    if (!importResult) return;
+    const pages = pagesFromImport(importResult);
+    if (!pages.length) return;
+    const saved = JSON.parse(JSON.stringify(state)) as PageState;
+    setImportOpen(false);
+    try {
+      setBusy("Sayfalar hazırlanıyor…");
+      const items: QueueItem[] = [];
+      for (let i = 0; i < pages.length; i += 1) {
+        const snapshot = pages[i];
+        setProgress(`${i + 1} / ${pages.length}`);
+        setState(snapshot);
+        await waitForCanvas(expectedImageCount(snapshot), snapKey(snapshot));
+        const thumb = await captureThumb();
+        items.push({
+          id: `xls-${i}-${snapshot.size}-${snapshot.count}`,
+          title: snapshotTitle(snapshot),
+          thumb,
+          snapshot,
+        });
+      }
+      setQueue((q) => [...q, ...items]);
+      setMsg(`${items.length} sayfa kuyruğa eklendi ✓`);
+    } catch {
+      setMsg("Sayfalar oluşturulamadı");
     } finally {
       setState(saved);
       setProgress(null);
@@ -1895,6 +2018,17 @@ export default function Studio2Page() {
         onChange={onUpload}
       />
       <input
+        ref={xlsxRef}
+        type="file"
+        accept=".xlsx,.xls,.csv,.tsv,.txt"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.currentTarget.files?.[0];
+          e.currentTarget.value = "";
+          if (f) void onImportFile(f);
+        }}
+      />
+      <input
         ref={jsonRef}
         type="file"
         accept="application/json,.json"
@@ -1934,6 +2068,15 @@ export default function Studio2Page() {
               title="Sayfayı ve tüm sayfa kuyruğunu buluta kaydet — aynı isim üzerine yazar"
             >
               Kaydet
+            </button>
+            <button
+              type="button"
+              onClick={() => xlsxRef.current?.click()}
+              disabled={Boolean(busy)}
+              className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
+              title="Stok Excel'inden sayfa kuyruğu oluştur"
+            >
+              Excel&apos;den Kuyruk
             </button>
             <button
               type="button"
@@ -3304,6 +3447,159 @@ export default function Studio2Page() {
                 </div>
               );
             })()}
+          </div>
+        </div>
+      ) : null}
+
+      {/* --------------------- EXCEL İÇE AKTARMA ÖNİZLEMESİ --------------------- */}
+      {importOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white">
+            <div className="border-b border-zinc-100 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-bold">Excel&apos;den kuyruk</div>
+                  <div className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
+                    Sayfa düzeni Excel&apos;deki <b>SAYFA</b> sütunundan geliyor.
+                    Sevk yeri, marka, zemin ve yazı ölçeği şu anki sayfa
+                    ayarlarından alınır.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setImportOpen(false)}
+                  className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+                >
+                  Kapat
+                </button>
+              </div>
+              {importError ? (
+                <div className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
+                  {importError}
+                </div>
+              ) : null}
+              {importResult ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                  <span className="rounded-md bg-emerald-50 px-2 py-1 text-emerald-800">
+                    {importResult.counts.kesin} eşleşti
+                  </span>
+                  {importResult.counts.belirsiz ? (
+                    <span className="rounded-md bg-amber-50 px-2 py-1 text-amber-900">
+                      {importResult.counts.belirsiz} şüpheli
+                    </span>
+                  ) : null}
+                  {importResult.counts.yok ? (
+                    <span className="rounded-md bg-red-50 px-2 py-1 text-red-700">
+                      {importResult.counts.yok} bulunamadı
+                    </span>
+                  ) : null}
+                  <span className="text-zinc-500">
+                    · {importResult.pages.length} sayfa · {importResult.counts.toplam} ürün
+                  </span>
+                  {importResult.missingColumns.length ? (
+                    <span className="rounded-md bg-amber-50 px-2 py-1 text-amber-900">
+                      eksik sütun: {importResult.missingColumns.join(", ")}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {importResult?.pages.map((pg) => (
+                <div key={pg.page} className="mb-4">
+                  <div className="mb-1.5 text-xs font-bold text-zinc-500">
+                    SAYFA {pg.page}
+                    <span className="ml-2 font-semibold text-zinc-400">
+                      {pg.rows.length} ürün
+                      {pg.rows.length > 4 ? " · 4'erli bölünecek" : ""}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {pg.rows.map((r) => {
+                      const picked = importPick[r.key] ?? "";
+                      const chosen = picked ? productsById.get(picked) : undefined;
+                      const tone = !picked
+                        ? "border-red-300 bg-red-50"
+                        : r.status === "kesin"
+                          ? "border-zinc-200 bg-white"
+                          : "border-amber-300 bg-amber-50";
+                      return (
+                        <div
+                          key={r.key}
+                          className={`flex items-center gap-3 rounded-xl border p-2.5 ${tone}`}
+                        >
+                          {chosen ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={chosen.image}
+                              alt=""
+                              loading="lazy"
+                              className="h-11 w-16 shrink-0 rounded object-cover ring-1 ring-black/10"
+                            />
+                          ) : (
+                            <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded bg-zinc-100 text-[9px] font-semibold text-zinc-400">
+                              görsel yok
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[12px] font-semibold">
+                              {r.rawName}
+                            </div>
+                            <div className="mt-0.5 text-[10px] text-zinc-500">
+                              {r.size || "ebat?"} · stok {r.stock} m² · {r.price} ₺
+                              {r.surface ? ` · ${r.surface}` : ""}
+                              {r.grade ? ` · ${r.grade}` : ""}
+                              {r.mergedFrom > 1 ? ` · ${r.mergedFrom} lot toplandı` : ""}
+                            </div>
+                          </div>
+                          <select
+                            value={picked}
+                            onChange={(e) =>
+                              setImportPick((prev) => ({
+                                ...prev,
+                                [r.key]: e.target.value,
+                              }))
+                            }
+                            className="w-64 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 py-2 text-[11px]"
+                          >
+                            <option value="">— eşleşme yok (görselsiz) —</option>
+                            {(chosen && !r.candidates.some((c) => c.id === chosen.id)
+                              ? [chosen, ...r.candidates]
+                              : r.candidates
+                            ).map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name} · {c.size}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {importResult ? (
+              <div className="flex items-center justify-between gap-3 border-t border-zinc-100 p-4">
+                <div className="text-[11px] text-zinc-500">
+                  Eşleşmeyen ürünler ada, stoğa ve fiyata sahip olarak eklenir —
+                  yalnız görselleri boş kalır.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void applyImport()}
+                  className="shrink-0 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
+                >
+                  Kuyruğa Ekle ({pagesFromImport(importResult).length} sayfa)
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
