@@ -40,6 +40,9 @@ type CatalogV1 = {
 
 type SellRow = {
   rowKey: string;
+  /** Çift fiyatlı slotta diğer fiyat; modalda tek tıkla seçilebilir. */
+  altPrice?: string;
+  altLabel?: string;
   slotIndex: number;
   /** Çift stoklu slotlarda hangi stoktan düşüleceğini belirler. */
   part: "primary" | "end";
@@ -688,6 +691,32 @@ function digitsOnly(input: string) {
   return input.replace(/[^\d]/g, "");
 }
 
+/**
+ * Fiyat girişi: binlik ayırıcı nokta, ondalık ayırıcı virgül.
+ * Eskiden digitsOnly ile virgül tamamen siliniyordu; "230,50" yazan kullanıcı
+ * afişte 23.050 görüyordu ve satış kaydına da 23050 gidiyordu.
+ */
+function formatPriceInput(raw: string): string {
+  const cleaned = String(raw ?? "").replace(/[^\d.,]/g, "");
+  // Son virgül/nokta ondalık ayırıcı sayılır; öncekiler binlik olarak atılır.
+  const lastSep = Math.max(cleaned.lastIndexOf(","), cleaned.lastIndexOf("."));
+  let intPart = cleaned;
+  let decPart = "";
+  if (lastSep >= 0) {
+    const tail = cleaned.slice(lastSep + 1).replace(/[.,]/g, "");
+    // Üç haneli son grup binlik ayırıcıdır (1.250), ondalık değil.
+    if (tail.length !== 3 || cleaned.slice(lastSep, lastSep + 1) === ",") {
+      intPart = cleaned.slice(0, lastSep);
+      decPart = tail.slice(0, 2);
+    }
+  }
+  const intDigits = intPart.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+  const grouped = intDigits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const hasSep = lastSep >= 0 && intPart !== cleaned;
+  if (!grouped && !hasSep) return "";
+  return hasSep ? `${grouped || "0"},${decPart}` : grouped;
+}
+
 function formatThousandsWithDot(digits: string) {
   if (!digits) return "";
   const trimmed = digits.replace(/^0+/, "") || "0";
@@ -1248,33 +1277,20 @@ export default function Home() {
     setImageErrorBySlot({});
   }
 
+  // Şablon kırpma artık changeProductImageAspect içinde, kullanıcı oranı
+  // değiştirdiği anda yapılıyor.
+
   useEffect(() => {
-    const allowed = isParquetMode ? TEMPLATES_PARQUET : TEMPLATES_DEFAULT;
-    if (!allowed.includes(selectedTemplate)) {
-      const next = allowed[0] ?? 1;
-      setSelectedTemplate(next);
-      setSlots((prev) => buildSlots(next, prev));
-      setActiveSlotIndex(0);
-      setImageErrorBySlot({});
-    }
+    // Yazı boyutu artık burada değil, kullanıcı oranı değiştirdiğinde
+    // changeProductImageAspect içinde ayarlanıyor. Efektte yapıldığında
+    // taslaktan gelen yazı boyutunu eziyordu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isParquetMode]);
 
   useEffect(() => {
-    if (isParquetMode) {
-      // Parke moduna geçildiği an 38px'e set et (kullanıcı slider oynamadıysa).
-      setParquetSliderTouched(false);
-      setGlobalFontSize(PARQUET_DEFAULT_FONT_SIZE);
-    } else {
-      // Parke'den çıkınca son non-parke değerine geri dön.
-      setGlobalFontSize(lastNonParquetFontSize);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isParquetMode]);
-
-  useEffect(() => {
-    // Zemin modu, katalog zeminiyle beraber export/canvas rengini de senkron tutsun.
-    setCanvasBgColor(isDarkBg ? "#1D1616" : "#F5F5F5");
+    // Zemin rengi artık burada değil, kullanıcı zemin modunu değiştirdiğinde
+    // toggleDarkBg içinde ayarlanıyor. Efektte yapıldığında taslaktan gelen
+    // özel zemin rengini eziyordu.
   }, [isDarkBg]);
 
   useEffect(() => {
@@ -1545,7 +1561,8 @@ export default function Home() {
             rowKey: `${idx}:${part.part}`,
             slotIndex: idx,
             part: part.part,
-            selected: true,
+            // Kampanya yazılı slot burada da işaretsiz gelmeli.
+            selected: !slot.hideStockPrice,
             productName: `${name} ${part.label}`.trim(),
             brand,
             size: sizeText,
@@ -1561,6 +1578,10 @@ export default function Home() {
         rowKey: `${idx}:primary`,
         slotIndex: idx,
         part: "primary",
+        // Çift fiyatlı slotta ikinci fiyat da taşınır; operatör modalda
+        // tek tıkla seçer. Eskiden daima Vadeli kaydediliyordu.
+        altPrice: slot.dualPrice ? slot.secondPrice || "" : "",
+        altLabel: slot.dualPrice ? slot.secondPriceLabel || "KART" : "",
         // Kampanya yazısı olan slotta stok/fiyat yok; yanlışlıkla 0 tutarlı
         // satış kaydedilmesin diye işaretsiz gelir.
         selected: !slot.hideStockPrice,
@@ -1740,7 +1761,6 @@ export default function Home() {
         });
         if (!res.ok) throw new Error(`Products fetch failed: ${res.status}`);
         const data = (await res.json()) as Product[];
-        console.log("Gelen Veri:", data);
         setProducts(Array.isArray(data) ? data : []);
       } catch (err) {
         if ((err as { name?: string })?.name === "AbortError") return;
@@ -1856,6 +1876,46 @@ export default function Home() {
     return `${sizePart}_${base}`;
   }
 
+  /** Kullanıcı zemin modunu değiştirdiğinde rengi de birlikte ayarla. */
+  function toggleDarkBg() {
+    setIsDarkBg((v) => {
+      const next = !v;
+      setCanvasBgColor(next ? "#1D1616" : "#F5F5F5");
+      return next;
+    });
+  }
+
+  /** Kullanıcı görsel oranını değiştirdiğinde parke yazı boyutunu ayarla. */
+  function changeProductImageAspect(next: ProductImageAspect) {
+    const wasParquet = productImageAspect === "parquet";
+    const willBeParquet = next === "parquet";
+    setProductImageAspect(next);
+
+    // Yeni mod mevcut şablona izin vermiyorsa EN YAKIN izinli şablona düş.
+    // Eskiden listenin ilkine (1) düşüyordu ve 8'li afişte parke seçmek
+    // 7 slotun verisini siliyordu.
+    const allowed = willBeParquet ? TEMPLATES_PARQUET : TEMPLATES_DEFAULT;
+    if (!allowed.includes(selectedTemplate)) {
+      const nextTemplate = allowed.reduce(
+        (best, t) =>
+          Math.abs(t - selectedTemplate) < Math.abs(best - selectedTemplate)
+            ? t
+            : best,
+        allowed[0] ?? 1,
+      );
+      setSelectedTemplate(nextTemplate);
+      setSlots((prev) => buildSlots(nextTemplate, prev));
+      setActiveSlotIndex(0);
+      setImageErrorBySlot({});
+    }
+    if (!wasParquet && willBeParquet) {
+      setParquetSliderTouched(false);
+      setGlobalFontSize(PARQUET_DEFAULT_FONT_SIZE);
+    } else if (wasParquet && !willBeParquet) {
+      setGlobalFontSize(lastNonParquetFontSize);
+    }
+  }
+
   function applySnapshot(d: DraftV1) {
     const allowedTemplates: TemplateCount[] = [...TEMPLATES_DEFAULT, ...TEMPLATES_PARQUET];
     const nextTemplate = allowedTemplates.includes(d.selectedTemplate)
@@ -1932,7 +1992,7 @@ export default function Home() {
             : it,
         ),
       );
-      setPdfEditingIndex(null);
+      // Bağ korunur: art arda güncellemede kuyruğa kopya sayfa eklenmesin.
       return;
     }
 
@@ -1977,8 +2037,12 @@ export default function Home() {
   // (gerçek PDF çıktısı zaten her zaman güncel snapshot'tan üretilir).
   async function refreshQueueThumbnails(
     items: { index: number; item: PdfQueueItemV1 }[],
+    restoreTo?: DraftV1,
   ) {
-    const original = makeSnapshot();
+    // makeSnapshot bu render'ın closure'unu okur. Çağıran taraf henüz
+    // uygulanmamış bir değişiklik yaptıysa (ör. slot taşıma), geri yükleme
+    // o değişikliği geri alıyordu; bu yüzden hedef snapshot dışarıdan gelebilir.
+    const original = restoreTo ?? makeSnapshot();
     for (const { index, item } of items) {
       applySnapshot(item.snapshot);
       await sleep(0);
@@ -2045,10 +2109,21 @@ export default function Home() {
       setSlots(updatedTarget.snapshot.slots);
     }
 
-    void refreshQueueThumbnails([
-      { index: sourceIdx, item: updatedSource },
-      { index: targetIdx, item: updatedTarget },
-    ]);
+    // Ekranda hangi sayfa açıksa, taşıma UYGULANMIŞ hâlini geri yükle.
+    const restoreTo: DraftV1 =
+      pdfEditingIndex === sourceIdx
+        ? updatedSource.snapshot
+        : pdfEditingIndex === targetIdx
+          ? updatedTarget.snapshot
+          : makeSnapshot();
+
+    void refreshQueueThumbnails(
+      [
+        { index: sourceIdx, item: updatedSource },
+        { index: targetIdx, item: updatedTarget },
+      ],
+      restoreTo,
+    );
   }
 
   async function downloadPdfFromQueue() {
@@ -2088,9 +2163,17 @@ export default function Home() {
       }
 
       doc.save(pdfName);
+      setExportError(null);
+    } catch (e) {
+      // Eskiden catch yoktu: bir görsel CORS/404 verdiğinde buton dönüyor,
+      // hiçbir şey inmiyor ve kullanıcı sebebini göremiyordu.
+      setExportError(
+        `PDF oluşturulamadı: ${(e as Error)?.message ?? "bilinmeyen hata"}`,
+      );
     } finally {
       applySnapshot(original);
-      setPdfEditingIndex(null);
+      // Düzenleme bağı korunur; aksi hâlde PDF sonrası yapılan düzenlemeler
+      // hiçbir kuyruk sayfasına işlenmiyordu.
       setIsBuildingPdf(false);
     }
   }
@@ -2111,10 +2194,18 @@ export default function Home() {
       setSavingDraft(true);
       setDraftSaveMsg(null);
       const current = makeSnapshot();
+      // Ekranda düzenlenen sayfa kuyruğa da yazılmalı. Aksi hâlde "3 sayfa
+      // kaydedildi" denip kuyruktaki sayfa eski hâliyle kaydediliyordu.
+      const syncedQueue =
+        pdfEditingIndex != null && pdfQueue[pdfEditingIndex]
+          ? pdfQueue.map((it, idx) =>
+              idx === pdfEditingIndex ? { ...it, snapshot: current } : it,
+            )
+          : pdfQueue;
       // Kuyruk doluysa tüm sayfaları, boşsa mevcut afişi tek sayfa olarak kaydet.
       const queue: PdfQueueItemV1[] =
-        pdfQueue.length > 0
-          ? pdfQueue
+        syncedQueue.length > 0
+          ? syncedQueue
           : [
               {
                 id: "sayfa-0",
@@ -2251,8 +2342,14 @@ export default function Home() {
 
       setPdfQueue(queue);
       applySnapshot(current);
-      // İlk sayfayı düzenleme moduna al ki satış/düzenleme o sayfayı güncellesin.
-      setPdfEditingIndex(queue.length > 0 ? 0 : null);
+      // Ekrana basılan snapshot kuyruğun HANGİ sayfasıysa onu düzenleme moduna al.
+      // Koşulsuz 0 vermek, 5. sayfa açıkken kaydedilmiş bir kataloğu geri
+      // açtığında "Sayfayı Güncelle" ile 1. sayfanın ezilmesine yol açıyordu.
+      const currentKey = JSON.stringify(current);
+      const matched = queue.findIndex(
+        (it) => JSON.stringify(it.snapshot) === currentKey,
+      );
+      setPdfEditingIndex(matched >= 0 ? matched : null);
       setIsSavedOpen(false);
     } catch (e) {
       setSavedError((e as Error)?.message ?? "Katalog açılamadı");
@@ -2845,7 +2942,7 @@ export default function Home() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setIsDarkBg((v) => !v)}
+                    onClick={toggleDarkBg}
                     className="relative inline-flex h-8 w-16 items-center rounded-full border border-zinc-200 bg-white transition"
                     aria-label="Zemin modu (Koyu / Açık)"
                   >
@@ -2952,7 +3049,7 @@ export default function Home() {
               <select
                 value={productImageAspect}
                 onChange={(e) =>
-                  setProductImageAspect(e.target.value as ProductImageAspect)
+                  changeProductImageAspect(e.target.value as ProductImageAspect)
                 }
                 className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                 aria-label="Ürün görsel oranı"
@@ -3652,7 +3749,7 @@ export default function Home() {
                                     onChange={(e) =>
                                       updateSlot(idx, { stock: e.target.value })
                                     }
-                                    placeholder="örn. 51.2"
+                                    placeholder="örn. 51,2"
                                     inputMode="numeric"
                                     className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                                     disabled={!mediaOk}
@@ -3669,9 +3766,7 @@ export default function Home() {
                                     value={s.price}
                                     onChange={(e) =>
                                       updateSlot(idx, {
-                                        price: formatThousandsWithDot(
-                                          digitsOnly(e.target.value),
-                                        ),
+                                        price: formatPriceInput(e.target.value),
                                       })
                                     }
                                     placeholder="örn. 1.250"
@@ -3739,9 +3834,7 @@ export default function Home() {
                                       value={s.secondPrice}
                                       onChange={(e) =>
                                         updateSlot(idx, {
-                                          secondPrice: formatThousandsWithDot(
-                                            digitsOnly(e.target.value),
-                                          ),
+                                          secondPrice: formatPriceInput(e.target.value),
                                         })
                                       }
                                       placeholder="örn. 220"
@@ -3830,9 +3923,7 @@ export default function Home() {
                                     value={s.price}
                                     onChange={(e) =>
                                       updateSlot(idx, {
-                                        price: formatThousandsWithDot(
-                                          digitsOnly(e.target.value),
-                                        ),
+                                        price: formatPriceInput(e.target.value),
                                       })
                                     }
                                     placeholder="örn. 230"
@@ -3849,9 +3940,7 @@ export default function Home() {
                                     value={s.endStockPrice}
                                     onChange={(e) =>
                                       updateSlot(idx, {
-                                        endStockPrice: formatThousandsWithDot(
-                                          digitsOnly(e.target.value),
-                                        ),
+                                        endStockPrice: formatPriceInput(e.target.value),
                                       })
                                     }
                                     placeholder="örn. 230"
@@ -4119,6 +4208,20 @@ export default function Home() {
                                   }
                                   className="mt-0.5 block w-24 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm outline-none focus:border-zinc-400"
                                 />
+                                {r.altPrice ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateSellRow(r.rowKey, {
+                                        unitPrice: r.altPrice ?? "",
+                                      })
+                                    }
+                                    title="Bu slotta çift fiyat var; diğerine geç"
+                                    className="mt-1 block w-24 rounded-md border border-zinc-300 bg-white px-1 py-0.5 text-[10px] font-bold text-zinc-700 hover:bg-zinc-50"
+                                  >
+                                    {r.altLabel}: {r.altPrice} ₺
+                                  </button>
+                                ) : null}
                               </label>
                               <div className="text-[11px] font-semibold text-zinc-600">
                                 Satır Toplam
