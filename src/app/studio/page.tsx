@@ -1469,6 +1469,17 @@ export default function Studio2Page() {
   const cellScale = cols === 2 ? 0.82 : 1;
   const s = scale * cellScale;
 
+  // Bilgi bloğunun yüksekliği SAYFADA TEK olmalı. Slotların bilgi alanı
+  // farklı yükseklikte olursa görsele kalan yer de farklı oluyor ve aynı
+  // ebattaki karolar farklı boyutta çiziliyordu (çift stoklu slot bunu
+  // bozuyordu). En yüksek ihtiyacı hesaplayıp hepsine uyguluyoruz.
+  const anyDualStock = state.slots
+    .slice(0, state.count)
+    .some((sl) => sl.dualStock);
+  const infoHeight = Math.round(
+    (cols === 1 ? (anyDualStock ? 200 : 132) : anyDualStock ? 182 : 150) * s,
+  );
+
   function SlotView({ index }: { index: number }) {
     const slot = state.slots[index];
     if (!slot) return null;
@@ -1515,8 +1526,10 @@ export default function Studio2Page() {
       <div
         style={{
           flexShrink: 0,
+          height: infoHeight,
           display: "flex",
           flexDirection: "column",
+          justifyContent: "flex-end",
           gap: Math.round((cols === 1 ? 14 : 8) * s),
           paddingBottom: Math.round(6 * s),
         }}
@@ -1537,7 +1550,7 @@ export default function Studio2Page() {
         <div
           style={{
             flexShrink: 0,
-            height: Math.round(132 * s),
+            height: infoHeight,
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "space-between",
@@ -1570,8 +1583,10 @@ export default function Studio2Page() {
         <div
           style={{
             flexShrink: 0,
+            height: infoHeight,
             display: "flex",
             flexDirection: "column",
+            justifyContent: "flex-end",
             gap: Math.round(10 * s),
           }}
         >
