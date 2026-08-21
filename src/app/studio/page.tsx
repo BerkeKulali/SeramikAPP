@@ -11,6 +11,14 @@ import {
   type ImportRow,
   type SavedMatch,
 } from "@/src/lib/stok-import";
+import {
+  auditSizes,
+  downloadCsv,
+  findJunkNames,
+  shootingList,
+  shootingListCsv,
+  sizeAuditCsv,
+} from "@/src/lib/katalog-rapor";
 
 /* ------------------------------------------------------------------ *
  *  KULALILAR · Afiş Stüdyo 2
@@ -115,6 +123,23 @@ type Product = {
   brand: string;
   size: string;
   image: string;
+};
+
+/**
+ * Satış kaydı ekranındaki tek satır. Çift stoklu karo iki satır üretir.
+ * Miktar ve fiyat metin olarak tutulur: sayıya bağlanırsa "1.240" yazarken
+ * her tuşta yeniden ayrıştırılır ve virgül yazmak imkânsız hâle gelir —
+ * yazı ölçeği kutusunda aynı hatayı bir kez yaşadık.
+ */
+type SalesRow = {
+  id: string;
+  on: boolean;
+  productName: string;
+  brand: string;
+  size: string;
+  quantityText: string;
+  unitPriceText: string;
+  note: string;
 };
 
 type LibraryItem = {
@@ -915,6 +940,15 @@ export default function Studio2Page() {
   >({});
   const [matchMemoryNote, setMatchMemoryNote] = useState<string | null>(null);
 
+  /* katalog boşluk raporu */
+  const [catalogOpen, setCatalogOpen] = useState(false);
+
+  /* satış kaydı seçim ekranı */
+  const [salesOpen, setSalesOpen] = useState(false);
+  const [salesRows, setSalesRows] = useState<SalesRow[]>([]);
+  const [salesDate, setSalesDate] = useState("");
+  const [salesCustomer, setSalesCustomer] = useState("");
+
   /** Yüklenen görsellerin kendi en/boy oranı (url -> oran). Ebatla
    *  uyuşmayan görseli panelde uyarmak için. */
   const [photoRatio, setPhotoRatio] = useState<Record<string, number>>({});
@@ -972,6 +1006,16 @@ export default function Studio2Page() {
     products.forEach((p) => m.set(p.id, p));
     return m;
   }, [products]);
+
+  /* Ebat menüsü dürüst olsun: hangi ebatta kaç fotoğraf var. Boş ebadı
+   * seçip "neden hiçbir şey çıkmıyor" diye aramak zaman kaybıydı. */
+  const sizeAudit = useMemo(() => auditSizes(products, SIZES), [products]);
+  const sizeCount = useMemo(() => {
+    const m = new Map<string, number>();
+    sizeAudit.rows.forEach((r) => m.set(r.size, r.count));
+    return m;
+  }, [sizeAudit]);
+  const junkNames = useMemo(() => findJunkNames(products), [products]);
 
   useEffect(() => {
     let dead = false;
@@ -1774,55 +1818,83 @@ export default function Studio2Page() {
 
   /* ---------------------------------- satış ---------------------------------- */
 
-  async function recordSales() {
+  /**
+   * Satış kaydını doğrudan yazmıyoruz artık. Sayfada duran her satır
+   * satılmış olmayabilir — afiş asılır, müşteri bir kaleminden alır.
+   * Bu yüzden önce seçim ekranı açılır; onay verilen satırlar kaydedilir.
+   */
+  function openSalesModal() {
     if (state.pageMode === "kampanya") {
       setMsg("Kampanya sayfasında satılacak ürün yok");
       return;
     }
-    const today = new Date().toISOString().slice(0, 10);
 
     // Çift stokta iki ayrı satır çıkar (1. KALİTE ve END.). Studio 1'de END.
     // satırının düşmemesi bir hataydı; burada baştan iki satır yazılıyor.
-    const items = state.slots.slice(0, state.count).flatMap((s) => {
-      const p = s.productId ? productsById.get(s.productId) : undefined;
-      const name = displayName(p, s);
-      if (!name) return [];
-      const base = {
-        date: today,
-        brand: p?.brand ?? state.brandName,
-        size: s.sizeOverride || state.size,
-        customer: "",
-        note: state.depot,
-        source: "banner" as const,
-      };
-      const rows: Array<typeof base & {
-        productName: string;
-        quantity: number;
-        unitPrice: number;
-      }> = [];
+    const rows: SalesRow[] = [];
+    state.slots.slice(0, state.count).forEach((s2, i) => {
+      const p = s2.productId ? productsById.get(s2.productId) : undefined;
+      const name = displayName(p, s2);
+      if (!name) return;
       const push = (suffix: string, stock: string, price: string) => {
         const quantity = parseTrNumber(stock);
         const unitPrice = parseTrNumber(price);
         if (!quantity || !unitPrice) return;
         rows.push({
-          ...base,
+          id: `${i}-${suffix || "tek"}`,
+          on: true,
           productName: suffix ? `${name} ${suffix}` : name,
-          quantity,
-          unitPrice,
+          brand: p?.brand ?? state.brandName,
+          size: s2.sizeOverride || state.size,
+          quantityText: String(quantity),
+          unitPriceText: String(unitPrice),
+          note: state.depot,
         });
       };
-      if (s.dualStock) {
-        push(s.isRec ? "REC 1. KALİTE" : "1. KALİTE", s.stock, s.price);
-        push(s.isRec ? "REC END." : "END.", s.stockEnd, s.priceEnd);
+      if (s2.dualStock) {
+        push(s2.isRec ? "REC 1. KALİTE" : "1. KALİTE", s2.stock, s2.price);
+        push(s2.isRec ? "REC END." : "END.", s2.stockEnd, s2.priceEnd);
       } else {
-        push(gradeLabel(s), s.stock, s.price);
+        push(gradeLabel(s2), s2.stock, s2.price);
       }
-      return rows;
     });
-    if (!items.length) {
+
+    if (!rows.length) {
       setMsg("Kaydedilecek satır yok (stok ve fiyat gerekli)");
       return;
     }
+    setSalesRows(rows);
+    setSalesDate(new Date().toISOString().slice(0, 10));
+    setSalesCustomer("");
+    setSalesOpen(true);
+  }
+
+  async function confirmSales() {
+    const picked = salesRows
+      .filter((r) => r.on)
+      .map((r) => ({
+        ...r,
+        quantity: parseTrNumber(r.quantityText),
+        unitPrice: parseTrNumber(r.unitPriceText),
+      }))
+      .filter((r) => r.quantity > 0 && r.unitPrice > 0);
+    if (!picked.length) {
+      setMsg("Kaydedilecek satır yok (miktar ve fiyat gerekli)");
+      return;
+    }
+    const date = salesDate || new Date().toISOString().slice(0, 10);
+    const customer = salesCustomer.trim();
+    const items = picked.map((r) => ({
+      date,
+      brand: r.brand,
+      size: r.size,
+      customer,
+      note: r.note,
+      source: "banner" as const,
+      productName: r.productName,
+      quantity: r.quantity,
+      unitPrice: r.unitPrice,
+    }));
     try {
       setBusy("Satış kaydediliyor…");
       const res = await fetch("/api/sales", {
@@ -1831,6 +1903,7 @@ export default function Studio2Page() {
         body: JSON.stringify({ items }),
       });
       if (!res.ok) throw new Error(String(res.status));
+      setSalesOpen(false);
       setMsg(`${items.length} satış kaydedildi ✓`);
     } catch {
       setMsg("Satış kaydedilemedi");
@@ -2143,10 +2216,19 @@ export default function Studio2Page() {
             </button>
             <button
               type="button"
-              onClick={() => void recordSales()}
+              onClick={openSalesModal}
               className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+              title="Hangi satırların satıldığını seç, sonra kaydet"
             >
               Satış Kaydet
+            </button>
+            <button
+              type="button"
+              onClick={() => setCatalogOpen(true)}
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+              title="Hangi ebatta kaç fotoğraf var, hangi kayıtların adı bozuk"
+            >
+              Katalog Durumu
             </button>
             <button
               type="button"
@@ -2240,16 +2322,26 @@ export default function Studio2Page() {
                 onChange={(e) => setSize(e.target.value)}
                 className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
               >
-                {SIZES.map((x) => (
-                  <option key={x} value={x}>
-                    {x}
-                  </option>
-                ))}
+                {SIZES.map((x) => {
+                  const n = sizeCount.get(x) ?? 0;
+                  return (
+                    <option key={x} value={x}>
+                      {x}
+                      {products.length ? (n ? ` (${n} görsel)` : " — görsel yok") : ""}
+                    </option>
+                  );
+                })}
               </select>
               <div className="pt-1 text-[11px] text-zinc-500">
                 {square ? "Kare — 2 sütun, en fazla 4 ürün" : "Dikdörtgen — tek sütun, alt alta"}
                 {" · "}önerilen: {suggestedCount(state.size)} ürün
               </div>
+              {products.length && !(sizeCount.get(state.size) ?? 0) ? (
+                <div className="mt-1 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[11px] font-semibold text-amber-900">
+                  Bu ebatta katalogda hiç fotoğraf yok. Ürünü elle
+                  yükleyebilir ya da başka ebadın fotoğrafını seçebilirsin.
+                </div>
+              ) : null}
             </label>
 
             <div className="mb-3 space-y-1">
@@ -3679,13 +3771,34 @@ export default function Studio2Page() {
                   bir dahaki dosyada kendiliğinden eşleşir.
                   {matchMemoryNote ? ` (${matchMemoryNote})` : ""}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void applyImport()}
-                  className="shrink-0 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
-                >
-                  Kuyruğa Ekle ({pagesFromImport(importResult).length} sayfa)
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  {(() => {
+                    const shots = shootingList(importResult, importPick, products);
+                    if (!shots.length) return null;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          downloadCsv(
+                            `cekim-listesi-${new Date().toISOString().slice(0, 10)}`,
+                            shootingListCsv(shots),
+                          )
+                        }
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm font-semibold hover:bg-zinc-50"
+                        title="Fotoğrafı eksik ürünleri Excel'de açılan bir listeye indir"
+                      >
+                        Çekim Listesi ({shots.length})
+                      </button>
+                    );
+                  })()}
+                  <button
+                    type="button"
+                    onClick={() => void applyImport()}
+                    className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
+                  >
+                    Kuyruğa Ekle ({pagesFromImport(importResult).length} sayfa)
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>
@@ -3803,6 +3916,329 @@ export default function Studio2Page() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* --------------------------- KATALOG DURUMU --------------------------- */}
+      {catalogOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white">
+            <div className="flex items-start justify-between gap-3 border-b border-zinc-100 p-4">
+              <div>
+                <div className="text-sm font-bold">Katalog Durumu</div>
+                <div className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
+                  {products.length} fotoğraf · {sizeAudit.empty.length} ebat boş ·{" "}
+                  {sizeAudit.thin.length} ebat zayıf (5 ve altı)
+                  {junkNames.length ? ` · ${junkNames.length} bozuk isim` : ""}
+                  {sizeAudit.orphans.length
+                    ? ` · ${sizeAudit.orphans.reduce((a, o) => a + o.count, 0)} kayıp kayıt`
+                    : ""}
+                </div>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadCsv("katalog-ebat-durumu", sizeAuditCsv(sizeAudit.rows))
+                  }
+                  className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+                >
+                  CSV indir
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCatalogOpen(false)}
+                  className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+                >
+                  Kapat
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                {sizeAudit.rows.map((r) => (
+                  <div
+                    key={r.size}
+                    className={[
+                      "flex items-baseline justify-between rounded-lg border px-2.5 py-2",
+                      r.level === "bos"
+                        ? "border-red-300 bg-red-50"
+                        : r.level === "ince"
+                          ? "border-amber-300 bg-amber-50"
+                          : "border-zinc-200 bg-white",
+                    ].join(" ")}
+                  >
+                    <span className="text-[12px] font-bold">{r.size}</span>
+                    <span
+                      className={[
+                        "text-[11px] font-semibold",
+                        r.level === "bos"
+                          ? "text-red-700"
+                          : r.level === "ince"
+                            ? "text-amber-800"
+                            : "text-zinc-500",
+                      ].join(" ")}
+                    >
+                      {r.count === 0 ? "yok" : r.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {junkNames.length ? (
+                <div className="mt-5">
+                  <div className="mb-1.5 text-xs font-bold text-zinc-500">
+                    ADI DÜZELTİLMESİ GEREKENLER
+                  </div>
+                  <div className="mb-2 text-[11px] leading-relaxed text-zinc-500">
+                    Bu adlar afişe aynen basılıyor. Dosya adını değiştirip{" "}
+                    <code className="rounded bg-zinc-100 px-1">npm run sync:products</code>{" "}
+                    çalıştır.
+                  </div>
+                  <div className="space-y-1.5">
+                    {junkNames.map((p2) => (
+                      <div
+                        key={p2.id}
+                        className="flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-2"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={thumbUrl(p2.image)}
+                          alt=""
+                          loading="lazy"
+                          className="h-10 w-14 shrink-0 rounded object-cover ring-1 ring-black/10"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[12px] font-semibold">
+                            {p2.name}
+                          </div>
+                          <div className="truncate text-[10px] text-zinc-500">
+                            {p2.brand} · {p2.size}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {sizeAudit.orphans.length ? (
+                <div className="mt-5">
+                  <div className="mb-1.5 text-xs font-bold text-zinc-500">
+                    MENÜDE OLMAYAN EBATLAR
+                  </div>
+                  <div className="mb-2 text-[11px] leading-relaxed text-zinc-500">
+                    Bu kayıtlara seçiciden ulaşılamıyor; ebada göre süzülünce
+                    hiçbir listeye düşmüyorlar. Dosyayı doğru ebat klasörüne
+                    taşıyıp senkronu tekrar çalıştır.
+                  </div>
+                  <div className="space-y-1.5">
+                    {sizeAudit.orphans.map((o) => (
+                      <div
+                        key={o.size}
+                        className="flex items-baseline justify-between rounded-lg border border-red-300 bg-red-50 px-2.5 py-2"
+                      >
+                        <span className="text-[12px] font-bold">
+                          &ldquo;{o.size || "(boş)"}&rdquo;
+                        </span>
+                        <span className="text-[11px] font-semibold text-red-700">
+                          {o.count} kayıt
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {sizeAudit.empty.length ? (
+                <div className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-[11px] leading-relaxed text-zinc-600">
+                  <b>Boş ebatlar:</b> {sizeAudit.empty.join(", ")}. Bu ebatlar
+                  menüde kalıyor — satılıyorlarsa fotoğraf çekilmesi, satılmıyorlarsa
+                  listeden çıkarılması gerekir.
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ---------------------------- SATIŞ KAYDI ---------------------------- */}
+      {salesOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white">
+            <div className="flex items-start justify-between gap-3 border-b border-zinc-100 p-4">
+              <div>
+                <div className="text-sm font-bold">Satış Kaydet</div>
+                <div className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
+                  Sayfadaki her satır satılmış olmayabilir. Yalnız satılanları
+                  işaretli bırak.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSalesOpen(false)}
+                className="shrink-0 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+              >
+                Kapat
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 border-b border-zinc-100 p-4">
+              <label className="space-y-1">
+                <div className="text-xs font-semibold text-zinc-600">Tarih</div>
+                <input
+                  type="date"
+                  value={salesDate}
+                  onChange={(e) => setSalesDate(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="space-y-1">
+                <div className="text-xs font-semibold text-zinc-600">
+                  Müşteri (isteğe bağlı)
+                </div>
+                <input
+                  value={salesCustomer}
+                  onChange={(e) => setSalesCustomer(e.target.value)}
+                  placeholder="Firma / kişi"
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-2">
+              <div className="text-[11px] font-semibold text-zinc-500">
+                {salesRows.filter((r) => r.on).length} / {salesRows.length} satır seçili
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSalesRows((prev) => prev.map((r) => ({ ...r, on: true })))
+                  }
+                  className="rounded-md border border-zinc-200 px-2 py-1 text-[11px] font-semibold hover:bg-zinc-50"
+                >
+                  Tümünü seç
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSalesRows((prev) => prev.map((r) => ({ ...r, on: false })))
+                  }
+                  className="rounded-md border border-zinc-200 px-2 py-1 text-[11px] font-semibold hover:bg-zinc-50"
+                >
+                  Temizle
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-2 overflow-y-auto p-4">
+              {salesRows.map((r) => (
+                <label
+                  key={r.id}
+                  className={[
+                    "flex cursor-pointer items-center gap-3 rounded-xl border p-2.5",
+                    r.on ? "border-zinc-900 bg-white" : "border-zinc-200 bg-zinc-50 opacity-60",
+                  ].join(" ")}
+                >
+                  <input
+                    type="checkbox"
+                    checked={r.on}
+                    onChange={(e) =>
+                      setSalesRows((prev) =>
+                        prev.map((x) =>
+                          x.id === r.id ? { ...x, on: e.target.checked } : x,
+                        ),
+                      )
+                    }
+                    className="h-4 w-4 shrink-0 accent-zinc-900"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[12px] font-semibold">
+                      {r.productName}
+                    </div>
+                    <div className="mt-0.5 text-[10px] text-zinc-500">
+                      {r.brand} · {r.size} · {r.note}
+                    </div>
+                  </div>
+                  <label className="shrink-0 text-right">
+                    <div className="text-[9px] font-semibold uppercase text-zinc-400">
+                      m²
+                    </div>
+                    <input
+                      value={r.quantityText}
+                      inputMode="decimal"
+                      onChange={(e) =>
+                        setSalesRows((prev) =>
+                          prev.map((x) =>
+                            x.id === r.id
+                              ? { ...x, quantityText: e.target.value }
+                              : x,
+                          ),
+                        )
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-20 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-right text-[12px] font-bold"
+                    />
+                  </label>
+                  <label className="shrink-0 text-right">
+                    <div className="text-[9px] font-semibold uppercase text-zinc-400">
+                      ₺
+                    </div>
+                    <input
+                      value={r.unitPriceText}
+                      inputMode="decimal"
+                      onChange={(e) =>
+                        setSalesRows((prev) =>
+                          prev.map((x) =>
+                            x.id === r.id
+                              ? { ...x, unitPriceText: e.target.value }
+                              : x,
+                          ),
+                        )
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-20 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-right text-[12px] font-bold"
+                    />
+                  </label>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-zinc-100 p-4">
+              <div className="text-[12px] font-semibold text-zinc-600">
+                Toplam{" "}
+                <b className="text-zinc-900">
+                  {salesRows
+                    .filter((r) => r.on)
+                    .reduce(
+                      (a, r) =>
+                        a + parseTrNumber(r.quantityText) * parseTrNumber(r.unitPriceText),
+                      0,
+                    )
+                    .toLocaleString("tr-TR", { maximumFractionDigits: 0 })}{" "}
+                  ₺
+                </b>
+              </div>
+              <button
+                type="button"
+                onClick={() => void confirmSales()}
+                disabled={Boolean(busy) || !salesRows.some((r) => r.on)}
+                className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+              >
+                {salesRows.filter((r) => r.on).length} satırı kaydet
+              </button>
             </div>
           </div>
         </div>
