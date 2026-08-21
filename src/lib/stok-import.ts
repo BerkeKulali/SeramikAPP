@@ -37,7 +37,10 @@ export type ImportRow = {
   price: string;
   page: string;
   productId: string | null;
-  status: "kesin" | "belirsiz" | "yok";
+  /** "baska-ebat": desen doğru ama fotoğraf başka ebattan alındı. */
+  status: "kesin" | "baska-ebat" | "belirsiz" | "yok";
+  /** Eşleşen ürünün kendi ebadı — satırın ebadından farklıysa uyarılır. */
+  matchedSize: string;
   score: number;
   candidates: CatalogProduct[];
   /** Aynı ürünün birden çok lot satırı toplandıysa kaç satırdan geldiği. */
@@ -48,7 +51,13 @@ export type ImportPage = { page: string; rows: ImportRow[] };
 
 export type ImportResult = {
   pages: ImportPage[];
-  counts: { kesin: number; belirsiz: number; yok: number; toplam: number };
+  counts: {
+    kesin: number;
+    baskaEbat: number;
+    belirsiz: number;
+    yok: number;
+    toplam: number;
+  };
   /** Başlık satırında bulunamayan sütunlar. */
   missingColumns: string[];
 };
@@ -279,23 +288,58 @@ export function buildImport(
       candidates = ranked.slice(0, 6).map((x) => x.p);
     }
 
-    if (!productId) {
-      const ranked = pool
+    const rank = (list: CatalogProduct[]) =>
+      list
         .map((p) => ({ p, s: similarity(nameTokens, tokens(p.name, false)) }))
         .sort((a, b) => b.s - a.s);
-      candidates = ranked.slice(0, 6).map((x) => x.p);
-      const top = ranked[0];
-      const second = ranked[1]?.s ?? 0;
-      if (top && top.s >= 0.8 && top.s - second >= 0.1) {
-        productId = top.p.id;
-        score = top.s;
-      } else if (top) {
-        score = top.s;
+    type Ranked = { p: CatalogProduct; s: number };
+    const confident = (r: Ranked[]): Ranked | null =>
+      r[0] && r[0].s >= 0.8 && r[0].s - (r[1]?.s ?? 0) >= 0.1 ? r[0] : null;
+
+    let crossSize = false;
+
+    if (!productId) {
+      const sameSize = rank(pool);
+      candidates = sameSize.slice(0, 6).map((x) => x.p);
+      const best = confident(sameSize);
+      if (best) {
+        productId = best.p.id;
+        score = best.s;
+      } else {
+        score = sameSize[0]?.s ?? 0;
+        // Aynı ebatta yoksa BAŞKA EBATTA ara: desen aynı, yalnız kesim
+        // ölçüsü farklı. Fotoğraf zaten ilan edilen orana kırpıldığı için
+        // 120x120 Marfil Rosso'dan doğru oranlı bir 60x120 karo çıkar.
+        const others = rank(catalog.filter((p) => p.size !== size));
+        const bestOther = confident(others);
+        if (bestOther) {
+          productId = bestOther.p.id;
+          score = bestOther.s;
+          crossSize = true;
+        }
+        // Seçim kutusunda başka ebattaki adaylar da görünsün.
+        const extra = others
+          .filter((x) => x.s >= 0.5)
+          .slice(0, 4)
+          .map((x) => x.p);
+        const seen = new Set(candidates.map((c) => c.id));
+        extra.forEach((c) => {
+          if (!seen.has(c.id)) {
+            seen.add(c.id);
+            candidates.push(c);
+          }
+        });
       }
     }
 
+    const matchedSize = productId
+      ? (catalog.find((p) => p.id === productId)?.size ?? "")
+      : "";
+
     const status: ImportRow["status"] = productId
-      ? "kesin"
+      ? crossSize
+        ? "baska-ebat"
+        : "kesin"
       : score >= 0.45
         ? "belirsiz"
         : "yok";
@@ -332,6 +376,7 @@ export function buildImport(
       page,
       productId,
       status,
+      matchedSize,
       score,
       candidates,
       mergedFrom: 1,
@@ -363,6 +408,7 @@ export function buildImport(
     pages,
     counts: {
       kesin: all.filter((r) => r.status === "kesin").length,
+      baskaEbat: all.filter((r) => r.status === "baska-ebat").length,
       belirsiz: all.filter((r) => r.status === "belirsiz").length,
       yok: all.filter((r) => r.status === "yok").length,
       toplam: all.length,

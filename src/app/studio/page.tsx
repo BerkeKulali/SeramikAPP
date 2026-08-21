@@ -3487,6 +3487,11 @@ export default function Studio2Page() {
                   <span className="rounded-md bg-emerald-50 px-2 py-1 text-emerald-800">
                     {importResult.counts.kesin} eşleşti
                   </span>
+                  {importResult.counts.baskaEbat ? (
+                    <span className="rounded-md bg-sky-50 px-2 py-1 text-sky-800">
+                      {importResult.counts.baskaEbat} görsel başka ebattan
+                    </span>
+                  ) : null}
                   {importResult.counts.belirsiz ? (
                     <span className="rounded-md bg-amber-50 px-2 py-1 text-amber-900">
                       {importResult.counts.belirsiz} şüpheli
@@ -3523,11 +3528,18 @@ export default function Studio2Page() {
                     {pg.rows.map((r) => {
                       const picked = importPick[r.key] ?? "";
                       const chosen = picked ? productsById.get(picked) : undefined;
+                      // Seçilen ürünün ebadı sayfanınkinden farklıysa
+                      // fotoğraf başka ebattan geliyor demektir.
+                      const otherSize = Boolean(
+                        chosen && r.size && chosen.size !== r.size,
+                      );
                       const tone = !picked
                         ? "border-red-300 bg-red-50"
-                        : r.status === "kesin"
-                          ? "border-zinc-200 bg-white"
-                          : "border-amber-300 bg-amber-50";
+                        : otherSize
+                          ? "border-sky-300 bg-sky-50"
+                          : r.status === "kesin"
+                            ? "border-zinc-200 bg-white"
+                            : "border-amber-300 bg-amber-50";
                       return (
                         <div
                           key={r.key}
@@ -3556,6 +3568,13 @@ export default function Studio2Page() {
                               {r.grade ? ` · ${r.grade}` : ""}
                               {r.mergedFrom > 1 ? ` · ${r.mergedFrom} lot toplandı` : ""}
                             </div>
+                            {otherSize && chosen ? (
+                              <div className="mt-1 text-[10px] font-semibold text-sky-800">
+                                Görsel {chosen.size} fotoğrafından alınıyor,
+                                {" "}{r.size} oranına kırpılacak. Desenli ürünlerde
+                                kompozisyon değişebilir — kontrol et.
+                              </div>
+                            ) : null}
                           </div>
                           <select
                             value={picked}
@@ -3588,8 +3607,9 @@ export default function Studio2Page() {
             {importResult ? (
               <div className="flex items-center justify-between gap-3 border-t border-zinc-100 p-4">
                 <div className="text-[11px] text-zinc-500">
-                  Eşleşmeyen ürünler ada, stoğa ve fiyata sahip olarak eklenir —
-                  yalnız görselleri boş kalır.
+                  Mavi satırlarda fotoğraf başka ebattan alınıyor. Eşleşmeyen
+                  ürünler ada, stoğa ve fiyata sahip olarak eklenir — yalnız
+                  görselleri boş kalır.
                 </div>
                 <button
                   type="button"
