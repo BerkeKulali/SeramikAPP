@@ -1498,28 +1498,88 @@ export default function Studio2Page() {
     sl.isRec = r.isRec;
     sl.stock = r.stock;
     sl.price = r.price;
+    // STOK 2 / FİYAT 2 doluysa afişte iki satır: 1. KALİTE ve END.
+    // Bu durumda KALİTE sütunu yok sayılır, ikisi de basılır.
+    if (r.dualStock) {
+      sl.dualStock = true;
+      sl.stockEnd = r.stockEnd;
+      sl.priceEnd = r.priceEnd;
+      sl.grade = "";
+    }
+    // Satırın kendi ebadı sayfanınkinden farklıysa karo kendi oranını korusun.
+    if (r.size) sl.sizeOverride = r.size;
     return sl;
   }
 
-  /** Önizlemedeki sayfaları PageState listesine çevirir. Bir sayfada 4'ten
-   *  fazla ürün varsa 4'erli bölünür — düzen en fazla 4 taşıyor. */
+  /**
+   * Önizlemedeki sayfaları PageState listesine çevirir.
+   *
+   * Sayfa ayarları (zemin, marka, sevk yeri, ürün sayısı) Excel'den gelir;
+   * boş bırakılanlar için stüdyoda o an seçili olan değer kullanılır.
+   * ÜRÜN SAYISI yazılmışsa sayfa o sayıda ürüne bölünür, yoksa 4'erli —
+   * düzen en fazla 4 taşıyor.
+   */
   function pagesFromImport(res: ImportResult): PageState[] {
     const out: PageState[] = [];
+
     res.pages.forEach((pg) => {
-      for (let i = 0; i < pg.rows.length; i += 4) {
-        const chunk = pg.rows.slice(i, i + 4);
-        const size =
-          chunk.map((r) => r.size).find(Boolean) || state.size;
+      const st = pg.settings;
+      const ground = GROUNDS.some((g) => g.id === st.ground)
+        ? (st.ground as GroundId)
+        : state.ground;
+      const depot = (DEPOTS as readonly string[]).includes(st.depot)
+        ? st.depot
+        : state.depot;
+      const base: PageState = {
+        ...state,
+        ground,
+        depot,
+        brandName: st.brand || state.brandName,
+      };
+
+      if (st.mode === "kampanya") {
+        // Kampanya sayfası: ürün satırları hediye olarak yerleşir.
+        const gifts = pg.rows.slice(0, 3);
+        const slots = [emptySlot(), emptySlot(), emptySlot()];
+        gifts.forEach((r, i) => {
+          slots[i] = slotFromRow(r, importPick[r.key] ?? "");
+        });
         out.push({
-          ...state,
+          ...base,
+          pageMode: "kampanya",
+          campaignOn: false,
+          campaignLead: st.campaignLead || state.campaignLead,
+          campaignTitle: st.campaignTitle || state.campaignTitle,
+          campaignText: st.campaignText || state.campaignText,
+          campaignNote: st.campaignNote || state.campaignNote,
+          giftCount: gifts.length,
+          slots,
+        });
+        return;
+      }
+
+      const per = st.count >= 1 && st.count <= 4 ? st.count : 4;
+      for (let i = 0; i < pg.rows.length; i += per) {
+        const chunk = pg.rows.slice(i, i + per);
+        const size = chunk.map((r) => r.size).find(Boolean) || state.size;
+        // Sayfanın tamamı tek ebattaysa karo başına ebat yazmaya gerek yok;
+        // panelde "kendi ebadı" olarak kalsın, kafa karıştırmasın.
+        const uniform = chunk.every((r) => !r.size || r.size === size);
+        out.push({
+          ...base,
           pageMode: "urun",
           campaignOn: false,
           size,
           count: chunk.length,
-          slots: chunk.map((r) => slotFromRow(r, importPick[r.key] ?? "")),
+          slots: chunk.map((r) => {
+            const sl = slotFromRow(r, importPick[r.key] ?? "");
+            if (uniform) sl.sizeOverride = "";
+            return sl;
+          }),
         });
       }
     });
+
     return out;
   }
 
@@ -1994,7 +2054,11 @@ export default function Studio2Page() {
           height: infoHeight,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "flex-end",
+          // Yazı kutusu sayfanın en yüksek yazısına göre ölçülüyor (eşit
+          // ebatlar eşit görünsün diye). Kısa yazı bu kutunun dibine
+          // oturursa kendi karosundan kopup bir sonrakine yaklaşıyor —
+          // bu yüzden içerik yukarı, karonun altına yaslanır.
+          justifyContent: "flex-start",
           gap: Math.round((cols === 1 ? 14 : 8) * s),
           paddingBottom: Math.round(6 * s),
         }}
@@ -2012,15 +2076,25 @@ export default function Studio2Page() {
         {dualStockRow(slot.isRec ? "REC END." : "END.", slot.stockEnd, slot.priceEnd, false)}
       </div>
     ) : cols === 1 ? (
+      // Dış kutu sayfanın en yüksek yazısı kadar; iç satır onun tepesine
+      // yaslanır. Aksi hâlde tek satırlık yazı, çift stoklu bir karo yüzünden
+      // büyüyen kutunun dibine düşüp kendi karosundan kopuyor.
+      <div
+        style={{
+          flexShrink: 0,
+          height: infoHeight,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+        }}
+      >
         <div
           style={{
-            flexShrink: 0,
-            height: infoHeight,
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "space-between",
             gap: Math.round(26 * s),
-            paddingBottom: Math.round(6 * s),
+            paddingTop: Math.round(6 * s),
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: Math.round(15 * s), minWidth: 0 }}>
@@ -2044,6 +2118,7 @@ export default function Studio2Page() {
             <PriceBlock slot={slot} scale={s} muted={muted} />
           </div>
         </div>
+      </div>
       ) : (
         <div
           style={{
@@ -2051,7 +2126,7 @@ export default function Studio2Page() {
             height: infoHeight,
             display: "flex",
             flexDirection: "column",
-            justifyContent: "flex-end",
+            justifyContent: "flex-start",
             gap: Math.round(10 * s),
           }}
         >
@@ -2205,6 +2280,14 @@ export default function Studio2Page() {
             >
               Excel&apos;den Kuyruk
             </button>
+            <a
+              href="/sablon/kulalilar-afis-sablonu.xlsx"
+              download
+              className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+              title="Doldurulacak boş Excel şablonu — sütunlar ve açılır listeler hazır"
+            >
+              Şablon
+            </a>
             <button
               type="button"
               onClick={openSavedModal}
@@ -3611,8 +3694,9 @@ export default function Studio2Page() {
                   <div className="text-sm font-bold">Excel&apos;den kuyruk</div>
                   <div className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
                     Sayfa düzeni Excel&apos;deki <b>SAYFA</b> sütunundan geliyor.
-                    Sevk yeri, marka, zemin ve yazı ölçeği şu anki sayfa
-                    ayarlarından alınır.
+                    Zemin, marka, sevk yeri ve ürün sayısı da Excel&apos;den
+                    okunuyor; boş bıraktığın alanlar için stüdyoda seçili olan
+                    değer kullanılır.
                   </div>
                 </div>
                 <button
@@ -3668,12 +3752,44 @@ export default function Studio2Page() {
             <div className="flex-1 overflow-y-auto p-4">
               {importResult?.pages.map((pg) => (
                 <div key={pg.page} className="mb-4">
-                  <div className="mb-1.5 text-xs font-bold text-zinc-500">
-                    SAYFA {pg.page}
-                    <span className="ml-2 font-semibold text-zinc-400">
-                      {pg.rows.length} ürün
-                      {pg.rows.length > 4 ? " · 4'erli bölünecek" : ""}
+                  <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 text-xs font-bold text-zinc-500">
+                    <span>SAYFA {pg.page}</span>
+                    {pg.settings.mode === "kampanya" ? (
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+                        KAMPANYA SAYFASI
+                      </span>
+                    ) : null}
+                    <span className="font-semibold text-zinc-400">
+                      {pg.rows.length}{" "}
+                      {pg.settings.mode === "kampanya" ? "hediye" : "ürün"}
+                      {(() => {
+                        const per =
+                          pg.settings.count >= 1 && pg.settings.count <= 4
+                            ? pg.settings.count
+                            : 4;
+                        return pg.settings.mode !== "kampanya" &&
+                          pg.rows.length > per
+                          ? ` · ${per}'erli bölünecek`
+                          : "";
+                      })()}
                     </span>
+                    {(() => {
+                      const st = pg.settings;
+                      const bits: string[] = [];
+                      if (st.count) bits.push(`${st.count} ürünlük düzen`);
+                      if (st.ground) {
+                        const g = GROUNDS.find((x) => x.id === st.ground);
+                        if (g) bits.push(g.label);
+                      }
+                      if (st.brand) bits.push(st.brand);
+                      if (st.depot) bits.push(st.depot);
+                      if (!bits.length) return null;
+                      return (
+                        <span className="font-semibold text-sky-700">
+                          · {bits.join(" · ")}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="space-y-2">
                     {pg.rows.map((r) => {

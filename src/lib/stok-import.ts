@@ -35,6 +35,12 @@ export type ImportRow = {
   isRec: boolean;
   stock: string;
   price: string;
+  /** Çift stok: END. satırının stoğu ve fiyatı. Boşsa çift stok yok. */
+  stockEnd: string;
+  priceEnd: string;
+  dualStock: boolean;
+  /** "urun" = normal karo · "hediye" = kampanya sayfasındaki hediye ürün. */
+  kind: "urun" | "hediye";
   page: string;
   productId: string | null;
   /** "baska-ebat": desen doğru ama fotoğraf başka ebattan alındı. */
@@ -51,7 +57,29 @@ export type ImportRow = {
   mergedFrom: number;
 };
 
-export type ImportPage = { page: string; rows: ImportRow[] };
+/**
+ * Sayfa bazlı ayarlar. Hepsi isteğe bağlı: boş bırakılan alan için
+ * stüdyoda o an seçili olan değer kullanılır.
+ */
+export type PageSettings = {
+  mode: "urun" | "kampanya";
+  /** Sayfada kaç ürün olacağı (ŞABLON / ÜRÜN SAYISI sütunu). 0 = belirtilmemiş. */
+  count: number;
+  /** "sicak-orta" gibi zemin kimliği ya da "". */
+  ground: string;
+  brand: string;
+  depot: string;
+  campaignLead: string;
+  campaignTitle: string;
+  campaignText: string;
+  campaignNote: string;
+};
+
+export type ImportPage = {
+  page: string;
+  rows: ImportRow[];
+  settings: PageSettings;
+};
 
 /** Daha önce elle yapılmış eşleşme. productId "" ise bilerek boş bırakılmış. */
 export type SavedMatch = { key: string; productId: string };
@@ -60,9 +88,9 @@ export type SavedMatch = { key: string; productId: string };
  * Sözlük anahtarı: Excel'deki ham addan üretilir. Ebat da anahtarın
  * parçası — aynı desenin 60x120'si ile 60x60'ı farklı ürün.
  */
-export function matchKey(rawName: string): string {
-  const size = sizeFromName(rawName);
-  return `${size}|${tokens(rawName).join(" ")}`;
+export function matchKey(rawName: string, size?: string): string {
+  const s = size ?? sizeFromName(rawName);
+  return `${s}|${tokens(rawName).join(" ")}`;
 }
 
 export type ImportResult = {
@@ -127,11 +155,15 @@ const NOISE = new Set([
 
 export function normalizeText(s: string): string {
   let t = String(s ?? "");
+  // Türkçe I/İ önce: NFD "İ"yi I + nokta yapar, sonra i'ye dönüşmez.
   t = t.replace(/İ/g, "i").replace(/I/g, "i").replace(/ı/g, "i");
   t = t.toLowerCase();
   for (const [a, b] of [["ğ", "g"], ["ü", "u"], ["ş", "s"], ["ö", "o"], ["ç", "c"]]) {
     t = t.split(a).join(b);
   }
+  // Kalan aksanlar ("kâğıt", "café") harfe indirilsin — yoksa aksanlı harf
+  // boşluğa dönüp kelimeyi ortadan ikiye bölüyor.
+  t = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   t = t.replace(/[-_/.,]/g, " ");
   return t.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -150,9 +182,19 @@ export function tokens(s: string, dropSize = true): string[] {
     .filter((w) => w && !NOISE.has(w) && !/^\d+$/.test(w));
 }
 
+/** "60 X 120", "7,5x30", "60X120" -> "60x120" / "7.5x30" */
+export function normalizeSize(raw: string): string {
+  const m = /(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)/.exec(
+    String(raw ?? "").replace(/İ/g, "I"),
+  );
+  if (!m) return "";
+  const f = (v: string) => v.replace(",", ".").replace(/\.0+$/, "");
+  return `${f(m[1])}x${f(m[2])}`;
+}
+
+/** Ad içindeki ebat. Ayrı EBAT sütunu yoksa buna düşülür. */
 export function sizeFromName(raw: string): string {
-  const m = /(\d+)\s*[xX*]\s*(\d+)/.exec(String(raw).replace(/İ/g, "I"));
-  return m ? `${m[1]}x${m[2]}` : "";
+  return normalizeSize(raw);
 }
 
 function similarity(a: string[], b: string[]): number {
@@ -175,30 +217,66 @@ function similarity(a: string[], b: string[]): number {
 
 /* ------------------------------ sütun bulma ------------------------------ */
 
+/**
+ * Sütun adları. İlk sıradakiler KULALILAR şablonunun kendi adları,
+ * sonrakiler ERP çıktısının adları — eski dosyalar da okunmaya devam etsin.
+ *
+ * Bir başlık birden çok anahtara uyarsa EN UZUN ipucu kazanır: "Sevk Kalan
+ * Miktar" hem depoya ("sevk") hem stoğa ("kalan") benziyor; "sevk yeri"
+ * ipucu ona uymadığı için stok kazanır.
+ */
 const COLUMN_HINTS = {
-  name: ["aciklama", "malzeme", "malz", "urun", "stok adi", "mal adi"],
+  page: ["sayfa"],
+  kind: ["tip"],
+  name: ["urun adi", "aciklama", "malzeme", "malz", "mal adi", "stok adi", "urun"],
+  size: ["ebat", "olcu", "boyut"],
   surface: ["yuzey"],
   grade: ["kalite"],
-  rect: ["rektifiye", "rekt"],
-  stock: ["miktar", "kalan", "stok"],
-  price: ["fiyat", "birim fiyat"],
-  page: ["sayfa"],
-  template: ["sablon"],
+  rect: ["rec", "rektifiye", "rekt"],
+  stock: ["stok", "miktar", "kalan"],
+  price: ["fiyat"],
+  stock2: ["stok 2", "stok2", "end stok", "ikinci stok"],
+  price2: ["fiyat 2", "fiyat2", "end fiyat", "ikinci fiyat"],
   override: ["afis urunu", "afis", "katalog", "eslesme", "eslestirme"],
+  count: ["urun sayisi", "sablon", "adet"],
+  ground: ["zemin", "renk"],
+  brand: ["marka"],
+  depot: ["sevk yeri", "depo"],
+  campLead: ["kampanya ust"],
+  campTitle: ["kampanya baslik"],
+  campText: ["kampanya metin"],
+  campNote: ["kampanya not"],
 } as const;
 
 type ColKey = keyof typeof COLUMN_HINTS;
 
 function findColumns(header: string[]): Partial<Record<ColKey, number>> {
   const norm = header.map((h) => normalizeText(h));
-  const out: Partial<Record<ColKey, number>> = {};
+
+  // Tüm (anahtar, sütun) adaylarını çıkar, sonra en güçlüden başlayarak
+  // eşle. Böylece bir sütunu kaptıran anahtar diğerini aç bırakmıyor:
+  // kaybeden anahtar kendi ikinci sütununa yerleşebiliyor.
+  const cands: { key: ColKey; idx: number; len: number }[] = [];
   (Object.keys(COLUMN_HINTS) as ColKey[]).forEach((key) => {
-    const hints = COLUMN_HINTS[key];
-    const idx = norm.findIndex((h) => h && hints.some((k) => h.includes(k)));
-    if (idx >= 0) out[key] = idx;
+    const hints = COLUMN_HINTS[key] as readonly string[];
+    norm.forEach((h, idx) => {
+      if (!h) return;
+      const hit = hints
+        .filter((k) => h.includes(k))
+        .sort((a, b) => b.length - a.length)[0];
+      if (hit) cands.push({ key, idx, len: hit.length });
+    });
   });
-  // "stok" ipucu fiyat sütununa denk gelmesin
-  if (out.stock != null && out.stock === out.price) delete out.stock;
+
+  cands.sort((a, b) => b.len - a.len || a.idx - b.idx);
+
+  const out: Partial<Record<ColKey, number>> = {};
+  const takenCol = new Set<number>();
+  cands.forEach((c) => {
+    if (out[c.key] != null || takenCol.has(c.idx)) return;
+    out[c.key] = c.idx;
+    takenCol.add(c.idx);
+  });
   return out;
 }
 
@@ -252,6 +330,44 @@ function normalizeGrade(v: string): "" | "1." | "END." {
   return "";
 }
 
+/** REC sütunu: E / EVET / VAR / X / 1 hepsi "rektifiyeli" demek. */
+function truthy(v: string): boolean {
+  const t = normalizeText(v);
+  if (!t) return false;
+  return /^(e|evet|var|x|1|rec|rekt|rektifiye|rektifiyeli|yes|true)$/.test(t);
+}
+
+/**
+ * ZEMİN sütununu zemin kimliğine çevirir: "sıcak orta" -> "sicak-orta".
+ * Aile yazılmamışsa sıcak gri varsayılır (eski kayıtlarla aynı davranış).
+ * Tanınmayan değer "" döner ve stüdyodaki seçim korunur.
+ */
+export function normalizeGround(v: string): string {
+  const t = normalizeText(v);
+  if (!t) return "";
+  const family = /zeytin|olive|yesil/.test(t) ? "zeytin" : "sicak";
+  const tone = /siyah|black|murekkep/.test(t)
+    ? "siyah"
+    : /koyu|dark/.test(t)
+      ? "koyu"
+      : /orta|mid|medium/.test(t)
+        ? "orta"
+        : /acik|light/.test(t)
+          ? "acik"
+          : /beyaz|kagit|kirik|white|paper/.test(t)
+            ? "beyaz"
+            : "";
+  return tone ? `${family}-${tone}` : "";
+}
+
+/** TİP sütunu. Boş = ürün satırı. */
+function rowKind(v: string): "urun" | "hediye" | "kampanya" {
+  const t = normalizeText(v);
+  if (t.startsWith("kampanya")) return "kampanya";
+  if (t.startsWith("hediye")) return "hediye";
+  return "urun";
+}
+
 /* -------------------------------- eşleme -------------------------------- */
 
 export function buildImport(
@@ -276,20 +392,71 @@ export function buildImport(
 
   const cell = (r: string[], i?: number) => (i == null ? "" : (r[i] ?? "").trim());
 
-  type Acc = ImportRow & { _stockNum: number };
+  type Acc = ImportRow & { _stockNum: number; _stockEndNum: number };
   const acc = new Map<string, Acc>();
   const order: string[] = [];
+
+  /* Sayfa ayarları: bir sayfanın herhangi bir satırında yazan değer o
+   * sayfanın tamamı için geçerli. İlk yazan kazanır — aynı sayfada iki
+   * farklı marka yazmak zaten anlamsız. */
+  const settings = new Map<string, PageSettings>();
+  const settingsOf = (page: string): PageSettings => {
+    let st = settings.get(page);
+    if (!st) {
+      st = {
+        mode: "urun",
+        count: 0,
+        ground: "",
+        brand: "",
+        depot: "",
+        campaignLead: "",
+        campaignTitle: "",
+        campaignText: "",
+        campaignNote: "",
+      };
+      settings.set(page, st);
+    }
+    return st;
+  };
+  const fill = (st: PageSettings, k: keyof PageSettings, v: string) => {
+    if (v && !st[k]) (st as unknown as Record<string, string>)[k] = v;
+  };
 
   for (let i = headerIdx + 1; i < rows.length; i += 1) {
     const r = rows[i] ?? [];
     const rawName = cell(r, cols.name);
+    const kind = rowKind(cell(r, cols.kind));
+    const page = cell(r, cols.page) || "1";
+
+    // Sayfa ayarları her satırdan toplanır; ürün satırı olmasa bile.
+    // Şablondaki örnek satırlar silinmeden gönderilirse afişe girmesin.
+    if (normalizeText(page).startsWith("ornek")) continue;
+
+    const st = settingsOf(page);
+    fill(st, "ground", normalizeGround(cell(r, cols.ground)));
+    fill(st, "brand", cell(r, cols.brand));
+    fill(st, "depot", cell(r, cols.depot));
+    fill(st, "campaignLead", cell(r, cols.campLead));
+    fill(st, "campaignTitle", cell(r, cols.campTitle));
+    fill(st, "campaignText", cell(r, cols.campText));
+    fill(st, "campaignNote", cell(r, cols.campNote));
+    if (!st.count) {
+      const n = Math.round(parseNumber(cell(r, cols.count)));
+      if (n >= 1 && n <= 4) st.count = n;
+    }
+    if (kind === "kampanya") st.mode = "kampanya";
+
+    // Kampanya satırı yalnız metin taşıyabilir; ürün adı aramayız.
+    if (kind === "kampanya" && !rawName) continue;
     if (!rawName) continue;
 
-    const size = sizeFromName(rawName);
+    // Ebat: ayrı sütun varsa o kesin. Yoksa addan okunur — ERP çıktısında
+    // ebat adın başında duruyor.
+    const size = normalizeSize(cell(r, cols.size)) || sizeFromName(rawName);
     const pool = bySize.get(size) ?? catalog;
     const nameTokens = tokens(rawName);
 
-    const memoryKey = matchKey(rawName);
+    const memoryKey = matchKey(rawName, size);
     type Ranked = { p: CatalogProduct; s: number };
     const rank = (list: CatalogProduct[]): Ranked[] =>
       list
@@ -384,15 +551,19 @@ export function buildImport(
         ? "belirsiz"
         : "yok";
 
-    const page = cell(r, cols.page) || "1";
     const stockNum = parseNumber(cell(r, cols.stock));
+    const stockEndNum = parseNumber(cell(r, cols.stock2));
+    const priceEnd = String(Math.round(parseNumber(cell(r, cols.price2))));
+    const dualStock = stockEndNum > 0 || parseNumber(cell(r, cols.price2)) > 0;
     // Aynı ürünün birden çok lotu tek satırda toplanır.
-    const key = `${page}|${productId ?? normalizeText(rawName)}`;
+    const key = `${page}|${kind}|${productId ?? normalizeText(rawName)}`;
 
     const existing = acc.get(key);
     if (existing) {
       existing._stockNum += stockNum;
       existing.stock = formatQty(existing._stockNum);
+      existing._stockEndNum += stockEndNum;
+      if (existing.dualStock) existing.stockEnd = formatQty(existing._stockEndNum);
       existing.mergedFrom += 1;
       continue;
     }
@@ -410,9 +581,13 @@ export function buildImport(
       size,
       surface: normalizeSurface(cell(r, cols.surface)),
       grade: normalizeGrade(cell(r, cols.grade)),
-      isRec: normalizeText(cell(r, cols.rect)).startsWith("var"),
+      isRec: truthy(cell(r, cols.rect)),
       stock: formatQty(stockNum),
       price: String(Math.round(parseNumber(cell(r, cols.price)))),
+      stockEnd: dualStock ? formatQty(stockEndNum) : "",
+      priceEnd: dualStock ? priceEnd : "",
+      dualStock,
+      kind: kind === "hediye" ? "hediye" : "urun",
       page,
       productId,
       status,
@@ -423,6 +598,7 @@ export function buildImport(
       candidates,
       mergedFrom: 1,
       _stockNum: stockNum,
+      _stockEndNum: stockEndNum,
     };
     acc.set(key, row);
     order.push(key);
@@ -435,6 +611,10 @@ export function buildImport(
     list.push(row);
     grouped.set(row.page, list);
   });
+  // Yalnız kampanya metni taşıyan sayfada ürün satırı yok — yine de sayfa.
+  settings.forEach((st, page) => {
+    if (!grouped.has(page) && st.mode === "kampanya") grouped.set(page, []);
+  });
 
   const pages: ImportPage[] = Array.from(grouped.entries())
     .sort((a, b) => {
@@ -443,7 +623,7 @@ export function buildImport(
       if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
       return a[0].localeCompare(b[0], "tr");
     })
-    .map(([page, list]) => ({ page, rows: list }));
+    .map(([page, list]) => ({ page, rows: list, settings: settingsOf(page) }));
 
   const all = pages.flatMap((p) => p.rows);
   return {
