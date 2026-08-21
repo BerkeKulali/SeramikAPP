@@ -9,6 +9,7 @@ import {
   buildImport,
   type ImportResult,
   type ImportRow,
+  type SavedMatch,
 } from "@/src/lib/stok-import";
 
 /* ------------------------------------------------------------------ *
@@ -908,6 +909,11 @@ export default function Studio2Page() {
   const [importError, setImportError] = useState<string | null>(null);
   /** Satır anahtarı -> kullanıcının seçtiği ürün kimliği ("" = eşleşme yok). */
   const [importPick, setImportPick] = useState<Record<string, string>>({});
+  /** Satır anahtarı -> sözlük anahtarı ve ham ad (kaydetmek için). */
+  const [importKeys, setImportKeys] = useState<
+    Record<string, { memoryKey: string; sample: string; initial: string }>
+  >({});
+  const [matchMemoryNote, setMatchMemoryNote] = useState<string | null>(null);
 
   /** Yüklenen görsellerin kendi en/boy oranı (url -> oran). Ebatla
    *  uyuşmayan görseli panelde uyarmak için. */
@@ -1382,19 +1388,47 @@ export default function Studio2Page() {
       const rows = /\.(csv|txt|tsv)$/i.test(file.name)
         ? readDelimitedRows(await file.text())
         : await readXlsxRows(await file.arrayBuffer());
-      const res = buildImport(rows, products);
+
+      // Daha önce elle yapılmış eşleşmeleri getir. Sözlük okunamazsa içe
+      // aktarma yine çalışsın — yalnız hatırlama devre dışı kalır.
+      let saved: SavedMatch[] = [];
+      try {
+        const r = await fetch("/api/matches", { cache: "no-store" });
+        if (r.ok) {
+          const d = (await r.json()) as { items?: SavedMatch[] };
+          saved = Array.isArray(d.items) ? d.items : [];
+        }
+      } catch {
+        saved = [];
+      }
+
+      const res = buildImport(rows, products, saved);
       if (!res.counts.toplam) {
         throw new Error("Dosyada ürün satırı bulunamadı");
       }
       // Kullanıcı seçimlerini otomatik eşleşmelerle doldur.
       const pick: Record<string, string> = {};
+      const keys: Record<
+        string,
+        { memoryKey: string; sample: string; initial: string }
+      > = {};
       res.pages.forEach((pg) =>
         pg.rows.forEach((r) => {
-          pick[r.key] = r.productId ?? "";
+          const chosen = r.productId ?? "";
+          pick[r.key] = chosen;
+          keys[r.key] = {
+            memoryKey: r.memoryKey,
+            sample: r.rawName,
+            initial: chosen,
+          };
         }),
       );
       setImportResult(res);
       setImportPick(pick);
+      setImportKeys(keys);
+      setMatchMemoryNote(
+        saved.length ? `${saved.length} kayıtlı eşleşme kullanıldı` : null,
+      );
       setImportOpen(true);
       setMsg(null);
     } catch (e) {
@@ -1452,6 +1486,23 @@ export default function Studio2Page() {
     if (!pages.length) return;
     const saved = JSON.parse(JSON.stringify(state)) as PageState;
     setImportOpen(false);
+
+    // Elle değiştirilen eşleşmeleri sözlüğe yaz — bir dahaki sefere
+    // aynı ham ad görülünce doğrudan uygulanır.
+    const learned = Object.entries(importKeys)
+      .filter(([rowKey, info]) => (importPick[rowKey] ?? "") !== info.initial)
+      .map(([rowKey, info]) => ({
+        key: info.memoryKey,
+        productId: importPick[rowKey] ?? "",
+        sample: info.sample,
+      }));
+    if (learned.length) {
+      void fetch("/api/matches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: learned }),
+      }).catch(() => {});
+    }
     try {
       setBusy("Sayfalar hazırlanıyor…");
       const items: QueueItem[] = [];
@@ -1469,7 +1520,10 @@ export default function Studio2Page() {
         });
       }
       setQueue((q) => [...q, ...items]);
-      setMsg(`${items.length} sayfa kuyruğa eklendi ✓`);
+      setMsg(
+        `${items.length} sayfa kuyruğa eklendi ✓` +
+          (learned.length ? ` · ${learned.length} eşleşme öğrenildi` : ""),
+      );
     } catch {
       setMsg("Sayfalar oluşturulamadı");
     } finally {
@@ -3487,6 +3541,11 @@ export default function Studio2Page() {
                   <span className="rounded-md bg-emerald-50 px-2 py-1 text-emerald-800">
                     {importResult.counts.kesin} eşleşti
                   </span>
+                  {importResult.counts.hatirlanan ? (
+                    <span className="rounded-md bg-violet-50 px-2 py-1 text-violet-800">
+                      {importResult.counts.hatirlanan} hatırlandı
+                    </span>
+                  ) : null}
                   {importResult.counts.baskaEbat ? (
                     <span className="rounded-md bg-sky-50 px-2 py-1 text-sky-800">
                       {importResult.counts.baskaEbat} görsel başka ebattan
@@ -3568,6 +3627,11 @@ export default function Studio2Page() {
                               {r.grade ? ` · ${r.grade}` : ""}
                               {r.mergedFrom > 1 ? ` · ${r.mergedFrom} lot toplandı` : ""}
                             </div>
+                            {r.fromMemory ? (
+                              <div className="mt-1 text-[10px] font-semibold text-violet-800">
+                                Daha önce senin yaptığın eşleşme kullanıldı.
+                              </div>
+                            ) : null}
                             {otherSize && chosen ? (
                               <div className="mt-1 text-[10px] font-semibold text-sky-800">
                                 Görsel {chosen.size} fotoğrafından alınıyor,
@@ -3606,10 +3670,14 @@ export default function Studio2Page() {
 
             {importResult ? (
               <div className="flex items-center justify-between gap-3 border-t border-zinc-100 p-4">
-                <div className="text-[11px] text-zinc-500">
+                <div className="text-[11px] leading-relaxed text-zinc-500">
                   Mavi satırlarda fotoğraf başka ebattan alınıyor. Eşleşmeyen
                   ürünler ada, stoğa ve fiyata sahip olarak eklenir — yalnız
                   görselleri boş kalır.
+                  <br />
+                  <b>Burada yaptığın her düzeltme kaydedilir</b>; aynı ürün
+                  bir dahaki dosyada kendiliğinden eşleşir.
+                  {matchMemoryNote ? ` (${matchMemoryNote})` : ""}
                 </div>
                 <button
                   type="button"

@@ -41,6 +41,10 @@ export type ImportRow = {
   status: "kesin" | "baska-ebat" | "belirsiz" | "yok";
   /** Eşleşen ürünün kendi ebadı — satırın ebadından farklıysa uyarılır. */
   matchedSize: string;
+  /** Sözlükten (daha önce elle yapılmış eşleşmeden) geldi mi. */
+  fromMemory: boolean;
+  /** Sözlük anahtarı — seçim değişirse bu anahtarla kaydedilir. */
+  memoryKey: string;
   score: number;
   candidates: CatalogProduct[];
   /** Aynı ürünün birden çok lot satırı toplandıysa kaç satırdan geldiği. */
@@ -49,10 +53,23 @@ export type ImportRow = {
 
 export type ImportPage = { page: string; rows: ImportRow[] };
 
+/** Daha önce elle yapılmış eşleşme. productId "" ise bilerek boş bırakılmış. */
+export type SavedMatch = { key: string; productId: string };
+
+/**
+ * Sözlük anahtarı: Excel'deki ham addan üretilir. Ebat da anahtarın
+ * parçası — aynı desenin 60x120'si ile 60x60'ı farklı ürün.
+ */
+export function matchKey(rawName: string): string {
+  const size = sizeFromName(rawName);
+  return `${size}|${tokens(rawName).join(" ")}`;
+}
+
 export type ImportResult = {
   pages: ImportPage[];
   counts: {
     kesin: number;
+    hatirlanan: number;
     baskaEbat: number;
     belirsiz: number;
     yok: number;
@@ -240,7 +257,9 @@ function normalizeGrade(v: string): "" | "1." | "END." {
 export function buildImport(
   rows: string[][],
   catalog: CatalogProduct[],
+  savedMatches: SavedMatch[] = [],
 ): ImportResult {
+  const memory = new Map(savedMatches.map((m) => [m.key, m.productId]));
   const headerIdx = findHeaderRow(rows);
   const cols = findColumns(rows[headerIdx] ?? []);
   const missingColumns: string[] = [];
@@ -270,13 +289,37 @@ export function buildImport(
     const pool = bySize.get(size) ?? catalog;
     const nameTokens = tokens(rawName);
 
-    // 1) istisna sütunu
-    const override = cell(r, cols.override);
+    const memoryKey = matchKey(rawName);
+    type Ranked = { p: CatalogProduct; s: number };
+    const rank = (list: CatalogProduct[]): Ranked[] =>
+      list
+        .map((p) => ({ p, s: similarity(nameTokens, tokens(p.name, false)) }))
+        .sort((a, b) => b.s - a.s);
+    const confident = (r: Ranked[]): Ranked | null =>
+      r[0] && r[0].s >= 0.8 && r[0].s - (r[1]?.s ?? 0) >= 0.1 ? r[0] : null;
+
     let productId: string | null = null;
     let score = 0;
     let candidates: CatalogProduct[] = [];
+    let fromMemory = false;
 
-    if (override) {
+    // 1) Daha önce elle yapılmış eşleşme — her şeyin önünde gelir.
+    //    Ürün katalogdan silinmişse hatırlanan kayıt yok sayılır.
+    if (memory.has(memoryKey)) {
+      const remembered = memory.get(memoryKey) ?? "";
+      if (!remembered) {
+        // Bilerek boş bırakılmış: tahmin etmeye çalışma.
+        fromMemory = true;
+      } else if (catalog.some((p) => p.id === remembered)) {
+        productId = remembered;
+        score = 1;
+        fromMemory = true;
+      }
+    }
+
+    // 2) istisna sütunu
+    const override = cell(r, cols.override);
+    if (!fromMemory && override) {
       const ot = tokens(override, false);
       const ranked = pool
         .map((p) => ({ p, s: similarity(ot, tokens(p.name, false)) }))
@@ -288,17 +331,9 @@ export function buildImport(
       candidates = ranked.slice(0, 6).map((x) => x.p);
     }
 
-    const rank = (list: CatalogProduct[]) =>
-      list
-        .map((p) => ({ p, s: similarity(nameTokens, tokens(p.name, false)) }))
-        .sort((a, b) => b.s - a.s);
-    type Ranked = { p: CatalogProduct; s: number };
-    const confident = (r: Ranked[]): Ranked | null =>
-      r[0] && r[0].s >= 0.8 && r[0].s - (r[1]?.s ?? 0) >= 0.1 ? r[0] : null;
-
     let crossSize = false;
 
-    if (!productId) {
+    if (!productId && !fromMemory) {
       const sameSize = rank(pool);
       candidates = sameSize.slice(0, 6).map((x) => x.p);
       const best = confident(sameSize);
@@ -335,6 +370,11 @@ export function buildImport(
     const matchedSize = productId
       ? (catalog.find((p) => p.id === productId)?.size ?? "")
       : "";
+
+    // Sözlükten geldiyse bile seçim kutusu dolu olmalı ki değiştirebilsin.
+    if (!candidates.length) {
+      candidates = rank(pool).slice(0, 6).map((x) => x.p);
+    }
 
     const status: ImportRow["status"] = productId
       ? crossSize
@@ -377,6 +417,8 @@ export function buildImport(
       productId,
       status,
       matchedSize,
+      fromMemory,
+      memoryKey,
       score,
       candidates,
       mergedFrom: 1,
@@ -408,6 +450,7 @@ export function buildImport(
     pages,
     counts: {
       kesin: all.filter((r) => r.status === "kesin").length,
+      hatirlanan: all.filter((r) => r.fromMemory).length,
       baskaEbat: all.filter((r) => r.status === "baska-ebat").length,
       belirsiz: all.filter((r) => r.status === "belirsiz").length,
       yok: all.filter((r) => r.status === "yok").length,
