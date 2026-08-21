@@ -55,6 +55,10 @@ export type ImportRow = {
   candidates: CatalogProduct[];
   /** Aynı ürünün birden çok lot satırı toplandıysa kaç satırdan geldiği. */
   mergedFrom: number;
+  /** Stok boş ya da sıfır — afişte "—" basılır, önizlemede uyarılır. */
+  missingStock: boolean;
+  /** Fiyat boş ya da sıfır. Hediye satırlarında normal, üründe hata. */
+  missingPrice: boolean;
 };
 
 /**
@@ -101,6 +105,8 @@ export type ImportResult = {
     baskaEbat: number;
     belirsiz: number;
     yok: number;
+    /** Stoğu ya da fiyatı boş satır sayısı — afişe eksik basılır. */
+    eksikVeri: number;
     toplam: number;
   };
   /** Başlık satırında bulunamayan sütunlar. */
@@ -553,15 +559,18 @@ export function buildImport(
 
     const stockNum = parseNumber(cell(r, cols.stock));
     const stockEndNum = parseNumber(cell(r, cols.stock2));
-    const priceEnd = String(Math.round(parseNumber(cell(r, cols.price2))));
-    const dualStock = stockEndNum > 0 || parseNumber(cell(r, cols.price2)) > 0;
+    const priceEndNum = parseNumber(cell(r, cols.price2));
+    const priceEnd = priceEndNum > 0 ? String(Math.round(priceEndNum)) : "";
+    const dualStock = stockEndNum > 0 || priceEndNum > 0;
+    const priceNum = parseNumber(cell(r, cols.price));
     // Aynı ürünün birden çok lotu tek satırda toplanır.
     const key = `${page}|${kind}|${productId ?? normalizeText(rawName)}`;
 
     const existing = acc.get(key);
     if (existing) {
       existing._stockNum += stockNum;
-      existing.stock = formatQty(existing._stockNum);
+      existing.stock = existing._stockNum > 0 ? formatQty(existing._stockNum) : "";
+      existing.missingStock = kind !== "hediye" && existing._stockNum <= 0;
       existing._stockEndNum += stockEndNum;
       if (existing.dualStock) existing.stockEnd = formatQty(existing._stockEndNum);
       existing.mergedFrom += 1;
@@ -582,10 +591,14 @@ export function buildImport(
       surface: normalizeSurface(cell(r, cols.surface)),
       grade: normalizeGrade(cell(r, cols.grade)),
       isRec: truthy(cell(r, cols.rect)),
-      stock: formatQty(stockNum),
-      price: String(Math.round(parseNumber(cell(r, cols.price)))),
-      stockEnd: dualStock ? formatQty(stockEndNum) : "",
+      // Boş hücre "0" olarak yazılmasın: afişte "0 m²" yerine hiç basılmaz
+      // ve önizlemede eksik olarak uyarılır.
+      stock: stockNum > 0 ? formatQty(stockNum) : "",
+      price: priceNum > 0 ? String(Math.round(priceNum)) : "",
+      stockEnd: dualStock && stockEndNum > 0 ? formatQty(stockEndNum) : "",
       priceEnd: dualStock ? priceEnd : "",
+      missingStock: kind !== "hediye" && stockNum <= 0,
+      missingPrice: kind !== "hediye" && priceNum <= 0,
       dualStock,
       kind: kind === "hediye" ? "hediye" : "urun",
       page,
@@ -634,6 +647,7 @@ export function buildImport(
       baskaEbat: all.filter((r) => r.status === "baska-ebat").length,
       belirsiz: all.filter((r) => r.status === "belirsiz").length,
       yok: all.filter((r) => r.status === "yok").length,
+      eksikVeri: all.filter((r) => r.missingStock || r.missingPrice).length,
       toplam: all.length,
     },
     missingColumns,

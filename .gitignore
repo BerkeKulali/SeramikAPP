@@ -42,3 +42,7 @@ next-env.d.ts
 
 # geçici: uzak oturum dosya silemediği için buraya taşınır
 _to_delete/
+
+# Excel açıkken bıraktığı kilit dosyaları
+~$*
+.~lock.*

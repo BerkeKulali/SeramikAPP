@@ -1583,8 +1583,14 @@ export default function Studio2Page() {
     return out;
   }
 
-  /** Sayfaları kuyruğa ekler ve her biri için küçük önizleme üretir. */
-  async function applyImport() {
+  /**
+   * Sayfaları kuyruğa yazar ve her biri için küçük önizleme üretir.
+   *
+   * mode "degistir": kuyruktaki eski sayfalar silinir. Fiyat düzeltip aynı
+   * dosyayı yeniden yükleyince 8 sayfanın 16 olması bundandı.
+   * mode "ekle": sonuna eklenir (ikinci bir depo listesi gibi).
+   */
+  async function applyImport(mode: "degistir" | "ekle" = "ekle") {
     if (!importResult) return;
     const pages = pagesFromImport(importResult);
     if (!pages.length) return;
@@ -1623,9 +1629,13 @@ export default function Studio2Page() {
           snapshot,
         });
       }
-      setQueue((q) => [...q, ...items]);
+      const replaced = mode === "degistir" ? queue.length : 0;
+      setQueue((q) => (mode === "degistir" ? items : [...q, ...items]));
       setMsg(
-        `${items.length} sayfa kuyruğa eklendi ✓` +
+        (mode === "degistir"
+          ? `Kuyruk ${items.length} sayfa ile değiştirildi ✓` +
+            (replaced ? ` (${replaced} eski sayfa silindi)` : "")
+          : `${items.length} sayfa kuyruğa eklendi ✓`) +
           (learned.length ? ` · ${learned.length} eşleşme öğrenildi` : ""),
       );
     } catch {
@@ -3737,6 +3747,11 @@ export default function Studio2Page() {
                       {importResult.counts.yok} bulunamadı
                     </span>
                   ) : null}
+                  {importResult.counts.eksikVeri ? (
+                    <span className="rounded-md bg-orange-100 px-2 py-1 text-orange-900">
+                      {importResult.counts.eksikVeri} satırda stok/fiyat boş
+                    </span>
+                  ) : null}
                   <span className="text-zinc-500">
                     · {importResult.pages.length} sayfa · {importResult.counts.toplam} ürün
                   </span>
@@ -3800,13 +3815,16 @@ export default function Studio2Page() {
                       const otherSize = Boolean(
                         chosen && r.size && chosen.size !== r.size,
                       );
+                      const eksik = r.missingStock || r.missingPrice;
                       const tone = !picked
                         ? "border-red-300 bg-red-50"
-                        : otherSize
-                          ? "border-sky-300 bg-sky-50"
-                          : r.status === "kesin"
-                            ? "border-zinc-200 bg-white"
-                            : "border-amber-300 bg-amber-50";
+                        : eksik
+                          ? "border-orange-300 bg-orange-50"
+                          : otherSize
+                            ? "border-sky-300 bg-sky-50"
+                            : r.status === "kesin"
+                              ? "border-zinc-200 bg-white"
+                              : "border-amber-300 bg-amber-50";
                       return (
                         <div
                           key={r.key}
@@ -3830,11 +3848,26 @@ export default function Studio2Page() {
                               {r.rawName}
                             </div>
                             <div className="mt-0.5 text-[10px] text-zinc-500">
-                              {r.size || "ebat?"} · stok {r.stock} m² · {r.price} ₺
+                              {r.size || "ebat?"} · stok {r.stock || "—"} m² ·{" "}
+                              {r.price || "—"} ₺
+                              {r.dualStock
+                                ? ` · END. ${r.stockEnd || "—"} m² / ${r.priceEnd || "—"} ₺`
+                                : ""}
                               {r.surface ? ` · ${r.surface}` : ""}
                               {r.grade ? ` · ${r.grade}` : ""}
                               {r.mergedFrom > 1 ? ` · ${r.mergedFrom} lot toplandı` : ""}
                             </div>
+                            {eksik ? (
+                              <div className="mt-1 text-[10px] font-semibold text-orange-800">
+                                Excel&apos;de{" "}
+                                {r.missingStock && r.missingPrice
+                                  ? "stok ve fiyat"
+                                  : r.missingStock
+                                    ? "stok"
+                                    : "fiyat"}{" "}
+                                boş — afişte bu satır yerine tire basılır.
+                              </div>
+                            ) : null}
                             {r.fromMemory ? (
                               <div className="mt-1 text-[10px] font-semibold text-violet-800">
                                 Daha önce senin yaptığın eşleşme kullanıldı.
@@ -3886,6 +3919,14 @@ export default function Studio2Page() {
                   <b>Burada yaptığın her düzeltme kaydedilir</b>; aynı ürün
                   bir dahaki dosyada kendiliğinden eşleşir.
                   {matchMemoryNote ? ` (${matchMemoryNote})` : ""}
+                  {queue.length ? (
+                    <>
+                      <br />
+                      Kuyrukta zaten <b>{queue.length} sayfa</b> var.
+                      &nbsp;&ldquo;Kuyruğu Değiştir&rdquo; onları siler —
+                      aynı listeyi düzeltip yeniden yüklüyorsan bunu seç.
+                    </>
+                  ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {(() => {
@@ -3907,12 +3948,28 @@ export default function Studio2Page() {
                       </button>
                     );
                   })()}
+                  {queue.length ? (
+                    <button
+                      type="button"
+                      onClick={() => void applyImport("ekle")}
+                      className="rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm font-semibold hover:bg-zinc-50"
+                      title={`Kuyruktaki ${queue.length} sayfanın sonuna eklenir`}
+                    >
+                      Sonuna Ekle
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={() => void applyImport()}
+                    onClick={() => void applyImport(queue.length ? "degistir" : "ekle")}
                     className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
+                    title={
+                      queue.length
+                        ? `Kuyruktaki ${queue.length} sayfa silinir, yerine bunlar yazılır`
+                        : undefined
+                    }
                   >
-                    Kuyruğa Ekle ({pagesFromImport(importResult).length} sayfa)
+                    {queue.length ? "Kuyruğu Değiştir" : "Kuyruğa Ekle"} (
+                    {pagesFromImport(importResult).length} sayfa)
                   </button>
                 </div>
               </div>
