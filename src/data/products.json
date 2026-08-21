@@ -3160,14 +3160,14 @@
     "id": "bien-seramik-katalog-adria-anthracite",
     "name": "adria-anthracite",
     "brand": "bien-seramik",
-    "size": "katalog",
+    "size": "60x60",
     "image": "/urunler/bien-seramik/60x60/adria-anthracite.png"
   },
   {
     "id": "bien-seramik-katalog-adria-beyaz",
     "name": "adria-beyaz",
     "brand": "bien-seramik",
-    "size": "katalog",
+    "size": "60x60",
     "image": "/urunler/bien-seramik/60x60/adria-beyaz.png"
   },
   {
@@ -6312,5 +6312,33 @@
     "brand": "karo-seramik",
     "size": "7.5x30",
     "image": "/urunler/karo-seramik/7.5x30/Screenshot 2026-08-18 at 4.17.29 PM.png"
+  },
+  {
+    "id": "qua-seramik-60x120-aria-stone-ash",
+    "name": "aria stone ash",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/aria stone ash.png"
+  },
+  {
+    "id": "qua-seramik-60x120-ark-night",
+    "name": "ark night",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/ark night.png"
+  },
+  {
+    "id": "qua-seramik-60x120-epoch-antrasit",
+    "name": "epoch antrasit",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/epoch antrasit.png"
+  },
+  {
+    "id": "qua-seramik-60x120-terrazzo-cream",
+    "name": "terrazzo cream",
+    "brand": "qua-seramik",
+    "size": "60x120",
+    "image": "/urunler/qua-seramik/60x120/terrazzo cream.png"
   }
 ]
