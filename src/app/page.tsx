@@ -949,9 +949,12 @@ function PdfQueueRow({
   onEdit,
   onDelete,
   onMoveSlot,
+  editing,
 }: {
   item: PdfQueueItemV1;
   idx: number;
+  /** Ekranda bu sayfa düzenleniyor — hangisi olduğu görünsün. */
+  editing: boolean;
   pdfQueue: PdfQueueItemV1[];
   expanded: boolean;
   isBuildingPdf: boolean;
@@ -964,7 +967,7 @@ function PdfQueueRow({
   onMoveSlot: (slotIdx: number, targetIdx: number) => void;
 }) {
   return (
-    <div>
+    <div className={editing ? "bg-amber-50" : undefined}>
       <div className="flex items-center gap-2 px-3 py-2">
         <div className="flex shrink-0 flex-col gap-0.5">
           <button
@@ -1002,6 +1005,11 @@ function PdfQueueRow({
           <div className="text-[11px] text-zinc-500">
             Şablon {item.snapshot.selectedTemplate} •{" "}
             {item.snapshot.isDarkBg ? "Koyu" : "Açık"}
+            {editing ? (
+              <span className="ml-1.5 font-bold text-amber-800">
+                • düzenleniyor
+              </span>
+            ) : null}
           </div>
         </div>
         <button
@@ -1976,12 +1984,20 @@ export default function Home() {
     }
   }
 
-  async function addOrUpdatePdfQueueItem() {
+  /**
+   * mode "auto": bir kuyruk sayfası düzenleniyorsa onu günceller, yoksa ekler.
+   * mode "yeni": bağı yok sayar, her hâlükârda yeni sayfa ekler.
+   *
+   * "yeni" olmadan bağ tek yönlü bir kapıydı: bir sayfaya "Düzenle" dedikten
+   * (ya da kayıtlı kataloğu açtıktan) sonra düğme kalıcı olarak
+   * "Sayfayı Güncelle"ye dönüyor, listeye yeni sayfa eklemenin yolu kalmıyordu.
+   */
+  async function addOrUpdatePdfQueueItem(mode: "auto" | "yeni" = "auto") {
     const snap = makeSnapshot();
     const thumb = await captureThumbnail();
     const title = snapshotTitle();
 
-    if (pdfEditingIndex != null) {
+    if (mode === "auto" && pdfEditingIndex != null) {
       setPdfQueue((prev) =>
         prev.map((it, idx) =>
           idx === pdfEditingIndex
@@ -2006,6 +2022,11 @@ export default function Home() {
       ...prev,
       { id, title, thumbnailDataUrl: thumb, snapshot: snap },
     ]);
+    // Ekledikten sonra bağ KURULMAZ. Kurulsaydı arka arkaya "Listeye Ekle"
+    // basmak ikinci sayfayı eklemek yerine birincinin üzerine yazardı —
+    // asıl kullanım biçimi bu değil. "Yeni Sayfa Olarak Ekle" ile gelindiğinde
+    // ise eski bağın kopması şart: yoksa düğme hâlâ eski sayfayı gösterirdi.
+    setPdfEditingIndex(null);
   }
 
   function movePdfQueueItem(idx: number, direction: -1 | 1) {
@@ -2740,8 +2761,15 @@ export default function Home() {
                     onClick={() => void addOrUpdatePdfQueueItem()}
                     disabled={isDownloading || isBuildingPdf}
                     className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+                    title={
+                      pdfEditingIndex != null
+                        ? `Listedeki ${pdfEditingIndex + 1}. sayfanın üzerine yazılır`
+                        : "Bu afişi PDF listesine yeni sayfa olarak ekler"
+                    }
                   >
-                    {pdfEditingIndex != null ? "Sayfayı Güncelle" : "Listeye Ekle"}
+                    {pdfEditingIndex != null
+                      ? `Sayfayı Güncelle (${pdfEditingIndex + 1}.)`
+                      : "Listeye Ekle"}
                   </button>
                   <button
                     type="button"
@@ -2753,6 +2781,35 @@ export default function Home() {
                     PDF İndir ({pdfQueue.length})
                   </button>
                 </div>
+                {pdfEditingIndex != null ? (
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void addOrUpdatePdfQueueItem("yeni")}
+                      disabled={isDownloading || isBuildingPdf}
+                      className="inline-flex flex-1 items-center justify-center rounded-lg border border-zinc-900 bg-white px-3 py-2 text-xs font-semibold text-zinc-900 hover:bg-zinc-50 disabled:opacity-60"
+                      title="Düzenlenen sayfayı bozmadan, ekrandakini listenin sonuna ekler"
+                    >
+                      + Yeni Sayfa Olarak Ekle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPdfEditingIndex(null)}
+                      disabled={isBuildingPdf}
+                      className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 disabled:opacity-60"
+                      title="Listedeki sayfayla bağı kes — düğme yeniden 'Listeye Ekle' olur"
+                    >
+                      Bağı kes
+                    </button>
+                  </div>
+                ) : null}
+                {pdfEditingIndex != null ? (
+                  <div className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">
+                    Listedeki <b>{pdfEditingIndex + 1}. sayfa</b> düzenleniyor.
+                    Yaptığın değişiklikler &ldquo;Sayfayı Güncelle&rdquo; ile o
+                    sayfanın üzerine yazılır.
+                  </div>
+                ) : null}
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -2843,6 +2900,7 @@ export default function Home() {
                         key={item.id}
                         item={item}
                         idx={idx}
+                        editing={pdfEditingIndex === idx}
                         pdfQueue={pdfQueue}
                         expanded={expandedQueueIds.has(item.id)}
                         isBuildingPdf={isBuildingPdf}
