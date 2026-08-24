@@ -2234,7 +2234,12 @@ export default function Studio2Page() {
           // Tek başına kalan ürün, diğerleriyle aynı genişlikte ve ortalanmış
           // olsun — yazıları sayfanın soluna savrulmasın.
           width: spanRow ? "calc(50% - 13px)" : undefined,
-          marginInline: spanRow ? "auto" : undefined,
+          // Ortalamak için "margin: auto" KULLANMA. Ekranda çalışıyor ama
+          // PDF/JPG çıkışında kayboluyordu: html-to-image düğümü kopyalarken
+          // hesaplanmış stilleri yazıyor, ızgara hücresinde otomatik kenar
+          // boşluğu "0px" olarak hesaplanıyor ve karo sola yapışıyordu.
+          // justify-self anahtar kelime olarak hesaplanır, kopyada da durur.
+          justifySelf: spanRow ? "center" : undefined,
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
