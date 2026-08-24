@@ -155,7 +155,7 @@ const SYNONYMS: Record<string, string> = {
 /** Ürün adı taşımayan kelimeler. */
 const NOISE = new Set([
   "sg", "exp", "full", "lap", "lappato", "lappatto", "matt", "mat",
-  "semi", "lapp", "flp", "rekt", "rektifiye", "rektifiyeli",
+  "semi", "lapp", "flp", "rec", "rekt", "rektifiye", "rektifiyeli",
   "seramik", "porselen", "fon", "dekor", "karo", "x", "cm", "adet",
 ]);
 
@@ -336,6 +336,23 @@ function normalizeGrade(v: string): "" | "1." | "END." {
   return "";
 }
 
+/**
+ * Kalite sütunu boşsa addan okunur: ERP satırları "... * 1." ya da
+ * "... * EXP." diye bitiyor. İki ayrı satır olarak gelen aynı ürünü
+ * eşleştirebilmek için kalitesini bilmek şart.
+ */
+function gradeFromName(raw: string): "" | "1." | "END." {
+  const t = ` ${normalizeText(raw)} `;
+  if (/ (exp|end|endustriyel|endustriel) /.test(t)) return "END.";
+  if (/ 1 $/.test(t) || / 1 kalite /.test(t)) return "1.";
+  return "";
+}
+
+/** Ad içinde REC/REKTİFİYE geçiyorsa sütun boş olsa da rektifiyelidir. */
+function recFromName(raw: string): boolean {
+  return / (rec|rekt|rektifiye|rektifiyeli) /.test(` ${normalizeText(raw)} `);
+}
+
 /** REC sütunu: E / EVET / VAR / X / 1 hepsi "rektifiyeli" demek. */
 function truthy(v: string): boolean {
   const t = normalizeText(v);
@@ -398,7 +415,18 @@ export function buildImport(
 
   const cell = (r: string[], i?: number) => (i == null ? "" : (r[i] ?? "").trim());
 
-  type Acc = ImportRow & { _stockNum: number; _stockEndNum: number };
+  type Acc = ImportRow & {
+    _stockNum: number;
+    _stockEndNum: number;
+    _price: number;
+    _priceEnd: number;
+    /** 1. kalite (ya da kalitesiz) satır görüldü mü. */
+    _seenFirst: boolean;
+    /** END. satırı görüldü mü. İkisi de görüldüyse çift stok. */
+    _seenEnd: boolean;
+    /** Tek kalite kalırsa basılacak etiket. */
+    _firstGrade: "" | "1." | "END.";
+  };
   const acc = new Map<string, Acc>();
   const order: string[] = [];
 
@@ -558,21 +586,78 @@ export function buildImport(
         : "yok";
 
     const stockNum = parseNumber(cell(r, cols.stock));
+    const priceNum = parseNumber(cell(r, cols.price));
+    // Açık STOK 2 / FİYAT 2 sütunları: satır iki kaliteyi birden taşıyor.
     const stockEndNum = parseNumber(cell(r, cols.stock2));
     const priceEndNum = parseNumber(cell(r, cols.price2));
-    const priceEnd = priceEndNum > 0 ? String(Math.round(priceEndNum)) : "";
-    const dualStock = stockEndNum > 0 || priceEndNum > 0;
-    const priceNum = parseNumber(cell(r, cols.price));
-    // Aynı ürünün birden çok lotu tek satırda toplanır.
-    const key = `${page}|${kind}|${productId ?? normalizeText(rawName)}`;
+
+    // Satırın kalitesi: sütun boşsa addan okunur ("... * 1." / "... * EXP.").
+    const grade = normalizeGrade(cell(r, cols.grade)) || gradeFromName(rawName);
+    const isRec = truthy(cell(r, cols.rect)) || recFromName(rawName);
+
+    /* Birleştirme anahtarı KALİTEYİ İÇERMEZ. ERP aynı karoyu 1. kalite ve
+     * END. için iki ayrı satır olarak veriyor; bunlar iki ayrı ürün değil,
+     * tek ürünün iki stoğu. Aynı sayfada aynı ürünün iki kalitesi görülürse
+     * tek karoya çift stok olarak yerleşirler. */
+    const identity = productId ?? `${size}|${nameTokens.join(" ")}`;
+    const key = `${page}|${kind}|${identity}`;
+
+    /** Satırdaki değerleri doğru kalite gözüne yazar. */
+    const feed = (row: Acc) => {
+      if (grade === "END.") {
+        row._stockEndNum += stockNum;
+        if (!row._priceEnd && priceNum > 0) row._priceEnd = Math.round(priceNum);
+        row._seenEnd = true;
+      } else {
+        row._stockNum += stockNum;
+        if (!row._price && priceNum > 0) row._price = Math.round(priceNum);
+        row._seenFirst = true;
+      }
+      // Açık ikinci sütunlar varsa END. gözünü onlar doldurur.
+      if (stockEndNum > 0 || priceEndNum > 0) {
+        row._stockEndNum += stockEndNum;
+        if (!row._priceEnd && priceEndNum > 0) row._priceEnd = Math.round(priceEndNum);
+        row._seenEnd = true;
+      }
+      if (isRec) row.isRec = true;
+      if (!row.surface) row.surface = normalizeSurface(cell(r, cols.surface));
+    };
+
+    /** Gözlerden görünen alanları (stok, fiyat, çift stok) tazeler. */
+    const settle = (row: Acc) => {
+      const dual = row._seenFirst && row._seenEnd;
+      row.dualStock = dual;
+      if (dual) {
+        row.stock = row._stockNum > 0 ? formatQty(row._stockNum) : "";
+        row.price = row._price > 0 ? String(row._price) : "";
+        row.stockEnd = row._stockEndNum > 0 ? formatQty(row._stockEndNum) : "";
+        row.priceEnd = row._priceEnd > 0 ? String(row._priceEnd) : "";
+        // İki rozet de basılır; tek kalite etiketi anlamsız kalır.
+        row.grade = "";
+        row.missingStock =
+          kind !== "hediye" && (row._stockNum <= 0 || row._stockEndNum <= 0);
+        row.missingPrice =
+          kind !== "hediye" && (row._price <= 0 || row._priceEnd <= 0);
+        return;
+      }
+      // Tek kalite: değerler hangi gözdeyse oradan okunur. Yalnız END.
+      // satırı gelen ürünün stoğu 1. kalite gözünde değil.
+      const onlyEnd = row._seenEnd && !row._seenFirst;
+      const st = onlyEnd ? row._stockEndNum : row._stockNum;
+      const pr = onlyEnd ? row._priceEnd : row._price;
+      row.stock = st > 0 ? formatQty(st) : "";
+      row.price = pr > 0 ? String(pr) : "";
+      row.stockEnd = "";
+      row.priceEnd = "";
+      row.grade = onlyEnd ? "END." : row._firstGrade;
+      row.missingStock = kind !== "hediye" && st <= 0;
+      row.missingPrice = kind !== "hediye" && pr <= 0;
+    };
 
     const existing = acc.get(key);
     if (existing) {
-      existing._stockNum += stockNum;
-      existing.stock = existing._stockNum > 0 ? formatQty(existing._stockNum) : "";
-      existing.missingStock = kind !== "hediye" && existing._stockNum <= 0;
-      existing._stockEndNum += stockEndNum;
-      if (existing.dualStock) existing.stockEnd = formatQty(existing._stockEndNum);
+      feed(existing);
+      settle(existing);
       existing.mergedFrom += 1;
       continue;
     }
@@ -582,24 +667,28 @@ export function buildImport(
       rawName,
       cleaned: nameTokens.join(" "),
       fallbackName: stripSize(String(rawName))
-        .replace(/\b(SG|EXP\.?|FULL\s*LAP|LAPPATO|X\s*0[,.]7)\b/gi, " ")
+        // ERP satırı kaliteyi adın sonuna yıldızla ekliyor: "... * 1.",
+        // "... * EXP." Bu afişe basılacak ad değil, kalite rozeti.
+        .replace(/\*\s*(1\.?|EXP\.?|END\.?|EXPORT)\s*$/i, " ")
+        .replace(/\b(SG|EXP\.?|REC|FULL\s*LAP|LAPPATO|X\s*0[,.]7)\b/gi, " ")
+        .replace(/\*/g, " ")
         .replace(/\s+/g, " ")
         .replace(/[\s.,;:·-]+$/, "")
         .trim()
         .toLocaleUpperCase("tr-TR"),
       size,
-      surface: normalizeSurface(cell(r, cols.surface)),
-      grade: normalizeGrade(cell(r, cols.grade)),
-      isRec: truthy(cell(r, cols.rect)),
+      surface: "",
+      grade: "",
+      isRec: false,
       // Boş hücre "0" olarak yazılmasın: afişte "0 m²" yerine hiç basılmaz
-      // ve önizlemede eksik olarak uyarılır.
-      stock: stockNum > 0 ? formatQty(stockNum) : "",
-      price: priceNum > 0 ? String(Math.round(priceNum)) : "",
-      stockEnd: dualStock && stockEndNum > 0 ? formatQty(stockEndNum) : "",
-      priceEnd: dualStock ? priceEnd : "",
-      missingStock: kind !== "hediye" && stockNum <= 0,
-      missingPrice: kind !== "hediye" && priceNum <= 0,
-      dualStock,
+      // ve önizlemede eksik olarak uyarılır. Gerçek değerleri settle() yazar.
+      stock: "",
+      price: "",
+      stockEnd: "",
+      priceEnd: "",
+      missingStock: false,
+      missingPrice: false,
+      dualStock: false,
       kind: kind === "hediye" ? "hediye" : "urun",
       page,
       productId,
@@ -610,9 +699,16 @@ export function buildImport(
       score,
       candidates,
       mergedFrom: 1,
-      _stockNum: stockNum,
-      _stockEndNum: stockEndNum,
+      _stockNum: 0,
+      _stockEndNum: 0,
+      _price: 0,
+      _priceEnd: 0,
+      _seenFirst: false,
+      _seenEnd: false,
+      _firstGrade: grade === "END." ? "" : grade,
     };
+    feed(row);
+    settle(row);
     acc.set(key, row);
     order.push(key);
   }

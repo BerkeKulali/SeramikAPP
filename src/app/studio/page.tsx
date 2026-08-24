@@ -1572,9 +1572,10 @@ export default function Studio2Page() {
       const ground = GROUNDS.some((g) => g.id === st.ground)
         ? (st.ground as GroundId)
         : state.ground;
-      const depot = (DEPOTS as readonly string[]).includes(st.depot)
-        ? st.depot
-        : state.depot;
+      // Sevk yeri serbest metin — stüdyodaki kutu da öyle. DEPOTS yalnız
+      // öneri listesi; Excel'e "BOZÖYÜK SEVK" yazınca listede yok diye
+      // "PANCAR DEPO"ya düşüyordu.
+      const depot = st.depot || state.depot;
       const base: PageState = {
         ...state,
         ground,

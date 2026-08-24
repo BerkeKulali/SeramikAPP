@@ -37,7 +37,7 @@ COLUMNS = [
     ("ÜRÜN SAYISI",     13, "sayfa",    "Sayfada kaç ürün olsun (1-4). Boşsa satır sayısından hesaplanır."),
     ("ZEMİN",           15, "sayfa",    "Sayfanın zemin rengi. Boşsa stüdyoda seçili olan kullanılır."),
     ("MARKA",           18, "sayfa",    "Afişin üstünde yazan marka."),
-    ("SEVK YERİ",       20, "sayfa",    "PANCAR DEPO · SÖKE FABRİKA SEVK"),
+    ("SEVK YERİ",       20, "sayfa",    "PANCAR DEPO · SÖKE FABRİKA SEVK · BOZÖYÜK SEVK — listede olmayan bir yer de yazabilirsin."),
     ("KAMPANYA ÜST",    20, "kampanya", 'Küçük üst satır: "Tamamını alana"'),
     ("KAMPANYA BAŞLIK", 28, "kampanya", 'Büyük başlık: "1 palet 10x20 hediye"'),
     ("KAMPANYA METİN",  34, "kampanya", "Açıklama paragrafı. Boş bırakılabilir."),
@@ -56,6 +56,10 @@ GROUNDS = [
     "ZEYTİN KÂĞIT", "ZEYTİN AÇIK", "ZEYTİN ORTA", "ZEYTİN KOYU", "ZEYTİN SİYAH",
 ]
 
+# Listesi olan ama listeyle SINIRLI OLMAYAN sütunlar: öneri sunulur,
+# başka bir değer yazmak engellenmez.
+FREE_TEXT = {"SEVK YERİ"}
+
 LISTS = {
     "TİP":         ["ÜRÜN", "KAMPANYA", "HEDİYE"],
     "YÜZEY":       ["FLP", "SEMİ LAPP.", "MAT"],
@@ -63,7 +67,7 @@ LISTS = {
     "REC":         ["E"],
     "ÜRÜN SAYISI": ["1", "2", "3", "4"],
     "ZEMİN":       GROUNDS,
-    "SEVK YERİ":   ["PANCAR DEPO", "SÖKE FABRİKA SEVK"],
+    "SEVK YERİ":   ["PANCAR DEPO", "SÖKE FABRİKA SEVK", "BOZÖYÜK SEVK"],
 }
 
 # Örnek satırlar. SAYFA sütunu "ÖRNEK" olduğu için içe aktarmada atlanır —
@@ -123,8 +127,13 @@ def build(path: str) -> None:
             allow_blank=True,
             showDropDown=False,
         )
-        dv.error = "Bu sütunda yalnız listedeki değerler kullanılabilir."
-        dv.errorTitle = "Geçersiz değer"
+        # SEVK YERİ ve MARKA gibi alanlar serbest metin: liste yalnız öneri,
+        # yeni bir depo adı yazmak engellenmemeli.
+        if title in FREE_TEXT:
+            dv.showErrorMessage = False
+        else:
+            dv.error = "Bu sütunda yalnız listedeki değerler kullanılabilir."
+            dv.errorTitle = "Geçersiz değer"
         ws.add_data_validation(dv)
         dv.add(f"{col}2:{col}{last}")
 
