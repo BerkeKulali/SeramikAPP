@@ -984,6 +984,16 @@ export default function Studio2Page() {
   }));
 
   const [queue, setQueue] = useState<QueueItem[]>([]);
+  /**
+   * Son yıkıcı işlemin öncesi. "Üzerine yaz", "Sil", "Kuyruğu boşalt",
+   * "Kuyruğu Değiştir" ve "Düzenle" tek tıkla geri dönüşü olmayan şeyler
+   * yapıyordu; artık her biri buraya bir dönüş noktası bırakıyor.
+   */
+  const [undoPoint, setUndoPoint] = useState<{
+    label: string;
+    queue: QueueItem[];
+    state: PageState | null;
+  } | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -1191,8 +1201,13 @@ export default function Studio2Page() {
     expectedSnap?: string,
     timeout = 12000,
   ) {
+    // Not: Date.now() yalnız dışa aktarma/kuyruk düğmelerinden (event handler)
+    // çağrılıyor, render sırasında değil — react-hooks/purity burada yanlış
+    // pozitif üretiyor. Studio 1'de de aynı istisna var.
+    // eslint-disable-next-line react-hooks/purity
     const start = Date.now();
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    // eslint-disable-next-line react-hooks/purity
     while (Date.now() - start < timeout) {
       await new Promise((r) => requestAnimationFrame(() => r(null)));
       const node = document.getElementById("afis-kanvas");
@@ -1328,12 +1343,16 @@ export default function Studio2Page() {
       await waitForCanvas(expectedImageCount(state), snapKey(state));
       const thumb = await captureThumb();
       const item: QueueItem = {
+        // Kimlik üretimi düğme tıklamasıyla çalışır, render sırasında değil.
+        // eslint-disable-next-line react-hooks/purity
         id: `${Date.now()}-${Math.round(Math.random() * 1e6)}`,
         title: snapshotTitle(state),
         thumb,
         snapshot: JSON.parse(JSON.stringify(state)) as PageState,
       };
       setQueue((q) => [...q, item]);
+      // Eski geri alma noktası artık bu yeni sayfayı da yutardı.
+      setUndoPoint(null);
       setMsg(`Kuyruğa eklendi (${queue.length + 1} sayfa) ✓`);
     } catch {
       setMsg("Sayfa kuyruğa eklenemedi");
@@ -1345,14 +1364,35 @@ export default function Studio2Page() {
   function loadFromQueue(id: string) {
     const item = queue.find((q) => q.id === id);
     if (!item) return;
+    // Ekrandaki afiş kaydedilmemiş olabilir; düzenlemeye almak onu siliyor.
+    markUndo("sayfayı düzenlemeye alma", true);
     setState(JSON.parse(JSON.stringify(item.snapshot)) as PageState);
     setMsg("Sayfa düzenlemeye alındı");
+  }
+
+  /** Yıkıcı bir işlemden hemen ÖNCE çağrılır. Sonrasında çağrılırsa geç kalır. */
+  function markUndo(label: string, withState = false) {
+    setUndoPoint({
+      label,
+      queue,
+      state: withState ? (JSON.parse(JSON.stringify(state)) as PageState) : null,
+    });
+  }
+
+  function undoLast() {
+    if (!undoPoint) return;
+    setQueue(undoPoint.queue);
+    if (undoPoint.state) setState(undoPoint.state);
+    setMsg(`Geri alındı: ${undoPoint.label}`);
+    setUndoPoint(null);
   }
 
   /** Kuyruktaki sayfayı ekrandaki hâliyle değiştirir. Küçük önizleme de
    *  yeniden üretilir; eskiden yalnız snapshot değişiyor, kuyrukta hep ilk
    *  hâlin resmi görünüyordu. */
   async function replaceInQueue(id: string) {
+    const before = queue.find((it) => it.id === id);
+    markUndo(`«${before?.title ?? "sayfa"}» üzerine yazma`);
     try {
       setBusy("Sayfa güncelleniyor…");
       await waitForCanvas(expectedImageCount(state), snapKey(state));
@@ -1364,6 +1404,7 @@ export default function Studio2Page() {
       );
       setMsg("Kuyruktaki sayfa güncellendi ✓");
     } catch {
+      setUndoPoint(null);
       setMsg("Sayfa güncellenemedi");
     } finally {
       setBusy(null);
@@ -1371,10 +1412,14 @@ export default function Studio2Page() {
   }
 
   function removeFromQueue(id: string) {
+    const gone = queue.find((it) => it.id === id);
+    markUndo(`«${gone?.title ?? "sayfa"}» silme`);
     setQueue((q) => q.filter((it) => it.id !== id));
+    setMsg("Sayfa silindi");
   }
 
   function moveInQueue(id: string, dir: -1 | 1) {
+    setUndoPoint(null);
     setQueue((q) => {
       const i = q.findIndex((it) => it.id === id);
       const j = i + dir;
@@ -1630,7 +1675,15 @@ export default function Studio2Page() {
         });
       }
       const replaced = mode === "degistir" ? queue.length : 0;
+      if (mode === "degistir" && queue.length) {
+        setUndoPoint({
+          label: `${queue.length} sayfalık kuyruğu değiştirme`,
+          queue,
+          state: null,
+        });
+      }
       setQueue((q) => (mode === "degistir" ? items : [...q, ...items]));
+      if (mode !== "degistir") setUndoPoint(null);
       setMsg(
         (mode === "degistir"
           ? `Kuyruk ${items.length} sayfa ile değiştirildi ✓` +
@@ -1812,6 +1865,7 @@ export default function Studio2Page() {
         null;
       if (!current) throw new Error("Bu kayıt Stüdyo 2 biçiminde değil");
       setQueue(nextQueue);
+      setUndoPoint(null);
       setState(current);
       setDocTitle(asStr(cat.title));
       setSavedOpen(false);
@@ -1864,6 +1918,7 @@ export default function Studio2Page() {
         null;
       if (!current) throw new Error("Dosya Stüdyo 2 biçiminde değil");
       setQueue(nextQueue);
+      setUndoPoint(null);
       setState(current);
       setDocTitle(asStr(cat.title));
       setMsg("Yedek yüklendi ✓");
@@ -2268,6 +2323,16 @@ export default function Studio2Page() {
           <div className="flex items-center gap-2">
             {msg ? (
               <span className="mr-1 text-xs font-semibold text-emerald-700">{msg}</span>
+            ) : null}
+            {undoPoint ? (
+              <button
+                type="button"
+                onClick={undoLast}
+                className="mr-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100"
+                title={`Geri al: ${undoPoint.label}`}
+              >
+                ↶ Geri al
+              </button>
             ) : null}
             {busy ? (
               <span className="mr-1 text-xs font-semibold text-zinc-500">{busy}</span>
@@ -2773,7 +2838,11 @@ export default function Studio2Page() {
               {queue.length ? (
                 <button
                   type="button"
-                  onClick={() => setQueue([])}
+                  onClick={() => {
+                    markUndo(`${queue.length} sayfalık kuyruğu boşaltma`);
+                    setQueue([]);
+                    setMsg("Kuyruk boşaltıldı");
+                  }}
                   className="rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-semibold hover:bg-zinc-50"
                 >
                   Kuyruğu boşalt
@@ -2812,14 +2881,16 @@ export default function Studio2Page() {
                         <button
                           type="button"
                           onClick={() => loadFromQueue(it.id)}
-                          className="rounded border border-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold hover:bg-zinc-50"
+                          className="rounded border border-zinc-900 bg-white px-1.5 py-0.5 text-[10px] font-semibold hover:bg-zinc-50"
+                          title="Bu sayfayı ekrana getirir — kuyruktaki hâline dokunmaz"
                         >
                           Düzenle
                         </button>
                         <button
                           type="button"
                           onClick={() => void replaceInQueue(it.id)}
-                          className="rounded border border-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold hover:bg-zinc-50"
+                          className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 hover:bg-amber-100"
+                          title="Bu sayfayı ekrandaki afişle değiştirir — eski hâli gider (geri alınabilir)"
                         >
                           Üzerine yaz
                         </button>
@@ -2840,7 +2911,8 @@ export default function Studio2Page() {
                         <button
                           type="button"
                           onClick={() => removeFromQueue(it.id)}
-                          className="rounded border border-zinc-200 px-1.5 py-0.5 text-[10px] font-semibold hover:bg-zinc-50"
+                          className="rounded border border-red-200 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50"
+                          title="Sayfayı kuyruktan çıkarır (geri alınabilir)"
                         >
                           Sil
                         </button>
