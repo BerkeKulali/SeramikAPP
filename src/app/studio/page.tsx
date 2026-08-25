@@ -63,6 +63,7 @@ const FONT_MAX = 160;
 const GROUND_FAMILIES = [
   { id: "sicak", label: "Sıcak gri" },
   { id: "zeytin", label: "Zeytin-gri" },
+  { id: "notr", label: "Nötr" },
 ] as const;
 type GroundFamily = (typeof GROUND_FAMILIES)[number]["id"];
 
@@ -88,6 +89,15 @@ const GROUNDS = [
   { id: "zeytin-orta", family: "zeytin", tone: "orta", label: "Zeytin orta", bg: "#6D7268", ink: "#FFFFFF" },
   { id: "zeytin-koyu", family: "zeytin", tone: "koyu", label: "Zeytin koyu", bg: "#3B403A", ink: "#FFFFFF" },
   { id: "zeytin-siyah", family: "zeytin", tone: "siyah", label: "Zeytin siyahı", bg: "#1E221F", ink: "#FFFFFF" },
+  // Nötr aile: eski stüdyodaki kâğıt beyazı (#F5F5F5 + saf siyah) buradan
+  // geliyor. Basımda ve fotokopide tarafsız durduğu için isteniyor.
+  // Kalan tonlar diğer ailelerle aynı L* basamaklarında (77 · 47,6 · 25,3 · 11,3)
+  // türetildi ki "orta" her ailede aynı koyulukta olsun.
+  { id: "notr-beyaz", family: "notr", tone: "beyaz", label: "Kâğıt beyazı", bg: "#F5F5F5", ink: "#000000" },
+  { id: "notr-acik", family: "notr", tone: "acik", label: "Nötr açık", bg: "#BEBEBE", ink: "#111111" },
+  { id: "notr-orta", family: "notr", tone: "orta", label: "Nötr orta", bg: "#717171", ink: "#FFFFFF" },
+  { id: "notr-koyu", family: "notr", tone: "koyu", label: "Nötr koyu", bg: "#3C3C3C", ink: "#FFFFFF" },
+  { id: "notr-siyah", family: "notr", tone: "siyah", label: "Nötr siyah", bg: "#1E1E1E", ink: "#FFFFFF" },
 ] as const;
 
 /** Eski kayıtlarda zemin "orta", "siyah" gibi tek kelimeydi. */

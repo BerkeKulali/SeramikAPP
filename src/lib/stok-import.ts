@@ -368,7 +368,11 @@ function truthy(v: string): boolean {
 export function normalizeGround(v: string): string {
   const t = normalizeText(v);
   if (!t) return "";
-  const family = /zeytin|olive|yesil/.test(t) ? "zeytin" : "sicak";
+  const family = /zeytin|olive|yesil/.test(t)
+    ? "zeytin"
+    : /notr|notur|neutral|kagit beyazi/.test(t)
+      ? "notr"
+      : "sicak";
   const tone = /siyah|black|murekkep/.test(t)
     ? "siyah"
     : /koyu|dark/.test(t)

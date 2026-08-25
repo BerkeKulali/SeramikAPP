@@ -52,6 +52,7 @@ GROUP_FILL = {
 }
 
 GROUNDS = [
+    "NÖTR KÂĞIT", "NÖTR AÇIK", "NÖTR ORTA", "NÖTR KOYU", "NÖTR SİYAH",
     "SICAK KÂĞIT", "SICAK AÇIK", "SICAK ORTA", "SICAK KOYU", "SICAK SİYAH",
     "ZEYTİN KÂĞIT", "ZEYTİN AÇIK", "ZEYTİN ORTA", "ZEYTİN KOYU", "ZEYTİN SİYAH",
 ]
