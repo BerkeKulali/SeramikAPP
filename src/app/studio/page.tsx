@@ -7,6 +7,7 @@ import { jsPDF } from "jspdf";
 import { readXlsxRows, readDelimitedRows } from "@/src/lib/xlsx-lite";
 import {
   buildImport,
+  formatQty,
   type ImportResult,
   type ImportRow,
   type SavedMatch,
@@ -144,6 +145,10 @@ type Product = {
 type SalesRow = {
   id: string;
   on: boolean;
+  /** Satırın geldiği karo — satış sonrası stok düşümü buraya yazılır. */
+  slotIndex: number;
+  /** Düşümün hangi stoktan yapılacağı (çift stokta END. ayrı). */
+  target: "stock" | "stockEnd";
   productName: string;
   brand: string;
   size: string;
@@ -837,17 +842,53 @@ function PriceBlock({
   );
 }
 
+/**
+ * Stoğu tükenmiş satır. Boş stok ("") "bilgi girilmedi" demek ve tire
+ * basılır; sıfır ise ürün gerçekten bitmiştir.
+ */
+function isSoldOut(value: string): boolean {
+  const t = String(value ?? "").trim();
+  return t !== "" && parseTrNumber(t) <= 0;
+}
+
 function StockLine({
   value,
   scale,
   muted,
   ink,
+  accent,
+  bg,
 }: {
   value: string;
   scale: number;
   muted: string;
   ink: string;
+  accent: string;
+  bg: string;
 }) {
+  if (isSoldOut(value)) {
+    // "STOK 0 m²" yazmak müşteriye bir şey anlatmıyor. Ürün bittiyse
+    // bunu söyleyen bir rozet, rakamdan daha okunur.
+    return (
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          background: accent,
+          color: bg,
+          borderRadius: Math.round(9 * scale),
+          padding: `${Math.round(7 * scale)}px ${Math.round(14 * scale)}px`,
+          fontSize: Math.round(30 * scale),
+          fontWeight: 850,
+          letterSpacing: ".04em",
+          lineHeight: 1,
+          whiteSpace: "nowrap",
+        }}
+      >
+        SIFIRLANDI
+      </div>
+    );
+  }
   return (
     // Stok, müşterinin uzaktan okuyacağı bilgi — fiyatla aynı ağırlıkta.
     <div style={{ display: "flex", alignItems: "baseline", gap: Math.round(10 * scale) }}>
@@ -950,6 +991,9 @@ export default function Studio2Page() {
   >({});
   const [matchMemoryNote, setMatchMemoryNote] = useState<string | null>(null);
 
+  /** Kuyrukta ürün listesi açık olan sayfalar. */
+  const [openQueueRows, setOpenQueueRows] = useState<Set<string>>(new Set());
+
   /* katalog boşluk raporu */
   const [catalogOpen, setCatalogOpen] = useState(false);
 
@@ -958,6 +1002,8 @@ export default function Studio2Page() {
   const [salesRows, setSalesRows] = useState<SalesRow[]>([]);
   const [salesDate, setSalesDate] = useState("");
   const [salesCustomer, setSalesCustomer] = useState("");
+  /** Satış kaydedilince afişteki stok da azalsın mı. */
+  const [salesDeduct, setSalesDeduct] = useState(true);
 
   /** Yüklenen görsellerin kendi en/boy oranı (url -> oran). Ebatla
    *  uyuşmayan görseli panelde uyarmak için. */
@@ -1395,6 +1441,96 @@ export default function Studio2Page() {
     if (undoPoint.state) setState(undoPoint.state);
     setMsg(`Geri alındı: ${undoPoint.label}`);
     setUndoPoint(null);
+  }
+
+  /**
+   * Bir ürünü kuyruktaki bir sayfadan diğerine taşır.
+   *
+   * Kaynak sayfanın ürün sayısı bir azalır, hedefinki bir artar (en fazla 4).
+   * Taşınan karo hedef sayfanın ebadına zorlanmaz: kendi ebadı farklıysa
+   * karo bazında ebat olarak yazılır, oranı bozulmaz.
+   *
+   * Küçük önizlemeler de yeniden üretilir — eskiden yalnız veriyi
+   * değiştirmek kuyrukta yanlış resim bırakıyordu.
+   */
+  async function moveSlotBetweenPages(
+    fromId: string,
+    slotIdx: number,
+    toId: string,
+  ) {
+    if (fromId === toId) return;
+    const from = queue.find((q) => q.id === fromId);
+    const to = queue.find((q) => q.id === toId);
+    if (!from || !to) return;
+    const moving = from.snapshot.slots[slotIdx];
+    if (!moving) return;
+    if (to.snapshot.count >= 4) {
+      setMsg("Hedef sayfa dolu — bir sayfada en fazla 4 ürün olabilir");
+      return;
+    }
+    if (from.snapshot.count <= 1) {
+      setMsg("Bu sayfada tek ürün kaldı; taşımak yerine sayfayı silebilirsin");
+      return;
+    }
+
+    const srcSize = moving.sizeOverride || from.snapshot.size;
+    const moved: Slot = {
+      ...moving,
+      sizeOverride: srcSize === to.snapshot.size ? "" : srcSize,
+    };
+
+    const fromSlots = from.snapshot.slots.filter((_, i) => i !== slotIdx);
+    const fromSnap: PageState = {
+      ...from.snapshot,
+      count: from.snapshot.count - 1,
+      slots: fromSlots.length ? fromSlots : [emptySlot()],
+    };
+    const toSnap: PageState = {
+      ...to.snapshot,
+      count: to.snapshot.count + 1,
+      slots: [...to.snapshot.slots.slice(0, to.snapshot.count), moved],
+    };
+
+    markUndo("ürün taşıma");
+    const saved = JSON.parse(JSON.stringify(state)) as PageState;
+    try {
+      setBusy("Ürün taşınıyor…");
+      const shoot = async (snap: PageState) => {
+        setState(snap);
+        await waitForCanvas(expectedImageCount(snap), snapKey(snap));
+        return captureThumb();
+      };
+      const fromThumb = await shoot(fromSnap);
+      const toThumb = await shoot(toSnap);
+      setQueue((q) =>
+        q.map((it) =>
+          it.id === fromId
+            ? {
+                ...it,
+                title: snapshotTitle(fromSnap),
+                thumb: fromThumb ?? it.thumb,
+                snapshot: fromSnap,
+              }
+            : it.id === toId
+              ? {
+                  ...it,
+                  title: snapshotTitle(toSnap),
+                  thumb: toThumb ?? it.thumb,
+                  snapshot: toSnap,
+                }
+              : it,
+        ),
+      );
+      setMsg(
+        `Ürün ${queue.findIndex((q) => q.id === toId) + 1}. sayfaya taşındı ✓`,
+      );
+    } catch {
+      setUndoPoint(null);
+      setMsg("Ürün taşınamadı");
+    } finally {
+      setState(saved);
+      setBusy(null);
+    }
   }
 
   /** Kuyruktaki sayfayı ekrandaki hâliyle değiştirir. Küçük önizleme de
@@ -1972,13 +2108,20 @@ export default function Studio2Page() {
       const p = s2.productId ? productsById.get(s2.productId) : undefined;
       const name = displayName(p, s2);
       if (!name) return;
-      const push = (suffix: string, stock: string, price: string) => {
+      const push = (
+        suffix: string,
+        stock: string,
+        price: string,
+        field: "stock" | "stockEnd" = "stock",
+      ) => {
         const quantity = parseTrNumber(stock);
         const unitPrice = parseTrNumber(price);
         if (!quantity || !unitPrice) return;
         rows.push({
           id: `${i}-${suffix || "tek"}`,
           on: true,
+          slotIndex: i,
+          target: field,
           productName: suffix ? `${name} ${suffix}` : name,
           brand: p?.brand ?? state.brandName,
           size: s2.sizeOverride || state.size,
@@ -1989,7 +2132,7 @@ export default function Studio2Page() {
       };
       if (s2.dualStock) {
         push(s2.isRec ? "REC 1. KALİTE" : "1. KALİTE", s2.stock, s2.price);
-        push(s2.isRec ? "REC END." : "END.", s2.stockEnd, s2.priceEnd);
+        push(s2.isRec ? "REC END." : "END.", s2.stockEnd, s2.priceEnd, "stockEnd");
       } else {
         push(gradeLabel(s2), s2.stock, s2.price);
       }
@@ -2039,8 +2182,44 @@ export default function Studio2Page() {
         body: JSON.stringify({ items }),
       });
       if (!res.ok) throw new Error(String(res.status));
+
+      let dusen = 0;
+      if (salesDeduct) {
+        // Satılan miktar afişteki stoktan düşer. Geri alma noktası hem
+        // sayfayı hem kuyruğu tutuyor; yanlış kayıtta tek tıkla dönülür.
+        markUndo("satış kaydı (stok düşümü)", true);
+        const before = JSON.stringify(state);
+        const slots = state.slots.map((x) => ({ ...x }));
+        picked.forEach((r) => {
+          const sl = slots[r.slotIndex];
+          if (!sl) return;
+          const kalan = Math.max(0, parseTrNumber(sl[r.target]) - r.quantity);
+          sl[r.target] = formatQty(kalan);
+          dusen += 1;
+        });
+        const next = { ...state, slots };
+        setState(next);
+        // Bu sayfa kuyrukta da duruyorsa oradaki kopya eski stokla kalmasın.
+        // Yalnız tek bir sayfa birebir eşleşiyorsa dokunuyoruz; birden çok
+        // eşleşmede hangisini güncelleyeceğimiz belirsiz olurdu.
+        const eslesen = queue.filter((q) => JSON.stringify(q.snapshot) === before);
+        if (eslesen.length === 1) {
+          const id = eslesen[0].id;
+          setQueue((q) =>
+            q.map((it) =>
+              it.id === id
+                ? { ...it, title: snapshotTitle(next), snapshot: next }
+                : it,
+            ),
+          );
+        }
+      }
+
       setSalesOpen(false);
-      setMsg(`${items.length} satış kaydedildi ✓`);
+      setMsg(
+        `${items.length} satış kaydedildi ✓` +
+          (dusen ? ` · ${dusen} satırın stoğu düşüldü` : ""),
+      );
     } catch {
       setMsg("Satış kaydedilemedi");
     } finally {
@@ -2117,7 +2296,14 @@ export default function Studio2Page() {
             bg={ground.bg}
             scale={s * 0.92}
           />
-          <StockLine value={stockValue} scale={s * 0.86} muted={muted} ink={ground.ink} />
+          <StockLine
+            value={stockValue}
+            scale={s * 0.86}
+            muted={muted}
+            ink={ground.ink}
+            accent={state.accent}
+            bg={ground.bg}
+          />
         </div>
         <PriceValue value={priceValue} scale={s * (primary ? 1 : 0.92)} muted={muted} />
       </div>
@@ -2186,7 +2372,14 @@ export default function Studio2Page() {
                 {name || "—"}
               </div>
               <div style={{ marginTop: Math.round(9 * s) }}>
-                <StockLine value={slot.stock} scale={s} muted={muted} ink={ground.ink} />
+                <StockLine
+                  value={slot.stock}
+                  scale={s}
+                  muted={muted}
+                  ink={ground.ink}
+                  accent={state.accent}
+                  bg={ground.bg}
+                />
               </div>
             </div>
           </div>
@@ -2226,7 +2419,14 @@ export default function Studio2Page() {
               gap: Math.round(14 * s),
             }}
           >
-            <StockLine value={slot.stock} scale={s} muted={muted} ink={ground.ink} />
+            <StockLine
+                  value={slot.stock}
+                  scale={s}
+                  muted={muted}
+                  ink={ground.ink}
+                  accent={state.accent}
+                  bg={ground.bg}
+                />
             <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
               <PriceBlock slot={slot} scale={s} muted={muted} />
             </div>
@@ -2874,10 +3074,8 @@ export default function Studio2Page() {
             ) : (
               <div className="space-y-2">
                 {queue.map((it, i) => (
-                  <div
-                    key={it.id}
-                    className="flex items-center gap-2 rounded-xl border border-zinc-200 p-2"
-                  >
+                  <div key={it.id} className="rounded-xl border border-zinc-200 p-2">
+                  <div className="flex items-center gap-2">
                     <div className="w-6 shrink-0 text-center text-xs font-bold text-zinc-400">
                       {i + 1}
                     </div>
@@ -2926,6 +3124,26 @@ export default function Studio2Page() {
                         </button>
                         <button
                           type="button"
+                          onClick={() =>
+                            setOpenQueueRows((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(it.id)) next.delete(it.id);
+                              else next.add(it.id);
+                              return next;
+                            })
+                          }
+                          className={[
+                            "rounded border px-1.5 py-0.5 text-[10px] font-semibold",
+                            openQueueRows.has(it.id)
+                              ? "border-zinc-900 bg-zinc-900 text-white"
+                              : "border-zinc-200 hover:bg-zinc-50",
+                          ].join(" ")}
+                          title="Sayfadaki ürünleri listele, başka sayfaya taşı"
+                        >
+                          Ürünler
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => removeFromQueue(it.id)}
                           className="rounded border border-red-200 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50"
                           title="Sayfayı kuyruktan çıkarır (geri alınabilir)"
@@ -2934,6 +3152,60 @@ export default function Studio2Page() {
                         </button>
                       </div>
                     </div>
+                  </div>
+                  {openQueueRows.has(it.id) ? (
+                    <div className="mt-1.5 space-y-1 rounded-lg bg-zinc-50 p-2">
+                      {it.snapshot.slots
+                        .slice(0, it.snapshot.count)
+                        .map((sl, si) => {
+                          const pr = sl.productId
+                            ? productsById.get(sl.productId)
+                            : undefined;
+                          const ad = displayName(pr, sl) || "(boş)";
+                          return (
+                            <div key={si} className="flex items-center gap-2">
+                              <div className="min-w-0 flex-1 truncate text-[11px] font-semibold">
+                                {ad}
+                                <span className="ml-1 font-normal text-zinc-400">
+                                  {sl.sizeOverride || it.snapshot.size}
+                                </span>
+                              </div>
+                              <select
+                                value=""
+                                disabled={Boolean(busy) || queue.length < 2}
+                                onChange={(e) => {
+                                  const target = e.target.value;
+                                  e.currentTarget.value = "";
+                                  if (target)
+                                    void moveSlotBetweenPages(it.id, si, target);
+                                }}
+                                className="shrink-0 rounded border border-zinc-200 bg-white px-1.5 py-1 text-[10px] font-semibold disabled:opacity-50"
+                                title="Bu ürünü başka bir sayfaya taşı"
+                              >
+                                <option value="">taşı →</option>
+                                {queue.map((q, qi) =>
+                                  q.id === it.id ? null : (
+                                    <option
+                                      key={q.id}
+                                      value={q.id}
+                                      disabled={q.snapshot.count >= 4}
+                                    >
+                                      {qi + 1}. sayfa
+                                      {q.snapshot.count >= 4 ? " (dolu)" : ""}
+                                    </option>
+                                  ),
+                                )}
+                              </select>
+                            </div>
+                          );
+                        })}
+                      {queue.length < 2 ? (
+                        <div className="text-[10px] text-zinc-500">
+                          Taşımak için kuyrukta en az iki sayfa olmalı.
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   </div>
                 ))}
               </div>
@@ -3129,8 +3401,14 @@ export default function Studio2Page() {
                         onChange={(e) => patchSlot(i, { stock: e.target.value })}
                         placeholder="örn. 363"
                         inputMode="decimal"
+                        title="0 yazarsan afişte SIFIRLANDI rozeti basılır. Boş bırakırsan tire."
                         className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
                       />
+                      {isSoldOut(slot.stock) ? (
+                        <div className="text-[10px] font-semibold text-blue-700">
+                          Afişte &ldquo;SIFIRLANDI&rdquo; basılacak
+                        </div>
+                      ) : null}
                     </label>
                     <label className="space-y-1">
                       <div className="text-xs font-semibold text-zinc-600">
@@ -4377,6 +4655,21 @@ export default function Studio2Page() {
                 />
               </label>
             </div>
+
+            <label className="flex cursor-pointer items-start gap-2 border-b border-zinc-100 px-4 py-2.5">
+              <input
+                type="checkbox"
+                checked={salesDeduct}
+                onChange={(e) => setSalesDeduct(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-zinc-900"
+              />
+              <span className="text-[11px] leading-relaxed text-zinc-600">
+                <b>Satılan miktarı afişteki stoktan düş.</b> Kalan sıfıra
+                inerse o satır &ldquo;SIFIRLANDI&rdquo; olarak basılır. Sayfa
+                kuyrukta da varsa oradaki kopya güncellenir; yanlışlıkla
+                yaparsan üstteki &ldquo;Geri al&rdquo; ile dönebilirsin.
+              </span>
+            </label>
 
             <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-2">
               <div className="text-[11px] font-semibold text-zinc-500">
