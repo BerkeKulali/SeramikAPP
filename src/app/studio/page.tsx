@@ -1468,10 +1468,10 @@ export default function Studio2Page() {
       setMsg("Hedef sayfa dolu — bir sayfada en fazla 4 ürün olabilir");
       return;
     }
-    if (from.snapshot.count <= 1) {
-      setMsg("Bu sayfada tek ürün kaldı; taşımak yerine sayfayı silebilirsin");
-      return;
-    }
+    // Kaynakta tek ürün varsa taşımak sayfayı boşaltır — sayfa da gider.
+    // Bunu engellemek yanlıştı: artık ürünü kurtarmanın tek yolu buydu,
+    // "sayfayı sil" dendiğinde ürün de siliniyordu.
+    const kaynakBosalir = from.snapshot.count <= 1;
 
     const srcSize = moving.sizeOverride || from.snapshot.size;
     const moved: Slot = {
@@ -1482,7 +1482,7 @@ export default function Studio2Page() {
     const fromSlots = from.snapshot.slots.filter((_, i) => i !== slotIdx);
     const fromSnap: PageState = {
       ...from.snapshot,
-      count: from.snapshot.count - 1,
+      count: Math.max(1, from.snapshot.count - 1),
       slots: fromSlots.length ? fromSlots : [emptySlot()],
     };
     const toSnap: PageState = {
@@ -1500,29 +1500,34 @@ export default function Studio2Page() {
         await waitForCanvas(expectedImageCount(snap), snapKey(snap));
         return captureThumb();
       };
-      const fromThumb = await shoot(fromSnap);
+      const fromThumb = kaynakBosalir ? null : await shoot(fromSnap);
       const toThumb = await shoot(toSnap);
+      const hedefNo = queue.findIndex((q) => q.id === toId) + 1;
       setQueue((q) =>
-        q.map((it) =>
-          it.id === fromId
-            ? {
-                ...it,
-                title: snapshotTitle(fromSnap),
-                thumb: fromThumb ?? it.thumb,
-                snapshot: fromSnap,
-              }
-            : it.id === toId
+        q
+          .map((it) =>
+            it.id === toId
               ? {
                   ...it,
                   title: snapshotTitle(toSnap),
                   thumb: toThumb ?? it.thumb,
                   snapshot: toSnap,
                 }
-              : it,
-        ),
+              : it.id === fromId && !kaynakBosalir
+                ? {
+                    ...it,
+                    title: snapshotTitle(fromSnap),
+                    thumb: fromThumb ?? it.thumb,
+                    snapshot: fromSnap,
+                  }
+                : it,
+          )
+          // Boşalan kaynak sayfa kuyrukta durmasın.
+          .filter((it) => !(kaynakBosalir && it.id === fromId)),
       );
       setMsg(
-        `Ürün ${queue.findIndex((q) => q.id === toId) + 1}. sayfaya taşındı ✓`,
+        `Ürün ${hedefNo}. sayfaya taşındı ✓` +
+          (kaynakBosalir ? " · boşalan sayfa kuyruktan çıkarıldı" : ""),
       );
     } catch {
       setUndoPoint(null);
@@ -3202,6 +3207,10 @@ export default function Studio2Page() {
                       {queue.length < 2 ? (
                         <div className="text-[10px] text-zinc-500">
                           Taşımak için kuyrukta en az iki sayfa olmalı.
+                        </div>
+                      ) : it.snapshot.count === 1 ? (
+                        <div className="text-[10px] text-zinc-500">
+                          Tek ürün: taşırsan bu sayfa kuyruktan çıkar.
                         </div>
                       ) : null}
                     </div>
