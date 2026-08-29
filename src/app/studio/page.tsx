@@ -13,6 +13,15 @@ import {
   type SavedMatch,
 } from "@/src/lib/stok-import";
 import {
+  grupEtiketi,
+  grupUrunleri,
+  hamDosyaMi,
+  hamGrupla,
+  hamOku,
+  sablonSatirlari,
+  type HamGrup,
+} from "@/src/lib/ham-stok";
+import {
   auditSizes,
   downloadCsv,
   findJunkNames,
@@ -991,6 +1000,17 @@ export default function Studio2Page() {
   >({});
   const [matchMemoryNote, setMatchMemoryNote] = useState<string | null>(null);
 
+  /* Ham stok dökümü hazırlama ekranı */
+  const [hamOpen, setHamOpen] = useState(false);
+  const [hamGruplar, setHamGruplar] = useState<HamGrup[]>([]);
+  const [hamSecili, setHamSecili] = useState<Set<string>>(new Set());
+  const [hamAcik, setHamAcik] = useState<Set<string>>(new Set());
+  const [grupFiyat, setGrupFiyat] = useState<Record<string, string>>({});
+  const [urunFiyat, setUrunFiyat] = useState<Record<string, string>>({});
+  /** Hafızadan gelen fiyatlar — hangilerinin hatırlandığını göstermek için. */
+  const [hatirlananFiyat, setHatirlananFiyat] = useState<Record<string, string>>({});
+  const [hamPerPage, setHamPerPage] = useState("3");
+
   /** Kuyrukta ürün listesi açık olan sayfalar. */
   const [openQueueRows, setOpenQueueRows] = useState<Set<string>>(new Set());
 
@@ -1625,9 +1645,59 @@ export default function Studio2Page() {
     try {
       setBusy("Excel okunuyor…");
       setImportError(null);
+      const buf = await file.arrayBuffer();
+      // Eski ikili .xls biçimi (OLE2) okunamıyor; kullanıcıya net söyle.
+      const sig = new Uint8Array(buf.slice(0, 4));
+      if (sig[0] === 0xd0 && sig[1] === 0xcf && sig[2] === 0x11 && sig[3] === 0xe0) {
+        throw new Error(
+          "Bu dosya eski .xls biçiminde. Excel'de açıp 'Farklı Kaydet → .xlsx' ile kaydedip tekrar dene.",
+        );
+      }
       const rows = /\.(csv|txt|tsv)$/i.test(file.name)
         ? readDelimitedRows(await file.text())
-        : await readXlsxRows(await file.arrayBuffer());
+        : await readXlsxRows(buf);
+
+      // Ham tedarikçi dökümü mü? Şablonda FİYAT ve SAYFA sütunları var,
+      // ham dökümde yok — o zaman önce hazırlama ekranı açılır.
+      if (hamDosyaMi(rows)) {
+        const gruplar = hamGrupla(hamOku(rows));
+        if (!gruplar.length) throw new Error("Dosyada stoğu olan ürün bulunamadı");
+
+        // Fiyat hafızası: aynı ürün daha önce fiyatlandıysa hazır gelsin.
+        let hafiza: Record<string, string> = {};
+        try {
+          const r = await fetch("/api/prices", { cache: "no-store" });
+          if (r.ok) {
+            const d = (await r.json()) as { items?: { key: string; price: string }[] };
+            (d.items ?? []).forEach((it) => {
+              if (it.key && it.price) hafiza[it.key] = it.price;
+            });
+          }
+        } catch {
+          hafiza = {};
+        }
+
+        const baslangic: Record<string, string> = {};
+        gruplar.forEach((g) =>
+          grupUrunleri(g).forEach((u) => {
+            const f = hafiza[u.urunKey];
+            if (f) baslangic[u.urunKey] = f;
+          }),
+        );
+
+        setHamGruplar(gruplar);
+        // En kalabalık grup açık gelsin — iş çoğunlukla orada.
+        const enBuyuk = gruplar.slice().sort((a, b) => b.satirlar.length - a.satirlar.length)[0];
+        setHamSecili(new Set(enBuyuk ? [enBuyuk.id] : []));
+        setHamAcik(new Set());
+        setGrupFiyat({});
+        setUrunFiyat(baslangic);
+        setHatirlananFiyat(baslangic);
+        setHamPerPage("3");
+        setHamOpen(true);
+        setBusy(null);
+        return;
+      }
 
       // Daha önce elle yapılmış eşleşmeleri getir. Sözlük okunamazsa içe
       // aktarma yine çalışsın — yalnız hatırlama devre dışı kalır.
@@ -1705,6 +1775,89 @@ export default function Studio2Page() {
     // Satırın kendi ebadı sayfanınkinden farklıysa karo kendi oranını korusun.
     if (r.size) sl.sizeOverride = r.size;
     return sl;
+  }
+
+  /**
+   * Hazırlama ekranındaki seçimleri şablon satırlarına çevirip normal
+   * içe aktarma önizlemesine devreder. Böylece fotoğraf eşleştirme,
+   * uyarılar ve kuyruk mantığı olduğu gibi yeniden kullanılıyor.
+   */
+  async function hamUygula() {
+    const secili = hamGruplar.filter((g) => hamSecili.has(g.id));
+    if (!secili.length) {
+      setImportError("En az bir grup seç");
+      return;
+    }
+    try {
+      setBusy("Sayfalar hazırlanıyor…");
+      const rows = sablonSatirlari(secili, {
+        sayfaBasinaUrun: Number(hamPerPage) || 3,
+        zemin: groundOf(state.ground).label.toLocaleUpperCase("tr-TR"),
+        marka: state.brandName,
+        sevkYeri: state.depot,
+        urunFiyat,
+        grupFiyat,
+      });
+
+      // Yazılan fiyatları hafızaya al — bir dahaki dökümde hazır gelsin.
+      const ogrenilen = secili
+        .flatMap((g) =>
+          grupUrunleri(g).map((u) => ({
+            key: u.urunKey,
+            price: (urunFiyat[u.urunKey] ?? grupFiyat[g.id] ?? "").trim(),
+            sample: u.ad,
+          })),
+        )
+        .filter((x) => x.price);
+      if (ogrenilen.length) {
+        void fetch("/api/prices", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: ogrenilen }),
+        }).catch(() => {});
+      }
+
+      let saved: SavedMatch[] = [];
+      try {
+        const r = await fetch("/api/matches", { cache: "no-store" });
+        if (r.ok) {
+          const d = (await r.json()) as { items?: SavedMatch[] };
+          saved = Array.isArray(d.items) ? d.items : [];
+        }
+      } catch {
+        saved = [];
+      }
+
+      const res = buildImport(rows, products, saved);
+      const pick: Record<string, string> = {};
+      const keys: Record<
+        string,
+        { memoryKey: string; sample: string; initial: string }
+      > = {};
+      res.pages.forEach((pg) =>
+        pg.rows.forEach((r) => {
+          pick[r.key] = r.productId ?? "";
+          keys[r.key] = {
+            memoryKey: r.memoryKey,
+            sample: r.rawName,
+            initial: r.productId ?? "",
+          };
+        }),
+      );
+      setImportResult(res);
+      setImportPick(pick);
+      setImportKeys(keys);
+      setImportError(null);
+      setMatchMemoryNote(
+        ogrenilen.length ? `${ogrenilen.length} ürünün fiyatı hatırlanacak` : null,
+      );
+      setHamOpen(false);
+      setImportOpen(true);
+    } catch (e) {
+      setImportError((e as Error)?.message ?? "Hazırlanamadı");
+    } finally {
+      setBusy(null);
+    }
   }
 
   /**
@@ -4061,6 +4214,212 @@ export default function Studio2Page() {
                 </div>
               );
             })()}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ------------------ HAM STOK DÖKÜMÜ · HAZIRLAMA ------------------ */}
+      {hamOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white">
+            <div className="border-b border-zinc-100 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-bold">Ham stok dökümü</div>
+                  <div className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
+                    Dosyada fiyat ve sayfa bilgisi yok; ebat, yüzey ve kalite
+                    ürün adından okundu. Hangi grupları afişe alacağını seç ve
+                    fiyatlarını gir — şablonu elle doldurmana gerek yok.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setHamOpen(false)}
+                  className="shrink-0 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold hover:bg-zinc-50"
+                >
+                  Kapat
+                </button>
+              </div>
+              {importError ? (
+                <div className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
+                  {importError}
+                </div>
+              ) : null}
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 text-[11px] font-semibold text-zinc-600">
+                  Sayfa başına ürün
+                  <input
+                    value={hamPerPage}
+                    onChange={(e) => setHamPerPage(e.target.value.replace(/\D/g, ""))}
+                    inputMode="numeric"
+                    className="w-12 rounded-lg border border-zinc-200 px-2 py-1 text-center text-sm font-bold"
+                  />
+                </label>
+                <span className="text-[11px] text-zinc-500">
+                  Zemin, marka ve sevk yeri şu anki sayfa ayarlarından alınır:{" "}
+                  <b>{groundOf(state.ground).label}</b> · <b>{state.brandName}</b>{" "}
+                  · <b>{state.depot}</b>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-2">
+                {hamGruplar.map((g) => {
+                  const secili = hamSecili.has(g.id);
+                  const acik = hamAcik.has(g.id);
+                  const urunler = grupUrunleri(g);
+                  return (
+                    <div
+                      key={g.id}
+                      className={[
+                        "rounded-xl border p-2.5",
+                        secili ? "border-zinc-900 bg-white" : "border-zinc-200 bg-zinc-50",
+                      ].join(" ")}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={secili}
+                          onChange={(e) =>
+                            setHamSecili((prev) => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.add(g.id);
+                              else next.delete(g.id);
+                              return next;
+                            })
+                          }
+                          className="h-4 w-4 shrink-0 accent-zinc-900"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[12px] font-bold">{grupEtiketi(g)}</div>
+                          <div className="text-[10px] text-zinc-500">
+                            {g.urunSayisi} ürün · {g.satirlar.length} lot ·{" "}
+                            {Math.round(g.toplamStok).toLocaleString("tr-TR")} m²
+                            {" · "}
+                            {Math.ceil(g.urunSayisi / (Number(hamPerPage) || 3))} sayfa
+                          </div>
+                        </div>
+                        <label className="shrink-0 text-right">
+                          <div className="text-[9px] font-semibold uppercase text-zinc-400">
+                            grup fiyatı ₺
+                          </div>
+                          <input
+                            value={grupFiyat[g.id] ?? ""}
+                            placeholder="—"
+                            inputMode="numeric"
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/\D/g, "");
+                              setGrupFiyat((prev) => ({ ...prev, [g.id]: v }));
+                            }}
+                            className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-right text-[12px] font-bold"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setHamAcik((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(g.id)) next.delete(g.id);
+                              else next.add(g.id);
+                              return next;
+                            })
+                          }
+                          className={[
+                            "shrink-0 rounded border px-1.5 py-1 text-[10px] font-semibold",
+                            acik
+                              ? "border-zinc-900 bg-zinc-900 text-white"
+                              : "border-zinc-200 hover:bg-zinc-50",
+                          ].join(" ")}
+                        >
+                          Ürünler
+                        </button>
+                      </div>
+
+                      {acik ? (
+                        <div className="mt-2 space-y-1 rounded-lg bg-zinc-50 p-2">
+                          {urunler.map((u) => {
+                            const hatirlandi = Boolean(hatirlananFiyat[u.urunKey]);
+                            return (
+                              <div key={u.urunKey} className="flex items-center gap-2">
+                                <div className="min-w-0 flex-1 truncate text-[11px]">
+                                  {u.ad}
+                                  <span className="ml-1 text-zinc-400">
+                                    {Math.round(u.stok).toLocaleString("tr-TR")} m²
+                                    {u.lotSayisi > 1 ? ` · ${u.lotSayisi} lot` : ""}
+                                  </span>
+                                  {hatirlandi ? (
+                                    <span className="ml-1 font-semibold text-violet-700">
+                                      · hatırlandı
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <input
+                                  value={urunFiyat[u.urunKey] ?? ""}
+                                  placeholder={grupFiyat[g.id] || "—"}
+                                  inputMode="numeric"
+                                  onChange={(e) => {
+                                    const v = e.target.value.replace(/\D/g, "");
+                                    setUrunFiyat((prev) => ({ ...prev, [u.urunKey]: v }));
+                                  }}
+                                  className="w-20 shrink-0 rounded border border-zinc-200 bg-white px-2 py-1 text-right text-[11px] font-bold"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-zinc-100 p-4">
+              <div className="text-[11px] leading-relaxed text-zinc-500">
+                Ürün kutusu boşsa grup fiyatı kullanılır. Girdiğin fiyatlar
+                hatırlanır; bir dahaki dökümde aynı ürün için hazır gelir.
+                <br />
+                Sonraki adımda fotoğraf eşleşmelerini görüp düzeltebilirsin.
+              </div>
+              {(() => {
+                const secili = hamGruplar.filter((g) => hamSecili.has(g.id));
+                const urun = secili.reduce((a, g) => a + g.urunSayisi, 0);
+                const sayfa = secili.reduce(
+                  (a, g) => a + Math.ceil(g.urunSayisi / (Number(hamPerPage) || 3)),
+                  0,
+                );
+                const fiyatsiz = secili.reduce(
+                  (a, g) =>
+                    a +
+                    grupUrunleri(g).filter(
+                      (u) => !(urunFiyat[u.urunKey] ?? grupFiyat[g.id] ?? "").trim(),
+                    ).length,
+                  0,
+                );
+                return (
+                  <div className="shrink-0 text-right">
+                    {fiyatsiz ? (
+                      <div className="mb-1 text-[10px] font-semibold text-orange-800">
+                        {fiyatsiz} üründe fiyat boş
+                      </div>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => void hamUygula()}
+                      disabled={Boolean(busy) || !secili.length}
+                      className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+                    >
+                      Devam ({urun} ürün · {sayfa} sayfa)
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
       ) : null}
