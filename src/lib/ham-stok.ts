@@ -17,7 +17,8 @@ export type HamSatir = {
   /** Açıklama sütunundaki hâli — afişe de bu ad gider. */
   rawName: string;
   size: string;
-  surface: "" | "FLP" | "SEMİ LAPP." | "MAT";
+  /** Adında yüzey yazmayan ürün MAT'tır (tedarikçi böyle adlandırıyor). */
+  surface: "FLP" | "SEMİ LAPP." | "MAT";
   grade: "" | "1." | "END.";
   isRec: boolean;
   stock: number;
@@ -82,14 +83,17 @@ export function hamDosyaMi(rows: string[][]): boolean {
   return !fiyat && !sayfa;
 }
 
+/**
+ * Yüzey ürün adından okunur. Adında yüzey geçmiyorsa ürün MAT'tır —
+ * tedarikçi yalnız mat dışındaki yüzeyleri ada yazıyor.
+ */
 function yuzeyOku(ad: string): HamSatir["surface"] {
   const t = normalizeText(ad);
   // "FULL LAP" ve dosyada rastlanan "FUL LAP" yazımı aynı yüzey.
   if (/\bful+\s*lap/.test(t)) return "FLP";
   if (/\bflp\b/.test(t)) return "FLP";
   if (/\blappato\b|\blapp\b|\bsemi\b/.test(t)) return "SEMİ LAPP.";
-  if (/\bmat+\b/.test(t)) return "MAT";
-  return "";
+  return "MAT";
 }
 
 function kaliteOku(ad: string): HamSatir["grade"] {
@@ -166,13 +170,12 @@ const YUZEY_SIRA: Record<string, number> = {
   FLP: 0,
   "SEMİ LAPP.": 1,
   MAT: 2,
-  "": 3,
 };
 
 export function grupEtiketi(g: HamGrup): string {
   return [
     g.size || "ebat?",
-    g.surface || "yüzey yok",
+    g.surface,
     g.grade === "END." ? "END." : g.grade === "1." ? "1. KALİTE" : "kalite yok",
   ].join(" · ");
 }

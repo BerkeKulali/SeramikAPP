@@ -328,6 +328,18 @@ function normalizeSurface(v: string): string {
   return "";
 }
 
+/**
+ * YÜZEY sütunu boşsa yüzey ürün adından okunur; adında da yüzey
+ * geçmiyorsa ürün MAT'tır. Tedarikçi yalnız mat dışındaki yüzeyleri
+ * ada yazıyor, bu yüzden "yazmıyorsa mat" doğru varsayım.
+ */
+function surfaceFromName(raw: string): string {
+  const t = normalizeText(raw);
+  if (/\bful+\s*lap/.test(t) || /\bflp\b/.test(t)) return "FLP";
+  if (/\blappato\b|\blapp\b|\bsemi\b/.test(t)) return "SEMİ LAPP.";
+  return "MAT";
+}
+
 function normalizeGrade(v: string): "" | "1." | "END." {
   const t = normalizeText(v);
   if (!t) return "";
@@ -624,7 +636,9 @@ export function buildImport(
         row._seenEnd = true;
       }
       if (isRec) row.isRec = true;
-      if (!row.surface) row.surface = normalizeSurface(cell(r, cols.surface));
+      if (!row.surface) {
+        row.surface = normalizeSurface(cell(r, cols.surface)) || surfaceFromName(rawName);
+      }
     };
 
     /** Gözlerden görünen alanları (stok, fiyat, çift stok) tazeler. */
