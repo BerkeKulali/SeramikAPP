@@ -86,6 +86,18 @@ function cloudItemLabel(item: UploadLibraryItem): string {
   return seg;
 }
 
+/** Cloudinary galerisindeki KUCUK onizleme kutucuklari icin hafif versiyon.
+ *  Secim yapildiginda banner'a yine orijinal (tam kaliteli) `item.url`
+ *  kullaniliyor -- bu sadece listedeki <img> kaynagini degistirir, bandwidth'i
+ *  onemli olcude dusurur ve gorunur kalite kaybi yaratmaz (kucuk kutuda zaten
+ *  gosterilen boyut bundan kucuk). */
+function thumbUrl(url: string, w = 400): string {
+  const u = String(url ?? "");
+  if (!u.includes("res.cloudinary.com") || !u.includes("/upload/")) return u;
+  if (/\/upload\/(c_|w_|h_|q_|f_)/.test(u)) return u;
+  return u.replace("/upload/", `/upload/w_${w},c_limit,q_auto,f_auto/`);
+}
+
 type SlotState = {
   productId: string | null;
   stock: string;
@@ -3306,7 +3318,7 @@ export default function Home() {
                           <div className="aspect-square w-full overflow-hidden bg-zinc-100">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={item.url}
+                              src={thumbUrl(item.url)}
                               alt=""
                               className="h-full w-full object-cover"
                             />
@@ -4141,7 +4153,7 @@ export default function Home() {
                         <div className="aspect-square w-full overflow-hidden bg-zinc-100">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={item.url}
+                            src={thumbUrl(item.url)}
                             alt=""
                             className="h-full w-full object-cover"
                           />
