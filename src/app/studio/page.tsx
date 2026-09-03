@@ -1249,6 +1249,11 @@ export default function Studio2Page() {
 
   /* --------------------------------- dışa aktarım --------------------------------- */
 
+  /** Dosya adında kullanılamayan karakterleri temizler. */
+  function safeFileName(v: string): string {
+    return v.replace(/[\\/:*?"<>|]/g, "-").trim();
+  }
+
   const fileBase = useMemo(() => {
     if (state.pageMode === "kampanya") {
       const t = state.campaignTitle.trim() || state.campaignLead.trim() || "kampanya";
@@ -1349,7 +1354,7 @@ export default function Studio2Page() {
       if (!url) return;
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${fileBase}.jpg`;
+      a.download = `${exportName}.jpg`;
       a.click();
       setMsg("JPG indirildi ✓");
     } catch {
@@ -1370,7 +1375,7 @@ export default function Studio2Page() {
         format: [CANVAS_W, CANVAS_H],
       });
       pdf.addImage(url, "JPEG", 0, 0, CANVAS_W, CANVAS_H);
-      pdf.save(`${fileBase}.pdf`);
+      pdf.save(`${exportName}.pdf`);
       setMsg("PDF indirildi ✓");
     } catch {
       setMsg("PDF oluşturulamadı");
@@ -1628,7 +1633,7 @@ export default function Studio2Page() {
         if (i > 0) pdf.addPage([CANVAS_W, CANVAS_H], "portrait");
         pdf.addImage(url, "JPEG", 0, 0, CANVAS_W, CANVAS_H);
       }
-      pdf.save(`${fileBase} (${queue.length} sayfa).pdf`);
+      pdf.save(`${exportName}.pdf`);
       setMsg(`${queue.length} sayfalık PDF indirildi ✓`);
     } catch {
       setMsg("PDF oluşturulamadı");
@@ -2062,6 +2067,16 @@ export default function Studio2Page() {
   /** Kayıt başlığı: kullanıcı yazdıysa o, yoksa sayfadan türetilen ad. */
   const saveTitle = useMemo(
     () => (docTitle.trim() || fileBase).slice(0, 120),
+    [docTitle, fileBase],
+  );
+
+  /**
+   * Dışa aktarılan dosyanın adı. KAYIT ADI yazılmışsa aynen o kullanılır —
+   * marka/ebat/depodan ad uydurulmaz, sonuna sayfa sayısı eklenmez.
+   * Kutu boşsa eski türetilmiş ada düşülür.
+   */
+  const exportName = useMemo(
+    () => safeFileName(docTitle.trim() || fileBase).slice(0, 120) || "afis",
     [docTitle, fileBase],
   );
 
@@ -3385,6 +3400,8 @@ export default function Studio2Page() {
               />
               <div className="mt-1 text-[10px] leading-relaxed text-zinc-500">
                 Aynı adla tekrar kaydedersen eski kaydın üzerine yazılır.
+                <br />
+                İndirilen PDF ve JPG de bu adı alır: <b>{exportName}.pdf</b>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <button
