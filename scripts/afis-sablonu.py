@@ -34,7 +34,7 @@ COLUMNS = [
     ("STOK 2",          10, "urun",     "Çift stok: END. stoğu. Doluysa afişte iki satır basılır."),
     ("FİYAT 2",         10, "urun",     "Çift stok: END. fiyatı."),
     ("AFİŞ ÜRÜNÜ",      26, "urun",     "Yanlış fotoğraf geliyorsa katalogdaki doğru adı buraya yaz."),
-    ("ÜRÜN SAYISI",     13, "sayfa",    "Sayfada kaç ürün olsun (1-4). Boşsa satır sayısından hesaplanır."),
+    ("ÜRÜN SAYISI",     13, "sayfa",    "Sayfada kaç ürün olsun: 1-4 · 6 · 8. Boşsa satır sayısından hesaplanır."),
     ("ZEMİN",           15, "sayfa",    "Sayfanın zemin rengi. Boşsa stüdyoda seçili olan kullanılır."),
     ("MARKA",           18, "sayfa",    "Afişin üstünde yazan marka."),
     ("SEVK YERİ",       20, "sayfa",    "PANCAR DEPO · SÖKE FABRİKA SEVK · BOZÖYÜK SEVK — listede olmayan bir yer de yazabilirsin."),
@@ -66,7 +66,7 @@ LISTS = {
     "YÜZEY":       ["FLP", "SEMİ LAPP.", "MAT"],
     "KALİTE":      ["1.", "END."],
     "REC":         ["E"],
-    "ÜRÜN SAYISI": ["1", "2", "3", "4"],
+    "ÜRÜN SAYISI": ["1", "2", "3", "4", "6", "8"],
     "ZEMİN":       GROUNDS,
     "SEVK YERİ":   ["PANCAR DEPO", "SÖKE FABRİKA SEVK", "BOZÖYÜK SEVK"],
 }
@@ -151,7 +151,7 @@ def build(path: str) -> None:
     notes = [
         "",
         "Nasıl çalışır",
-        "· Aynı SAYFA numarasına yazdığın satırlar tek afiş olur. 4'ten fazlaysa kendiliğinden bölünür.",
+        "· Aynı SAYFA numarasına yazdığın satırlar tek afiş olur. ÜRÜN SAYISI'ndan fazlaysa kendiliğinden bölünür.",
         "· Ürün adı katalogdaki fotoğrafla otomatik eşleşir. Yanlış eşleşirse stüdyodaki önizlemede",
         "  düzeltirsin; düzeltme hatırlanır, bir dahaki dosyada tekrar sorulmaz.",
         "· İstersen AFİŞ ÜRÜNÜ sütununa doğru fotoğrafın adını yazıp baştan sabitleyebilirsin.",

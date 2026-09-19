@@ -277,7 +277,7 @@ export function sablonSatirlari(
   gruplar: HamGrup[],
   ayar: HazirlaAyar,
 ): string[][] {
-  const perPage = Math.min(4, Math.max(1, Math.round(ayar.sayfaBasinaUrun) || 3));
+  const perPage = Math.min(8, Math.max(1, Math.round(ayar.sayfaBasinaUrun) || 3));
   const rows: string[][] = [SABLON_BASLIK.slice()];
   let sayfa = 0;
 

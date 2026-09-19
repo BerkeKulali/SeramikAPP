@@ -40,7 +40,7 @@ import {
  *  Tasarım kuralları (kararlaştırıldı):
  *   - Ebat ve görsel en üst öncelik: karo ASLA kırpılmaz, oranı bozulmaz.
  *   - Dikey çekilmiş fotoğraf yatay çerçeveye çevrilerek yerleştirilir.
- *   - Dikdörtgen ebatlar tek sütun, alt alta. Kare ebatlar 2 sütun, en fazla 4.
+ *   - Dikdörtgen ebatlar tek sütun. Kare ebatlar ve 5+ ürün 2 sütun.
  *   - Ürün sayısını kullanıcı seçer; ebada göre yalnızca öneri sunulur.
  *   - Zemin nötr orta tondur: hem koyu hem açık karo zeminden ayrışır.
  *   - Vurgu rengi logo mavisidir.
@@ -330,7 +330,7 @@ function normalizeState(raw: unknown): PageState | null {
     typeof o.count === "number" && Number.isFinite(o.count)
       ? Math.round(o.count)
       : slotsRaw.length;
-  const count = Math.min(4, Math.max(1, rawCount || 1));
+  const count = Math.min(MAX_SLOT, Math.max(1, rawCount || 1));
   const accent = asStr(o.accent);
   const fontScale =
     typeof o.fontScale === "number" && Number.isFinite(o.fontScale)
@@ -417,8 +417,12 @@ function suggestedCount(text: string): number {
   return 3; // 60x120, 40x120, 120x280 ...
 }
 
+/** Sayfa başına ürün seçenekleri. 6 ve 8, iki sütunlu ızgarada 3 ve 4 sıra. */
+const MAX_SLOT = 8;
+
 function countOptionsFor(text: string): number[] {
-  return isSquareSize(text) ? [1, 2, 3, 4] : [1, 2, 3, 4];
+  void text;
+  return [1, 2, 3, 4, 6, 8];
 }
 
 function displayName(p: Product | undefined, s: Slot): string {
@@ -1163,10 +1167,7 @@ export default function Studio2Page() {
 
   function setSize(size: string) {
     setState((s) => {
-      const n = Math.min(
-        isSquareSize(size) ? 4 : 4,
-        s.count || suggestedCount(size),
-      );
+      const n = Math.min(MAX_SLOT, s.count || suggestedCount(size));
       const slots = Array.from({ length: n }, (_, i) => s.slots[i] ?? emptySlot());
       return { ...s, size, count: n, slots };
     });
@@ -1471,7 +1472,7 @@ export default function Studio2Page() {
   /**
    * Bir ürünü kuyruktaki bir sayfadan diğerine taşır.
    *
-   * Kaynak sayfanın ürün sayısı bir azalır, hedefinki bir artar (en fazla 4).
+   * Kaynak sayfanın ürün sayısı bir azalır, hedefinki bir artar.
    * Taşınan karo hedef sayfanın ebadına zorlanmaz: kendi ebadı farklıysa
    * karo bazında ebat olarak yazılır, oranı bozulmaz.
    *
@@ -1489,8 +1490,8 @@ export default function Studio2Page() {
     if (!from || !to) return;
     const moving = from.snapshot.slots[slotIdx];
     if (!moving) return;
-    if (to.snapshot.count >= 4) {
-      setMsg("Hedef sayfa dolu — bir sayfada en fazla 4 ürün olabilir");
+    if (to.snapshot.count >= MAX_SLOT) {
+      setMsg(`Hedef sayfa dolu — bir sayfada en fazla ${MAX_SLOT} ürün olabilir`);
       return;
     }
     // Kaynakta tek ürün varsa taşımak sayfayı boşaltır — sayfa da gider.
@@ -1871,7 +1872,7 @@ export default function Studio2Page() {
    * Sayfa ayarları (zemin, marka, sevk yeri, ürün sayısı) Excel'den gelir;
    * boş bırakılanlar için stüdyoda o an seçili olan değer kullanılır.
    * ÜRÜN SAYISI yazılmışsa sayfa o sayıda ürüne bölünür, yoksa 4'erli —
-   * düzen en fazla 4 taşıyor.
+   * düzen en fazla MAX_SLOT taşıyor.
    */
   function pagesFromImport(res: ImportResult): PageState[] {
     const out: PageState[] = [];
@@ -1913,7 +1914,7 @@ export default function Studio2Page() {
         return;
       }
 
-      const per = st.count >= 1 && st.count <= 4 ? st.count : 4;
+      const per = st.count >= 1 && st.count <= MAX_SLOT ? st.count : 4;
       for (let i = 0; i < pg.rows.length; i += per) {
         const chunk = pg.rows.slice(i, i + per);
         const size = chunk.map((r) => r.size).find(Boolean) || state.size;
@@ -2405,8 +2406,12 @@ export default function Studio2Page() {
   const square = isSquareSize(state.size);
   // İki sütun ancak iki SIRA dolduğunda anlamlı (3 ve 4 kare). 2 karede tek
   // sıra dibe yapışıp sayfanın üstünü boş bırakıyordu; onlar alt alta.
-  const cols = square && state.count >= 3 ? 2 : 1;
-  const cellScale = cols === 2 ? 0.82 : 1;
+  // 5 ve üzeri her ebatta iki sütun: dikdörtgen karoyu 8 kez alt alta
+  // dizmek karoyu okunmaz hâle getiriyor.
+  const cols = state.count >= 5 || (square && state.count >= 3) ? 2 : 1;
+  const gridRows = Math.max(1, Math.ceil(state.count / cols));
+  // Sıra arttıkça yazı da küçülmeli, yoksa karoya yer kalmıyor.
+  const cellScale = cols === 1 ? 1 : gridRows >= 4 ? 0.64 : gridRows === 3 ? 0.72 : 0.82;
   const s = scale * cellScale;
 
   // Bilgi bloğunun yüksekliği SAYFADA TEK olmalı. Slotların bilgi alanı
@@ -2425,8 +2430,9 @@ export default function Studio2Page() {
   );
 
   const slotGap = Math.round(14 * s);
-  const rows = cols === 1 ? Math.max(1, state.count) : 2;
-  const rowGap = cols === 1 ? 28 : 30;
+  const rows = cols === 1 ? Math.max(1, state.count) : gridRows;
+  // Sıra çoğaldıkça sıralar arası boşluk daralır; toplam boşluk sabit kalsın.
+  const rowGap = cols === 1 ? 28 : gridRows >= 4 ? 18 : gridRows === 3 ? 24 : 30;
   const slotH =
     areaH > 0 ? (areaH - 44 - rowGap * (rows - 1)) / rows : 0;
   /** Karonun tuval pikseli cinsinden yükseklik tavanı. 0 = henüz ölçülmedi. */
@@ -2608,7 +2614,9 @@ export default function Studio2Page() {
       );
 
     // 3 karede son ürün alt sırayı tek başına kaplar, ortalanmış durur.
-    const spanRow = cols === 2 && state.count === 3 && index === 2;
+    // Tek sayıda üründe son karo alt sırayı tek başına kaplar ve ortalanır.
+    const spanRow =
+      cols === 2 && state.count % 2 === 1 && index === state.count - 1;
 
     return (
       <div
@@ -2880,7 +2888,9 @@ export default function Studio2Page() {
                 })}
               </select>
               <div className="pt-1 text-[11px] text-zinc-500">
-                {square ? "Kare — 2 sütun, en fazla 4 ürün" : "Dikdörtgen — tek sütun, alt alta"}
+                {cols === 2
+                  ? `2 sütun · ${gridRows} sıra`
+                  : "Tek sütun, alt alta"}
                 {" · "}önerilen: {suggestedCount(state.size)} ürün
               </div>
               {products.length && !(sizeCount.get(state.size) ?? 0) ? (
@@ -3361,10 +3371,10 @@ export default function Studio2Page() {
                                     <option
                                       key={q.id}
                                       value={q.id}
-                                      disabled={q.snapshot.count >= 4}
+                                      disabled={q.snapshot.count >= MAX_SLOT}
                                     >
                                       {qi + 1}. sayfa
-                                      {q.snapshot.count >= 4 ? " (dolu)" : ""}
+                                      {q.snapshot.count >= MAX_SLOT ? " (dolu)" : ""}
                                     </option>
                                   ),
                                 )}
@@ -4530,7 +4540,7 @@ export default function Studio2Page() {
                       {pg.settings.mode === "kampanya" ? "hediye" : "ürün"}
                       {(() => {
                         const per =
-                          pg.settings.count >= 1 && pg.settings.count <= 4
+                          pg.settings.count >= 1 && pg.settings.count <= MAX_SLOT
                             ? pg.settings.count
                             : 4;
                         return pg.settings.mode !== "kampanya" &&
