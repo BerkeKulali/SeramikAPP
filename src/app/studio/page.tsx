@@ -422,7 +422,7 @@ const MAX_SLOT = 8;
 
 function countOptionsFor(text: string): number[] {
   void text;
-  return [1, 2, 3, 4, 6, 8];
+  return [1, 2, 3, 4, 5, 6, 7, 8];
 }
 
 function displayName(p: Product | undefined, s: Slot): string {
@@ -2406,8 +2406,10 @@ export default function Studio2Page() {
   const square = isSquareSize(state.size);
   // İki sütun ancak iki SIRA dolduğunda anlamlı (3 ve 4 kare). 2 karede tek
   // sıra dibe yapışıp sayfanın üstünü boş bırakıyordu; onlar alt alta.
-  // 5 ve üzeri her ebatta iki sütun: dikdörtgen karoyu 8 kez alt alta
-  // dizmek karoyu okunmaz hâle getiriyor.
+  // 5 ve üzeri her ebatta iki sütun: dikdörtgen karoyu bu kadar çok kez
+  // alt alta dizmek karoyu okunmaz hâle getiriyor. 4'te tek sütun kalıyor —
+  // iki sütun karoyu biraz büyütüyor ama iki sıra arasında büyük bir
+  // boşluk bırakıyor, sayfa ortadan kopuyordu.
   const cols = state.count >= 5 || (square && state.count >= 3) ? 2 : 1;
   const gridRows = Math.max(1, Math.ceil(state.count / cols));
   // Sıra arttıkça yazı da küçülmeli, yoksa karoya yer kalmıyor.
@@ -2425,14 +2427,37 @@ export default function Studio2Page() {
   const anyDualStock = state.slots
     .slice(0, state.count)
     .some((sl) => sl.dualStock);
+  // Tek sütunda sıra sayısı arttıkça yazı bloğu daralır. 4 karo alt alta
+  // dizilince yazıya ayrılan sabit yükseklik karoyu sayfanın üçte birine
+  // düşürüyordu; yazı zaten o boşluğu kullanmıyor.
+  const tightCol = cols === 1 && state.count >= 4;
   const infoHeight = Math.round(
-    (cols === 1 ? (anyDualStock ? 200 : 132) : anyDualStock ? 182 : 150) * s,
+    (cols === 1
+      ? anyDualStock
+        ? tightCol
+          ? 172
+          : 200
+        : tightCol
+          ? 104
+          : 132
+      : anyDualStock
+        ? 182
+        : 150) * s,
   );
 
   const slotGap = Math.round(14 * s);
   const rows = cols === 1 ? Math.max(1, state.count) : gridRows;
   // Sıra çoğaldıkça sıralar arası boşluk daralır; toplam boşluk sabit kalsın.
-  const rowGap = cols === 1 ? 28 : gridRows >= 4 ? 18 : gridRows === 3 ? 24 : 30;
+  const rowGap =
+    cols === 1
+      ? tightCol
+        ? 16
+        : 28
+      : gridRows >= 4
+        ? 18
+        : gridRows === 3
+          ? 24
+          : 30;
   const slotH =
     areaH > 0 ? (areaH - 44 - rowGap * (rows - 1)) / rows : 0;
   /** Karonun tuval pikseli cinsinden yükseklik tavanı. 0 = henüz ölçülmedi. */
@@ -3992,7 +4017,7 @@ export default function Studio2Page() {
                         minHeight: 0,
                         display: "flex",
                         flexDirection: "column",
-                        gap: 28,
+                        gap: rowGap,
                         padding: "20px 62px 24px",
                       }}
                     >
@@ -4008,8 +4033,11 @@ export default function Studio2Page() {
                         minHeight: 0,
                         display: "grid",
                         gridTemplateColumns: "1fr 1fr",
-                        gridTemplateRows: "1fr 1fr",
-                        gap: "30px 26px",
+                        // Sıra sayısı üründen geliyor. Sabit "1fr 1fr" iken
+                        // 3. ve 4. sıra içerik boyunda kalıyor, sıralar
+                        // birbiriyle hizalanmıyordu.
+                        gridTemplateRows: `repeat(${gridRows}, 1fr)`,
+                        gap: `${rowGap}px 26px`,
                         padding: "20px 62px 24px",
                       }}
                     >
