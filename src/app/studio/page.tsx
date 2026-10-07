@@ -687,6 +687,40 @@ function TilePlaceholder({
 
 /* ------------------------------ rozetler ------------------------------ */
 
+/**
+ * Karonun kendi ebadı. Sayfada tek ebat varsa üstteki büyük rozet yeter;
+ * karışık sayfada hangi karonun hangi ebat olduğunu söyleyen tek şey bu.
+ */
+function SizeChip({
+  text,
+  ink,
+  scale,
+}: {
+  text: string;
+  ink: string;
+  scale: number;
+}) {
+  if (!text) return null;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        border: `${Math.max(1, Math.round(2 * scale))}px solid ${ink}`,
+        color: ink,
+        fontSize: Math.round(19 * scale),
+        fontWeight: 800,
+        letterSpacing: ".04em",
+        padding: `${Math.round(5 * scale)}px ${Math.round(11 * scale)}px`,
+        borderRadius: Math.round(8 * scale),
+        whiteSpace: "nowrap",
+      }}
+    >
+      {text.replace("x", " × ")}
+    </span>
+  );
+}
+
 function GradeChip({
   text,
   accent,
@@ -2427,6 +2461,19 @@ export default function Studio2Page() {
   const anyDualStock = state.slots
     .slice(0, state.count)
     .some((sl) => sl.dualStock);
+  /**
+   * Sayfadaki farklı ebatlar. Her karo kendi ebadında çiziliyor; birden
+   * çok ebat varsa üstteki rozet tek ebadı söyleyerek yanıltıyordu.
+   */
+  const pageSizes = Array.from(
+    new Set(
+      state.slots
+        .slice(0, state.count)
+        .map((sl) => sl.sizeOverride || state.size)
+        .filter(Boolean),
+    ),
+  );
+  const mixedSizes = pageSizes.length > 1;
   // Tek sütunda sıra sayısı arttıkça yazı bloğu daralır. 4 karo alt alta
   // dizilince yazıya ayrılan sabit yükseklik karoyu sayfanın üçte birine
   // düşürüyordu; yazı zaten o boşluğu kullanmıyor.
@@ -2531,12 +2578,25 @@ export default function Studio2Page() {
       >
         <div
           style={{
-            fontSize: Math.round((cols === 1 ? 32 : 27) * s),
-            fontWeight: 750,
-            lineHeight: 1.05,
+            display: "flex",
+            alignItems: "center",
+            gap: Math.round(12 * s),
+            minWidth: 0,
           }}
         >
-          {name || "—"}
+          {mixedSizes ? (
+            <SizeChip text={size} ink={ground.ink} scale={s * 0.92} />
+          ) : null}
+          <div
+            style={{
+              fontSize: Math.round((cols === 1 ? 32 : 27) * s),
+              fontWeight: 750,
+              lineHeight: 1.05,
+              minWidth: 0,
+            }}
+          >
+            {name || "—"}
+          </div>
         </div>
         {dualStockRow(slot.isRec ? "REC 1. KALİTE" : "1. KALİTE", slot.stock, slot.price, true)}
         {dualStockRow(slot.isRec ? "REC END." : "END.", slot.stockEnd, slot.priceEnd, false)}
@@ -2564,6 +2624,9 @@ export default function Studio2Page() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: Math.round(15 * s), minWidth: 0 }}>
+            {mixedSizes ? (
+              <SizeChip text={size} ink={ground.ink} scale={s} />
+            ) : null}
             <GradeChip
               text={chip}
               accent={state.accent}
@@ -2604,6 +2667,9 @@ export default function Studio2Page() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: Math.round(10 * s), minWidth: 0 }}>
+            {mixedSizes ? (
+              <SizeChip text={size} ink={ground.ink} scale={s * 0.92} />
+            ) : null}
             <GradeChip
               text={chip}
               accent={state.accent}
@@ -3855,7 +3921,9 @@ export default function Studio2Page() {
                             borderRadius: 12,
                           }}
                         >
-                          {state.size.replace("x", " × ")}
+                          {pageSizes
+                            .map((x) => x.replace("x", " × "))
+                            .join("  ·  ")}
                         </span>
                       </div>
                     ) : null}
