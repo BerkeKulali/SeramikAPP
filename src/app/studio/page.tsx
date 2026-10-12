@@ -185,12 +185,14 @@ type Slot = {
   dualStock: boolean;
   stockEnd: string;
   priceEnd: string;
-  /** Boş = tek fiyat. Dolu = Vadeli/Kart. */
+  /** Boş = tek fiyat. Dolu = Vadeli/Kredi/Peşin. */
   dualPrice: boolean;
   price: string;
   priceSecond: string;
   priceLabel: string;
   priceSecondLabel: string;
+  priceThird: string;
+  priceThirdLabel: string;
   /** Slot bazında ebat geçersiz kılma (karma sayfa için). Boş = sayfa ebadı. */
   sizeOverride: string;
 };
@@ -247,7 +249,9 @@ function emptySlot(): Slot {
     price: "",
     priceSecond: "",
     priceLabel: "VADELİ",
-    priceSecondLabel: "KART",
+    priceSecondLabel: "KREDİ",
+    priceThird: "",
+    priceThirdLabel: "PEŞİN",
     sizeOverride: "",
   };
 }
@@ -300,6 +304,7 @@ function normalizeGround(v: unknown): GroundId {
 function normalizeSlot(raw: unknown): Slot {
   const o = (raw ?? {}) as Record<string, unknown>;
   const base = emptySlot();
+  const savedSecondLabel = asStr(o.priceSecondLabel);
   return {
     productId: typeof o.productId === "string" ? o.productId : null,
     imageUrl: typeof o.imageUrl === "string" ? o.imageUrl : null,
@@ -315,7 +320,14 @@ function normalizeSlot(raw: unknown): Slot {
     price: asStr(o.price),
     priceSecond: asStr(o.priceSecond),
     priceLabel: asStr(o.priceLabel) || base.priceLabel,
-    priceSecondLabel: asStr(o.priceSecondLabel) || base.priceSecondLabel,
+    // Eski çift fiyat şablonundaki varsayılan KART etiketi artık KREDİ'dir.
+    // Kullanıcının farklı yazdığı özel etiketler olduğu gibi korunur.
+    priceSecondLabel:
+      savedSecondLabel.trim().toLocaleUpperCase("tr") === "KART"
+        ? base.priceSecondLabel
+        : savedSecondLabel || base.priceSecondLabel,
+    priceThird: asStr(o.priceThird),
+    priceThirdLabel: asStr(o.priceThirdLabel) || base.priceThirdLabel,
     sizeOverride: asStr(o.sizeOverride),
   };
 }
@@ -807,12 +819,12 @@ function PriceBlock({
     </div>
   );
 
-  // Tek ve çift fiyat aynı yüksekliği kaplar; aksi hâlde satırlar kayıyor.
-  const boxHeight = Math.round(108 * scale);
+  // Çok fiyatlı blok, diğer karolarla hizayı koruyacak sabit yüksekliğe sahip.
+  const boxHeight = Math.round(124 * scale);
 
   if (slot.dualPrice) {
     const line = (label: string, value: string, big: boolean) => {
-      const fs = Math.round((big ? 42 : 36) * scale);
+      const fs = Math.round((big ? 30 : 27) * scale);
       return (
         <div
           style={{
@@ -824,7 +836,7 @@ function PriceBlock({
         >
           <span
             style={{
-              fontSize: Math.round(18 * scale),
+              fontSize: Math.round(15 * scale),
               fontWeight: 700,
               letterSpacing: ".12em",
               color: muted,
@@ -856,8 +868,10 @@ function PriceBlock({
         }}
       >
         {line(slot.priceLabel || "VADELİ", slot.price, true)}
-        <div style={{ height: Math.round(5 * scale) }} />
-        {line(slot.priceSecondLabel || "KART", slot.priceSecond, false)}
+        <div style={{ height: Math.round(3 * scale) }} />
+        {line(slot.priceSecondLabel || "KREDİ", slot.priceSecond, false)}
+        <div style={{ height: Math.round(3 * scale) }} />
+        {line(slot.priceThirdLabel || "PEŞİN", slot.priceThird, false)}
         {unit}
       </div>
     );
@@ -3758,12 +3772,12 @@ export default function Studio2Page() {
                         slot.dualStock ? "font-semibold text-zinc-400" : "font-semibold"
                       }
                     >
-                      Çift fiyat (Vadeli + Kart)
+                      3 fiyat (Vadeli + Kredi + Peşin)
                     </span>
                   </label>
                   {slot.dualStock ? (
                     <div className="mt-1 text-[10px] leading-relaxed text-zinc-500">
-                      Çift stokta her kalitenin kendi fiyatı var; Vadeli/Kart ayrımı
+                      Çift stokta her kalitenin kendi fiyatı var; Vadeli/Kredi/Peşin ayrımı
                       aynı anda kullanılamaz.
                     </div>
                   ) : null}
@@ -3789,10 +3803,29 @@ export default function Studio2Page() {
                         />
                       </label>
                       <label className="space-y-1">
+                        <div className="text-xs font-semibold text-zinc-600">3. etiket</div>
+                        <input
+                          value={slot.priceThirdLabel || "PEŞİN"}
+                          onChange={(e) =>
+                            patchSlot(i, { priceThirdLabel: e.target.value.toUpperCase() })
+                          }
+                          className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm"
+                        />
+                      </label>
+                      <label className="space-y-1">
                         <div className="text-xs font-semibold text-zinc-600">2. fiyat</div>
                         <input
                           value={slot.priceSecond}
                           onChange={(e) => patchSlot(i, { priceSecond: digits(e.target.value) })}
+                          inputMode="numeric"
+                          className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm"
+                        />
+                      </label>
+                      <label className="space-y-1">
+                        <div className="text-xs font-semibold text-zinc-600">3. fiyat</div>
+                        <input
+                          value={slot.priceThird || ""}
+                          onChange={(e) => patchSlot(i, { priceThird: digits(e.target.value) })}
                           inputMode="numeric"
                           className="w-full rounded-lg border border-zinc-200 bg-white px-2 py-2 text-sm"
                         />
