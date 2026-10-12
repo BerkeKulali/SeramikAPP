@@ -225,6 +225,8 @@ type PageState = {
   /** Kampanya sayfasında gösterilecek hediye ürün sayısı (0-3).
    *  Ürünler normal slots dizisinden okunur. */
   giftCount: number;
+  /** Alt sabit dipnotların üstünde, öne çıkarılan serbest metin. */
+  footerNote: string;
   footerLeft: string;
   footerRight: string;
   fontScale: number;
@@ -366,6 +368,7 @@ function normalizeState(raw: unknown): PageState | null {
       typeof o.giftCount === "number" && Number.isFinite(o.giftCount)
         ? Math.min(3, Math.max(0, Math.round(o.giftCount)))
         : 0,
+    footerNote: asStr(o.footerNote),
     footerLeft: asStr(o.footerLeft),
     footerRight: asStr(o.footerRight),
     fontScale,
@@ -1105,6 +1108,7 @@ export default function Studio2Page() {
     campaignText: "",
     campaignNote: "Bir palet 96 m² · Kampanya stoklarla sınırlıdır",
     giftCount: 0,
+    footerNote: "",
     footerLeft: "FİYATLAR KDV HARİÇTİR",
     footerRight: "STOKLARLA SINIRLIDIR",
     fontScale: 100,
@@ -3147,6 +3151,22 @@ export default function Studio2Page() {
                 </div>
               </label>
             </div>
+
+            <label className="mt-3 block space-y-1">
+              <div className="text-xs font-semibold text-zinc-600">
+                Alt not (afişte belirgin görünür)
+              </div>
+              <textarea
+                value={state.footerNote ?? ""}
+                onChange={(e) => patch({ footerNote: e.target.value })}
+                rows={2}
+                placeholder="örn. FİYATLAR SADECE BUGÜN İÇİN GEÇERLİDİR"
+                className="w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+              />
+              <div className="text-[10px] leading-relaxed text-zinc-500">
+                Bu metin, en altta mavi bant üzerinde büyük ve okunaklı basılır.
+              </div>
+            </label>
           </section>
 
           <section className="rounded-2xl bg-white p-4 ring-1 ring-zinc-200">
@@ -4193,6 +4213,27 @@ export default function Studio2Page() {
                       }}
                     >
                       {state.campaignNote}
+                    </div>
+                  ) : null}
+
+                  {state.footerNote?.trim() ? (
+                    <div
+                      style={{
+                        flexShrink: 0,
+                        margin: "0 62px",
+                        padding: "14px 20px",
+                        borderRadius: 12,
+                        background: state.accent,
+                        color: "#FFFFFF",
+                        fontSize: 24,
+                        fontWeight: 850,
+                        lineHeight: 1.2,
+                        letterSpacing: ".035em",
+                        textAlign: "center",
+                        whiteSpace: "pre-line",
+                      }}
+                    >
+                      {state.footerNote}
                     </div>
                   ) : null}
 
