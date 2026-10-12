@@ -42,9 +42,8 @@ type CatalogV1 = {
 
 type SellRow = {
   rowKey: string;
-  /** Çift fiyatlı slotta diğer fiyat; modalda tek tıkla seçilebilir. */
-  altPrice?: string;
-  altLabel?: string;
+  /** Çok fiyatlı slotta seçilebilecek diğer fiyatlar. */
+  alternativePrices?: Array<{ label: string; price: string }>;
   slotIndex: number;
   /** Çift stoklu slotlarda hangi stoktan düşüleceğini belirler. */
   part: "primary" | "end";
@@ -111,6 +110,8 @@ type SlotState = {
   priceLabel: string;
   secondPriceLabel: string;
   secondPrice: string;
+  thirdPriceLabel: string;
+  thirdPrice: string;
   /** Görselin çerçeve içindeki genişliği (%). Boş = ebattan otomatik. */
   imageScale: string;
   /** Slot bazında görsel oranı. "" = sayfanın oranını kullan. */
@@ -220,8 +221,10 @@ function emptySlot(): SlotState {
     endStockPrice: "",
     dualPrice: false,
     priceLabel: "Vadeli",
-    secondPriceLabel: "Kart",
+    secondPriceLabel: "Kredi",
     secondPrice: "",
+    thirdPriceLabel: "Peşin",
+    thirdPrice: "",
     imageScale: "",
     imageAspect: "",
     imageOutline: false,
@@ -266,8 +269,13 @@ function normalizeSlotFromPartial(s: Partial<SlotState> | undefined): SlotState 
     secondPriceLabel:
       typeof s.secondPriceLabel === "string" && s.secondPriceLabel.trim()
         ? s.secondPriceLabel
-        : "Kart",
+        : "Kredi",
     secondPrice: typeof s.secondPrice === "string" ? s.secondPrice : "",
+    thirdPriceLabel:
+      typeof s.thirdPriceLabel === "string" && s.thirdPriceLabel.trim()
+        ? s.thirdPriceLabel
+        : "Peşin",
+    thirdPrice: typeof s.thirdPrice === "string" ? s.thirdPrice : "",
     imageScale: typeof s.imageScale === "string" ? s.imageScale : "",
     imageAspect:
       s.imageAspect === "square" ||
@@ -341,9 +349,15 @@ function buildSlots(count: TemplateCount, prev?: SlotState[]): SlotState[] {
       secondPriceLabel:
         typeof existing.secondPriceLabel === "string" && existing.secondPriceLabel.trim()
           ? existing.secondPriceLabel
-          : "Kart",
+          : "Kredi",
       secondPrice:
         typeof existing.secondPrice === "string" ? existing.secondPrice : "",
+      thirdPriceLabel:
+        typeof existing.thirdPriceLabel === "string" && existing.thirdPriceLabel.trim()
+          ? existing.thirdPriceLabel
+          : "Peşin",
+      thirdPrice:
+        typeof existing.thirdPrice === "string" ? existing.thirdPrice : "",
       imageScale:
         typeof existing.imageScale === "string" ? existing.imageScale : "",
       imageAspect: existing.imageAspect ?? "",
@@ -513,7 +527,7 @@ function SlotStockPriceDisplay({
         <span className="font-extrabold">{unit}</span>
       </div>
       {slot?.dualPrice ? (
-        <div className="grid w-full grid-cols-2 gap-x-2">
+        <div className="grid w-full grid-cols-3 gap-x-2">
           <div className={priceClass} style={{ fontSize }}>
             {(slot.priceLabel?.trim() || "Vadeli")}:{" "}
             <span className="tabular-nums font-extrabold">
@@ -522,9 +536,16 @@ function SlotStockPriceDisplay({
             <span className="font-extrabold">+ KDV</span>
           </div>
           <div className={priceClass} style={{ fontSize }}>
-            {(slot.secondPriceLabel?.trim() || "Kart")}:{" "}
+            {(slot.secondPriceLabel?.trim() || "Kredi")}:{" "}
             <span className="tabular-nums font-extrabold">
               {priceValue(slot.secondPrice)}
+            </span>{" "}
+            <span className="font-extrabold">+ KDV</span>
+          </div>
+          <div className={priceClass} style={{ fontSize }}>
+            {(slot.thirdPriceLabel?.trim() || "Peşin")}:{" "}
+            <span className="tabular-nums font-extrabold">
+              {priceValue(slot.thirdPrice)}
             </span>{" "}
             <span className="font-extrabold">+ KDV</span>
           </div>
@@ -1600,10 +1621,13 @@ export default function Home() {
         rowKey: `${idx}:primary`,
         slotIndex: idx,
         part: "primary",
-        // Çift fiyatlı slotta ikinci fiyat da taşınır; operatör modalda
-        // tek tıkla seçer. Eskiden daima Vadeli kaydediliyordu.
-        altPrice: slot.dualPrice ? slot.secondPrice || "" : "",
-        altLabel: slot.dualPrice ? slot.secondPriceLabel || "KART" : "",
+        // Çok fiyatlı slotta diğer ödeme türleri de operatörün seçimine sunulur.
+        alternativePrices: slot.dualPrice
+          ? [
+              { label: slot.secondPriceLabel || "KREDİ", price: slot.secondPrice || "" },
+              { label: slot.thirdPriceLabel || "PEŞİN", price: slot.thirdPrice || "" },
+            ].filter((option) => option.price.trim())
+          : [],
         // Kampanya yazısı olan slotta stok/fiyat yok; yanlışlıkla 0 tutarlı
         // satış kaydedilmesin diye işaretsiz gelir.
         selected: !slot.hideStockPrice,
@@ -3860,12 +3884,12 @@ export default function Home() {
                                   className="h-4 w-4 accent-zinc-900"
                                 />
                                 <span className="font-semibold">
-                                  Çift fiyat (Vadeli + Kart)
+                                  3 fiyat (Vadeli + Kredi + Peşin)
                                 </span>
                               </label>
 
                               {s.dualPrice ? (
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-3 gap-2">
                                   <label className="space-y-1">
                                     <div className="text-xs font-semibold text-zinc-600">
                                       1. fiyat etiketi
@@ -3893,27 +3917,57 @@ export default function Home() {
                                           secondPriceLabel: e.target.value,
                                         })
                                       }
-                                      placeholder="Kart"
+                                      placeholder="Kredi"
                                       className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                                       disabled={!mediaOk}
                                     />
                                   </label>
-                                  <label className="col-span-2 space-y-1">
+                                  <label className="space-y-1">
                                     <div className="text-xs font-semibold text-zinc-600">
-                                      {s.secondPriceLabel?.trim() || "Kart"} fiyatı
+                                      3. fiyat etiketi
                                     </div>
                                     <input
-                                      value={s.secondPrice}
+                                      value={s.thirdPriceLabel}
                                       onChange={(e) =>
                                         updateSlot(idx, {
-                                          secondPrice: formatPriceInput(e.target.value),
+                                          thirdPriceLabel: e.target.value,
                                         })
                                       }
-                                      placeholder="örn. 220"
-                                      inputMode="numeric"
+                                      placeholder="Peşin"
                                       className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                                       disabled={!mediaOk}
                                     />
+                                  </label>
+                                  <label className="col-span-3 space-y-1">
+                                    <div className="text-xs font-semibold text-zinc-600">
+                                      Diğer fiyatlar
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <input
+                                        value={s.secondPrice}
+                                        onChange={(e) =>
+                                          updateSlot(idx, {
+                                            secondPrice: formatPriceInput(e.target.value),
+                                          })
+                                        }
+                                        placeholder={`${s.secondPriceLabel?.trim() || "Kredi"} fiyatı`}
+                                        inputMode="numeric"
+                                        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                        disabled={!mediaOk}
+                                      />
+                                      <input
+                                        value={s.thirdPrice}
+                                        onChange={(e) =>
+                                          updateSlot(idx, {
+                                            thirdPrice: formatPriceInput(e.target.value),
+                                          })
+                                        }
+                                        placeholder={`${s.thirdPriceLabel?.trim() || "Peşin"} fiyatı`}
+                                        inputMode="numeric"
+                                        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                                        disabled={!mediaOk}
+                                      />
+                                    </div>
                                   </label>
                                 </div>
                               ) : null}
@@ -4280,20 +4334,21 @@ export default function Home() {
                                   }
                                   className="mt-0.5 block w-24 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm outline-none focus:border-zinc-400"
                                 />
-                                {r.altPrice ? (
+                                {r.alternativePrices?.map((option) => (
                                   <button
+                                    key={`${r.rowKey}:${option.label}:${option.price}`}
                                     type="button"
                                     onClick={() =>
                                       updateSellRow(r.rowKey, {
-                                        unitPrice: r.altPrice ?? "",
+                                        unitPrice: option.price,
                                       })
                                     }
-                                    title="Bu slotta çift fiyat var; diğerine geç"
+                                    title="Bu slotta farklı ödeme fiyatı var; seçmek için tıklayın"
                                     className="mt-1 block w-24 rounded-md border border-zinc-300 bg-white px-1 py-0.5 text-[10px] font-bold text-zinc-700 hover:bg-zinc-50"
                                   >
-                                    {r.altLabel}: {r.altPrice} ₺
+                                    {option.label}: {option.price} ₺
                                   </button>
-                                ) : null}
+                                ))}
                               </label>
                               <div className="text-[11px] font-semibold text-zinc-600">
                                 Satır Toplam
@@ -5876,4 +5931,3 @@ export default function Home() {
     </div>
   );
 }
-
